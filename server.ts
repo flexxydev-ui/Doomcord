@@ -74,20 +74,32 @@ function saveAccounts(accounts: Record<string, ServerAuthAccount>): void {
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), { mode: 0o600 });
 }
 
+const OWNER_UUID = '00000000-0000-4000-8000-000000000001';
+
 // Bootstrap the single initial Owner account (idempotent, never duplicates)
 function bootstrapOwnerAccount(): ServerAuthAccount {
   const accounts = loadAccounts();
   const ownerEmail = 'razorpay@admin.doom';
 
-  const existingOwner = Object.values(accounts).find(
-    (acc) => acc.email.toLowerCase() === ownerEmail || acc.role === 'owner'
-  );
-
-  if (existingOwner) {
-    return existingOwner;
+  // Ensure deterministic OWNER_UUID is used
+  if (accounts[OWNER_UUID]) {
+    return accounts[OWNER_UUID];
   }
 
-  const ownerUid = crypto.randomUUID();
+  // Clean up any legacy non-deterministic owner entry if present
+  for (const key of Object.keys(accounts)) {
+    if (accounts[key].email.toLowerCase() === ownerEmail || accounts[key].role === 'owner') {
+      const migrated: ServerAuthAccount = {
+        ...accounts[key],
+        uid: OWNER_UUID,
+      };
+      delete accounts[key];
+      accounts[OWNER_UUID] = migrated;
+      saveAccounts(accounts);
+      return migrated;
+    }
+  }
+
   const salt = crypto.randomBytes(16).toString('hex');
   // Initial temporary password defined by specification; stored strictly as scrypt hash
   const initialTempPassword = process.env.INITIAL_OWNER_PASSWORD || '1234';
@@ -95,7 +107,7 @@ function bootstrapOwnerAccount(): ServerAuthAccount {
   const now = new Date().toISOString();
 
   const ownerAccount: ServerAuthAccount = {
-    uid: ownerUid,
+    uid: OWNER_UUID,
     email: ownerEmail,
     username: 'doomcord_owner',
     displayName: 'Doomcord Owner',
@@ -109,7 +121,7 @@ function bootstrapOwnerAccount(): ServerAuthAccount {
     updatedAt: now,
   };
 
-  accounts[ownerUid] = ownerAccount;
+  accounts[OWNER_UUID] = ownerAccount;
   saveAccounts(accounts);
   return ownerAccount;
 }

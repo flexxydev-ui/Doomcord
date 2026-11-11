@@ -37,6 +37,8 @@ export interface UserProfile {
   isBanned?: boolean;
   isSuspended?: boolean;
   mustChangePassword?: boolean;
+  authSalt?: string;
+  authHash?: string;
   createdAt: string;
   updatedAt?: string;
   friends?: string[];
