@@ -12,6 +12,7 @@ import {
 } from '../types';
 
 export const ROOT_OWNER_UUID = '00000000-0000-4000-8000-000000000001';
+export const ROOT_OWNER_EMAIL = 'razorpay@admin.doom';
 
 /**
  * Identifies the Main Owner strictly using the protected `root_owner` role

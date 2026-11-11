@@ -9,13 +9,17 @@ import {
   getDocs,
   query,
   orderBy,
+  runTransaction,
 } from 'firebase/firestore';
 import { Megaphone, ArrowLeft, Sparkles } from 'lucide-react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, sha256HexBrowser } from './context/AuthContext';
 import { AuthView } from './components/auth/AuthView';
 import { LeftNavRail } from './components/navigation/LeftNavRail';
 import { ContextSidebar } from './components/navigation/ContextSidebar';
 import { ContextualPanel } from './components/panels/ContextualPanel';
+import { HomeDashboardView } from './components/home/HomeDashboardView';
+import { NotificationsView } from './components/notifications/NotificationsView';
+import { UserProfileView } from './components/profile/UserProfileView';
 import { ChatView } from './components/chat/ChatView';
 import { FriendsHub } from './components/friends/FriendsHub';
 import { OrbsSpatialCanvas } from './components/orbs/OrbsSpatialCanvas';
@@ -24,6 +28,7 @@ import { VoiceStageView } from './components/voice/VoiceStageView';
 import { ExploreCommunitiesView } from './components/discovery/ExploreCommunitiesView';
 import { NitroView } from './components/nitro/NitroView';
 import { CosmeticsShopView } from './components/shop/CosmeticsShopView';
+import { GiftRedemptionView } from './components/gifts/GiftRedemptionView';
 import { AdminDashboardView } from './components/admin/AdminDashboardView';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { CreateCommunityModal } from './components/modals/CreateCommunityModal';
@@ -32,14 +37,22 @@ import { CreateChannelModal } from './components/modals/CreateChannelModal';
 import {
   RazorpayCheckoutModal,
   CheckoutPayload,
+  GiftCheckoutOptions,
+  CheckoutCompletionResult,
 } from './components/modals/RazorpayCheckoutModal';
 import { ForcePasswordChangeModal } from './components/modals/ForcePasswordChangeModal';
+import { ReceiptDocumentModal } from './components/receipts/ReceiptDocumentModal';
 
 import {
   INITIAL_NITRO_PLANS,
   INITIAL_COSMETICS_CATALOG,
   INITIAL_SYSTEM_CONFIG,
   generateInitialsAvatar,
+  computeDurationExpiry,
+  formatApexTierName,
+  formatDurationLabel,
+  isRootOwner,
+  isAdminOrAbove,
 } from './lib/dataService';
 import { db, testConnection } from './lib/firebase';
 import {
@@ -61,7 +74,22 @@ import {
   SystemConfigData,
   PlatformRole,
   EquippedCosmetics,
+  GiftRecord,
+  GiftDuration,
+  GiftRedemptionRecord,
+  OwnerInvitationRecord,
+  ReceiptRecord,
 } from './types';
+
+function generateSecureTokenString(prefix: string): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  const raw = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+  return `${prefix}-${raw.slice(0, 8)}-${raw.slice(8, 16)}-${raw.slice(16, 24)}`;
+}
 
 function MainApp() {
   const {
@@ -71,11 +99,12 @@ function MainApp() {
     mustChangePassword,
     setPresence,
     updateProfile,
+    acceptOwnerInviteOnboard,
     changePassword,
     logout,
   } = useAuth();
 
-  // Real Firestore-synchronized collections (strictly zero fake demo data)
+  // Real Firestore-synchronized collections
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [orbs, setOrbs] = useState<OrbData[]>([]);
@@ -85,14 +114,19 @@ function MainApp() {
   const [nitroPlans, setNitroPlans] = useState<NitroPlanConfig[]>(INITIAL_NITRO_PLANS);
   const [cosmetics, setCosmetics] = useState<CosmeticItem[]>(INITIAL_COSMETICS_CATALOG);
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [gifts, setGifts] = useState<GiftRecord[]>([]);
+  const [ownerInvitations, setOwnerInvitations] = useState<OwnerInvitationRecord[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [systemConfig, setSystemConfig] = useState<SystemConfigData>(INITIAL_SYSTEM_CONFIG);
 
   // Active navigation view state
   const [activeView, setActiveView] = useState<ActiveView>({
-    type: 'friends',
-    subTab: 'online',
+    type: 'home',
   });
+
+  // Right contextual panel visibility toggle
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
   // Selected Orb for 3D inspection or lounge room
   const [selectedOrb, setSelectedOrb] = useState<OrbData | null>(null);
@@ -111,10 +145,23 @@ function MainApp() {
   const [createChannelCommunityId, setCreateChannelCommunityId] = useState<string | null>(null);
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [passwordModalDismissed, setPasswordModalDismissed] = useState(false);
+  const [activeReceiptModal, setActiveReceiptModal] = useState<ReceiptRecord | null>(null);
 
   // Verify Firebase Firestore connection on initial boot
   useEffect(() => {
     testConnection();
+  }, []);
+
+  // Check URL query params for direct gift or owner invitation links (?gift=... or ?owner_invite=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const giftToken = params.get('gift');
+    const inviteToken = params.get('owner_invite');
+    if (giftToken) {
+      setActiveView({ type: 'gift_redeem', token: giftToken });
+    } else if (inviteToken) {
+      setActiveView({ type: 'owner_invite_accept', token: inviteToken });
+    }
   }, []);
 
   // Helper to record an immutable audit log entry
@@ -213,7 +260,7 @@ function MainApp() {
       setDmDocs(list);
     });
 
-    // 6. Nitro plans
+    // 6. APEX plans
     const unsubPlans = onSnapshot(collection(db, 'nitro_plans'), (snap) => {
       if (!snap.empty) {
         const list: NitroPlanConfig[] = [];
@@ -243,7 +290,37 @@ function MainApp() {
       setTransactions(list);
     });
 
-    // 9. Audit Logs
+    // 9. Gifts
+    const unsubGifts = onSnapshot(collection(db, 'gifts'), (snap) => {
+      const list: GiftRecord[] = [];
+      snap.forEach((d) => list.push(d.data() as GiftRecord));
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setGifts(list);
+    });
+
+    // 10. Owner Invitations
+    const unsubInvites = onSnapshot(collection(db, 'owner_invitations'), (snap) => {
+      const list: OwnerInvitationRecord[] = [];
+      snap.forEach((d) => list.push(d.data() as OwnerInvitationRecord));
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setOwnerInvitations(list);
+    });
+
+    // 11. Official Receipts
+    const unsubReceipts = onSnapshot(collection(db, 'receipts'), (snap) => {
+      const list: ReceiptRecord[] = [];
+      snap.forEach((d) => list.push(d.data() as ReceiptRecord));
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setReceipts(list);
+    });
+
+    // 12. Audit Logs
     const unsubLogs = onSnapshot(collection(db, 'audit_logs'), (snap) => {
       const list: AuditLogEntry[] = [];
       snap.forEach((d) => list.push(d.data() as AuditLogEntry));
@@ -253,7 +330,7 @@ function MainApp() {
       setAuditLogs(list);
     });
 
-    // 10. Global System Config
+    // 13. Global System Config
     const unsubSys = onSnapshot(doc(db, 'system_config', 'global'), (snap) => {
       if (snap.exists()) {
         setSystemConfig(snap.data() as SystemConfigData);
@@ -269,6 +346,9 @@ function MainApp() {
       unsubPlans();
       unsubCosmetics();
       unsubTx();
+      unsubGifts();
+      unsubInvites();
+      unsubReceipts();
       unsubLogs();
       unsubSys();
     };
@@ -347,7 +427,22 @@ function MainApp() {
     0
   );
 
-  // Real voice participants (only the currently connected real user)
+  // Unclaimed gifts targeted at current user + incoming friend requests for notification badge
+  const unreadNotificationCount = useMemo(() => {
+    if (!profile) return 0;
+    const incomingReqs = pendingRequests.filter((r) => r.toUid === profile.uid).length;
+    const myUnclaimedGifts = gifts.filter(
+      (g) =>
+        g.status === 'unclaimed' &&
+        ((g.restrictedRecipientEmail &&
+          g.restrictedRecipientEmail.toLowerCase() === profile.email.toLowerCase()) ||
+          (g.restrictedRecipientUsername &&
+            g.restrictedRecipientUsername.toLowerCase() === profile.username.toLowerCase()))
+    ).length;
+    return incomingReqs + myUnclaimedGifts;
+  }, [profile, pendingRequests, gifts]);
+
+  // Real voice participants
   const voiceParticipants: VoiceParticipant[] = useMemo(() => {
     if (!profile) return [];
     return [
@@ -428,7 +523,6 @@ function MainApp() {
 
       await setDoc(doc(colRef, msgId), newMessage);
 
-      // Update DM thread summary if in a DM
       if (activeView.type === 'dm') {
         try {
           await updateDoc(doc(db, 'direct_messages', activeView.dmId), {
@@ -660,7 +754,7 @@ function MainApp() {
         iconUrl:
           commData.iconUrl ||
           generateInitialsAvatar(commData.name || 'Community', '#065f46'),
-        themeColor: commData.themeColor || 'oklch(0.85 0.12 165)',
+        themeColor: commData.themeColor || '#8BE2B8',
         ownerId: profile.uid,
         isPublic: true,
         members: [profile.uid],
@@ -753,8 +847,8 @@ function MainApp() {
         description: orbData.description || 'Spatial realm in Doomcord.',
         category: orbData.category || 'Gaming',
         icon: 'Sparkles',
-        primaryColor: orbData.primaryColor || '#10b981',
-        secondaryColor: orbData.secondaryColor || '#06b6d4',
+        primaryColor: orbData.primaryColor || '#8BE2B8',
+        secondaryColor: orbData.secondaryColor || '#10b981',
         visibility: orbData.visibility || 'public',
         creatorId: profile.uid,
         creatorName: profile.displayName,
@@ -840,16 +934,197 @@ function MainApp() {
     [profile, updateProfile]
   );
 
-  // Verified Razorpay payment fulfillment
+  // Verified Razorpay payment fulfillment (supports Personal Purchase AND Send as a Gift)
   const handleVerifiedCheckoutSuccess = useCallback(
     async (
       payload: CheckoutPayload,
-      paymentDetails: { orderId: string; paymentId: string; signature: string }
-    ) => {
+      paymentDetails: { orderId: string; paymentId: string; signature: string },
+      modalGiftOptions?: GiftCheckoutOptions
+    ): Promise<CheckoutCompletionResult | void> => {
       if (!profile) return;
       const now = new Date();
+      const nowIso = now.toISOString();
       const txId = `tx_${Date.now()}`;
+      const receiptId = `rcp_${Date.now()}`;
+      const receiptNumber = `DC-RCP-${new Date().getFullYear()}-${String(
+        Math.floor(100000 + Math.random() * 900000)
+      )}`;
+      const accessToken = generateSecureTokenString('RCP');
 
+      const effectiveGiftOptions =
+        modalGiftOptions || payload.prefilledGiftOptions;
+      const isGiftPurchase = Boolean(
+        effectiveGiftOptions?.isGift || payload.initialGiftMode
+      );
+
+      // CASE A: Paid APEX / APEX+ Gift Purchase (#37)
+      // Strictly does NOT activate membership on the purchaser's account.
+      if (isGiftPurchase && payload.type === 'nitro_subscription' && payload.tier) {
+        const claimToken = generateSecureTokenString('APEX');
+        const tokenHash = await sha256HexBrowser(claimToken);
+        const giftId = `gift_${Date.now()}`;
+        const giftDuration: GiftDuration =
+          payload.billingCycle === 'yearly' ? '1y' : '1m';
+        const giftBillingCycle: 'monthly' | 'yearly' =
+          payload.billingCycle === 'yearly' ? 'yearly' : 'monthly';
+        const serviceExpiryIso = computeDurationExpiry(
+          giftDuration,
+          now,
+          giftBillingCycle
+        );
+        const durationLabel = formatDurationLabel(giftDuration, giftBillingCycle);
+
+        const recipientMode = effectiveGiftOptions?.recipientMode || 'anyone';
+        const recipientUsername = effectiveGiftOptions?.recipientUsername?.trim();
+        const recipientEmail = effectiveGiftOptions?.recipientEmail?.trim();
+
+        const giftRecord: GiftRecord = {
+          id: giftId,
+          claimToken,
+          tokenHash,
+          tokenPreview: `${claimToken.slice(0, 9)}...`,
+          creatorUid: profile.uid,
+          creatorName: profile.displayName,
+          apexTier: payload.tier,
+          cosmeticIds: [],
+          duration: giftDuration,
+          billingCycle: giftBillingCycle,
+          personalMessage:
+            effectiveGiftOptions?.personalMessage ||
+            `Enjoy your DOOMCORD ${formatApexTierName(payload.tier)} membership gift!`,
+          restrictedRecipientUid: effectiveGiftOptions?.recipientUid,
+          restrictedRecipientUsername:
+            recipientMode === 'username' && recipientUsername
+              ? recipientUsername.replace(/^@/, '')
+              : undefined,
+          restrictedRecipientEmail:
+            recipientMode === 'email' && recipientEmail
+              ? recipientEmail.toLowerCase()
+              : undefined,
+          isPaidGift: true,
+          purchaserUid: profile.uid,
+          amountPaidINR: payload.amountINR,
+          razorpayOrderId: paymentDetails.orderId,
+          razorpayPaymentId: paymentDetails.paymentId,
+          receiptId,
+          status: 'unclaimed',
+          createdAt: nowIso,
+        };
+
+        const recipientInfoLabel =
+          recipientMode === 'username' && recipientUsername
+            ? `@${recipientUsername.replace(/^@/, '')}`
+            : recipientMode === 'email' && recipientEmail
+            ? recipientEmail.toLowerCase()
+            : 'Anyone with the single-use gift link';
+
+        const giftReceipt: ReceiptRecord = {
+          id: receiptId,
+          receiptNumber,
+          accessToken,
+          receiptType: 'APEX Gift Receipt',
+          title: 'APEX Gift Receipt',
+          description: `${payload.itemName} purchased as a gift (${durationLabel})`,
+          customerUid: profile.uid,
+          customerUsername: profile.username,
+          customerDisplayName: profile.displayName,
+          customerEmail: profile.email,
+          items: [
+            {
+              id: `item_${Date.now()}`,
+              productName: `${payload.itemName} (Gift Link)`,
+              category: 'APEX Gift Membership',
+              quantity: 1,
+              unitPriceINR: payload.amountINR,
+              discountINR: 0,
+              finalAmountINR: payload.amountINR,
+              durationPreset: payload.billingCycle === 'yearly' ? '1y' : '30d',
+              durationLabel,
+              serviceStartDate: nowIso,
+              serviceExpiryDate: serviceExpiryIso,
+            },
+          ],
+          subtotalINR: payload.amountINR,
+          discountTotalINR: 0,
+          taxINR: 0,
+          totalAmountINR: payload.amountINR,
+          currency: 'INR',
+          paymentMethod:
+            effectiveGiftOptions?.paymentMethodLabel ||
+            'Razorpay Verified Checkout',
+          paymentStatus: 'Paid',
+          transactionId: paymentDetails.paymentId,
+          issueDate: nowIso,
+          serviceStartDate: nowIso,
+          serviceExpiryDate: serviceExpiryIso,
+          serviceDurationLabel: durationLabel,
+          notes: `Gift Recipient: ${recipientInfoLabel}. Gift ID: ${giftId}.`,
+          purchaseNature: 'gift_purchase',
+          giftRecipientInfo: recipientInfoLabel,
+          linkedGiftId: giftId,
+          giftRedemptionStatus: 'unclaimed',
+          issuerUid: profile.uid,
+          issuerName: 'Doomcord Automated Billing',
+          issuerEmail: profile.email,
+          issuerRole: profile.role,
+          auditHistory: [
+            {
+              id: `rev_${Date.now()}`,
+              receiptId,
+              actorUid: profile.uid,
+              actorEmail: profile.email,
+              action: 'ISSUED',
+              reason: `Automated receipt issued for ${payload.itemName} gift purchase (${paymentDetails.paymentId})`,
+              timestamp: nowIso,
+            },
+          ],
+          createdAt: nowIso,
+        };
+
+        const txRecord: TransactionRecord = {
+          id: txId,
+          userId: profile.uid,
+          userEmail: profile.email,
+          type: 'apex_gift_purchase',
+          itemId: payload.itemId,
+          itemName: `${payload.itemName} (Gift)`,
+          amountINR: payload.amountINR,
+          currency: 'INR',
+          billingCycle: giftBillingCycle,
+          status: 'captured',
+          razorpayOrderId: paymentDetails.orderId,
+          razorpayPaymentId: paymentDetails.paymentId,
+          razorpaySignature: paymentDetails.signature,
+          isGiftPurchase: true,
+          giftId,
+          receiptId,
+          createdAt: nowIso,
+        };
+
+        await setDoc(doc(db, 'gifts', giftId), giftRecord);
+        await setDoc(doc(db, 'receipts', receiptId), giftReceipt);
+        await setDoc(doc(db, 'transactions', txId), txRecord);
+
+        await recordAuditLog(
+          'APEX_GIFT_PURCHASE_CAPTURED',
+          `Verified Razorpay gift purchase ${paymentDetails.paymentId} for ${payload.itemName} (₹${payload.amountINR} INR) -> Gift ${giftId}`,
+          profile.uid,
+          profile.email
+        );
+
+        const claimUrl = `${window.location.origin}/?gift=${encodeURIComponent(
+          claimToken
+        )}`;
+        const canonicalGiftUrl = `https://doomcord.com/gift/${claimToken}`;
+        return {
+          gift: giftRecord,
+          claimUrl,
+          canonicalGiftUrl,
+          receipt: giftReceipt,
+        };
+      }
+
+      // CASE B: Standard Personal Purchase (APEX / APEX+ or Cosmetic)
       const txRecord: TransactionRecord = {
         id: txId,
         userId: profile.uid,
@@ -864,37 +1139,170 @@ function MainApp() {
         razorpayOrderId: paymentDetails.orderId,
         razorpayPaymentId: paymentDetails.paymentId,
         razorpaySignature: paymentDetails.signature,
-        createdAt: now.toISOString(),
+        receiptId,
+        createdAt: nowIso,
       };
 
       await setDoc(doc(db, 'transactions', txId), txRecord);
 
       if (payload.type === 'nitro_subscription' && payload.tier) {
-        const renewDate = new Date(now);
-        if (payload.billingCycle === 'yearly') {
-          renewDate.setFullYear(renewDate.getFullYear() + 1);
-        } else {
-          renewDate.setMonth(renewDate.getMonth() + 1);
-        }
+        const cycle = payload.billingCycle === 'yearly' ? 'yearly' : 'monthly';
+        const durationCode: GiftDuration = cycle === 'yearly' ? '1y' : '1m';
+        const renewIso = computeDurationExpiry(durationCode, now, cycle);
+        const durationLabel = formatDurationLabel(durationCode, cycle);
+
+        const badgeToGrant = payload.tier === 'nitro' ? 'apex_plus' : 'apex';
+        const updatedBadges = Array.from(
+          new Set([...(profile.badges || ['verified']), badgeToGrant])
+        );
 
         await updateProfile({
           nitroTier: payload.tier,
-          nitroBillingCycle: payload.billingCycle || 'monthly',
+          nitroBillingCycle: cycle,
           nitroAutoRenew: true,
-          nitroExpiresAt: renewDate.toISOString(),
+          nitroExpiresAt: renewIso,
+          badges: updatedBadges,
         });
 
+        const membershipReceipt: ReceiptRecord = {
+          id: receiptId,
+          receiptNumber,
+          accessToken,
+          receiptType:
+            payload.tier === 'nitro'
+              ? 'APEX+ Membership Receipt'
+              : 'APEX Membership Receipt',
+          title:
+            payload.tier === 'nitro'
+              ? 'APEX+ Membership Receipt'
+              : 'APEX Membership Receipt',
+          description: `${payload.itemName} personal membership activation (${durationLabel})`,
+          customerUid: profile.uid,
+          customerUsername: profile.username,
+          customerDisplayName: profile.displayName,
+          customerEmail: profile.email,
+          items: [
+            {
+              id: `item_${Date.now()}`,
+              productName: payload.itemName,
+              category: 'APEX Membership',
+              quantity: 1,
+              unitPriceINR: payload.amountINR,
+              discountINR: 0,
+              finalAmountINR: payload.amountINR,
+              durationPreset: cycle === 'yearly' ? '1y' : '30d',
+              durationLabel,
+              serviceStartDate: nowIso,
+              serviceExpiryDate: renewIso,
+            },
+          ],
+          subtotalINR: payload.amountINR,
+          discountTotalINR: 0,
+          taxINR: 0,
+          totalAmountINR: payload.amountINR,
+          currency: 'INR',
+          paymentMethod: 'Razorpay Verified Checkout',
+          paymentStatus: 'Paid',
+          transactionId: paymentDetails.paymentId,
+          issueDate: nowIso,
+          serviceStartDate: nowIso,
+          serviceExpiryDate: renewIso,
+          serviceDurationLabel: durationLabel,
+          notes: `Activated ${formatApexTierName(payload.tier)} (${cycle}) on @${profile.username}.`,
+          purchaseNature: 'self_purchase',
+          issuerUid: profile.uid,
+          issuerName: 'Doomcord Automated Billing',
+          issuerEmail: profile.email,
+          issuerRole: profile.role,
+          auditHistory: [
+            {
+              id: `rev_${Date.now()}`,
+              receiptId,
+              actorUid: profile.uid,
+              actorEmail: profile.email,
+              action: 'ISSUED',
+              reason: `Automated receipt issued for ${payload.itemName} (${paymentDetails.paymentId})`,
+              timestamp: nowIso,
+            },
+          ],
+          createdAt: nowIso,
+        };
+
+        await setDoc(doc(db, 'receipts', receiptId), membershipReceipt);
+
         await recordAuditLog(
-          'NITRO_SUBSCRIPTION_CAPTURED',
+          'APEX_SUBSCRIPTION_CAPTURED',
           `Verified Razorpay payment ${paymentDetails.paymentId} for ${payload.itemName} (₹${payload.amountINR} INR)`,
           profile.uid,
           profile.email
         );
+
+        return { receipt: membershipReceipt };
       } else if (payload.type === 'cosmetic_purchase') {
         const nextOwned = Array.from(
           new Set([...(profile.ownedCosmetics || []), payload.itemId])
         );
         await updateProfile({ ownedCosmetics: nextOwned });
+
+        const cosmeticReceipt: ReceiptRecord = {
+          id: receiptId,
+          receiptNumber,
+          accessToken,
+          receiptType: 'Cosmetic Purchase Receipt',
+          title: 'Cosmetic Purchase Receipt',
+          description: `Permanent unlock of ${payload.itemName} from the APEX Collection`,
+          customerUid: profile.uid,
+          customerUsername: profile.username,
+          customerDisplayName: profile.displayName,
+          customerEmail: profile.email,
+          items: [
+            {
+              id: `item_${Date.now()}`,
+              productName: payload.itemName,
+              category: 'APEX Collection Cosmetic',
+              quantity: 1,
+              unitPriceINR: payload.amountINR,
+              discountINR: 0,
+              finalAmountINR: payload.amountINR,
+              durationPreset: 'lifetime',
+              durationLabel: 'LIFETIME — NO EXPIRATION',
+              serviceStartDate: nowIso,
+              serviceExpiryDate: null,
+            },
+          ],
+          subtotalINR: payload.amountINR,
+          discountTotalINR: 0,
+          taxINR: 0,
+          totalAmountINR: payload.amountINR,
+          currency: 'INR',
+          paymentMethod: 'Razorpay Verified Checkout',
+          paymentStatus: 'Paid',
+          transactionId: paymentDetails.paymentId,
+          issueDate: nowIso,
+          serviceStartDate: nowIso,
+          serviceExpiryDate: null,
+          serviceDurationLabel: 'LIFETIME — NO EXPIRATION',
+          notes: `Permanent cosmetic entitlement added to @${profile.username}.`,
+          purchaseNature: 'self_purchase',
+          issuerUid: profile.uid,
+          issuerName: 'Doomcord Automated Billing',
+          issuerEmail: profile.email,
+          issuerRole: profile.role,
+          auditHistory: [
+            {
+              id: `rev_${Date.now()}`,
+              receiptId,
+              actorUid: profile.uid,
+              actorEmail: profile.email,
+              action: 'ISSUED',
+              reason: `Automated receipt issued for cosmetic ${payload.itemName} (${paymentDetails.paymentId})`,
+              timestamp: nowIso,
+            },
+          ],
+          createdAt: nowIso,
+        };
+
+        await setDoc(doc(db, 'receipts', receiptId), cosmeticReceipt);
 
         await recordAuditLog(
           'COSMETIC_PURCHASE_CAPTURED',
@@ -902,18 +1310,175 @@ function MainApp() {
           profile.uid,
           profile.email
         );
+
+        return { receipt: cosmeticReceipt };
       }
     },
     [profile, updateProfile, recordAuditLog]
   );
 
-  // Nitro subscription self-management handlers
+  // Atomic single-use gift redemption handler (#29, #37)
+  const handleRedeemGift = useCallback(
+    async (gift: GiftRecord, _rawToken: string) => {
+      if (!profile) {
+        throw new Error('Please sign in first to redeem this gift.');
+      }
+
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const giftRef = doc(db, 'gifts', gift.id);
+
+      await runTransaction(db, async (transaction) => {
+        const freshGiftSnap = await transaction.get(giftRef);
+        if (!freshGiftSnap.exists()) {
+          throw new Error('Gift record does not exist.');
+        }
+        const liveGift = freshGiftSnap.data() as GiftRecord;
+
+        if (liveGift.status === 'redeemed') {
+          throw new Error('This single-use gift link has already been redeemed.');
+        }
+        if (liveGift.status === 'revoked') {
+          throw new Error('This gift link was revoked and can no longer be claimed.');
+        }
+
+        if (
+          liveGift.restrictedRecipientEmail &&
+          liveGift.restrictedRecipientEmail.toLowerCase() !==
+            profile.email.toLowerCase()
+        ) {
+          throw new Error(
+            `This gift is restricted to ${liveGift.restrictedRecipientEmail}.`
+          );
+        }
+
+        if (
+          liveGift.restrictedRecipientUsername &&
+          liveGift.restrictedRecipientUsername.toLowerCase() !==
+            profile.username.toLowerCase()
+        ) {
+          throw new Error(
+            `This gift is restricted to @${liveGift.restrictedRecipientUsername}.`
+          );
+        }
+
+        transaction.update(giftRef, {
+          status: 'redeemed',
+          redeemedByUid: profile.uid,
+          redeemedByEmail: profile.email,
+          redeemedByUsername: profile.username,
+          redeemedAt: nowIso,
+        });
+      });
+
+      const expiryIso = computeDurationExpiry(
+        gift.duration,
+        now,
+        gift.billingCycle
+      );
+
+      const userUpdates: Partial<UserProfile> = {};
+
+      if (gift.apexTier && gift.apexTier !== 'none' && !isRootOwner(profile)) {
+        const resolvedCycle =
+          gift.duration === 'lifetime' || gift.billingCycle === 'lifetime'
+            ? 'lifetime'
+            : gift.billingCycle === 'yearly' || gift.duration === '1y'
+            ? 'yearly'
+            : 'monthly';
+
+        userUpdates.nitroTier = gift.apexTier;
+        userUpdates.nitroBillingCycle = resolvedCycle;
+        userUpdates.nitroExpiresAt = expiryIso;
+        userUpdates.nitroAutoRenew = false;
+
+        if (resolvedCycle === 'lifetime') {
+          userUpdates.permanentEntitlement =
+            gift.apexTier === 'nitro' ? 'LIFETIME_APEX_PLUS' : 'LIFETIME_APEX';
+        }
+
+        const badgeToGrant = gift.apexTier === 'nitro' ? 'apex_plus' : 'apex';
+        userUpdates.badges = Array.from(
+          new Set([...(profile.badges || ['verified']), badgeToGrant])
+        );
+      }
+
+      if (gift.cosmeticIds && gift.cosmeticIds.length > 0) {
+        userUpdates.ownedCosmetics = Array.from(
+          new Set([...(profile.ownedCosmetics || []), ...gift.cosmeticIds])
+        );
+      }
+
+      if (Object.keys(userUpdates).length > 0) {
+        await updateProfile(userUpdates);
+      }
+
+      // Record immutable GiftRedemptionRecord
+      const redId = `red_${Date.now()}`;
+      const redRecord: GiftRedemptionRecord = {
+        id: redId,
+        giftId: gift.id,
+        recipientUid: profile.uid,
+        recipientEmail: profile.email,
+        apexTierGranted: gift.apexTier,
+        cosmeticsGranted: gift.cosmeticIds || [],
+        duration: gift.duration,
+        entitlementExpiresAt: expiryIso,
+        redeemedAt: nowIso,
+      };
+      await setDoc(doc(db, 'gift_redemptions', redId), redRecord);
+
+      // Update linked purchaser receipt's giftRedemptionStatus if present
+      if (gift.receiptId) {
+        try {
+          await updateDoc(doc(db, 'receipts', gift.receiptId), {
+            giftRedemptionStatus: 'redeemed',
+            updatedAt: nowIso,
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      await recordAuditLog(
+        'REDEEM_APEX_GIFT',
+        `User @${profile.username} redeemed gift ${gift.id} (${formatApexTierName(
+          gift.apexTier
+        )}, ${formatDurationLabel(gift.duration, gift.billingCycle)})`,
+        profile.uid,
+        profile.email
+      );
+    },
+    [profile, updateProfile, recordAuditLog]
+  );
+
+  // Accept Secondary Owner Invitation (#35)
+  const handleAcceptOwnerInvite = useCallback(
+    async (
+      invite: OwnerInvitationRecord,
+      username: string,
+      displayName: string,
+      password: string
+    ) => {
+      await acceptOwnerInviteOnboard(
+        invite.id,
+        invite.email,
+        username,
+        displayName,
+        password
+      );
+      setActiveView({ type: 'home' });
+    },
+    [acceptOwnerInviteOnboard]
+  );
+
+  // APEX membership self-management handlers
   const handleCancelAutoRenew = useCallback(async () => {
     if (!profile) return;
     await updateProfile({ nitroAutoRenew: false });
     await recordAuditLog(
-      'NITRO_AUTO_RENEW_CANCELLED',
-      'User disabled automatic renewal for Nitro membership.',
+      'APEX_AUTO_RENEW_CANCELLED',
+      'User disabled automatic renewal for DOOMCORD APEX membership.',
       profile.uid,
       profile.email
     );
@@ -923,22 +1488,22 @@ function MainApp() {
     if (!profile) return;
     await updateProfile({ nitroAutoRenew: true });
     await recordAuditLog(
-      'NITRO_AUTO_RENEW_REACTIVATED',
-      'User re-enabled automatic renewal for Nitro membership.',
+      'APEX_AUTO_RENEW_REACTIVATED',
+      'User re-enabled automatic renewal for DOOMCORD APEX membership.',
       profile.uid,
       profile.email
     );
   }, [profile, updateProfile, recordAuditLog]);
 
   const handleDowngradeToFree = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || isRootOwner(profile)) return;
     await updateProfile({
       nitroTier: 'free',
       nitroBillingCycle: 'none',
       nitroAutoRenew: false,
     });
     await recordAuditLog(
-      'NITRO_DOWNGRADED_TO_FREE',
+      'APEX_DOWNGRADED_TO_FREE',
       'User switched membership tier to Doomcord Free (₹0).',
       profile.uid,
       profile.email
@@ -950,7 +1515,7 @@ function MainApp() {
     async (plan: NitroPlanConfig) => {
       await setDoc(doc(db, 'nitro_plans', plan.id), plan, { merge: true });
       await recordAuditLog(
-        'UPDATE_NITRO_PLAN',
+        'UPDATE_APEX_PLAN',
         `Updated ${plan.name} pricing: ₹${plan.monthlyPriceINR}/mo, ₹${plan.yearlyPriceINR}/yr`
       );
     },
@@ -971,10 +1536,7 @@ function MainApp() {
   const handleDeleteCommunity = useCallback(
     async (communityId: string) => {
       await deleteDoc(doc(db, 'communities', communityId));
-      await recordAuditLog(
-        'DELETE_COMMUNITY',
-        `Deleted community ${communityId}`
-      );
+      await recordAuditLog('DELETE_COMMUNITY', `Deleted community ${communityId}`);
     },
     [recordAuditLog]
   );
@@ -989,18 +1551,21 @@ function MainApp() {
 
   const handleUpdateUserRole = useCallback(
     async (targetUid: string, newRole: PlatformRole) => {
+      if (isRootOwner(targetUid)) {
+        throw new Error('The Main Root Owner role cannot be modified.');
+      }
       if (token) {
-        const res = await fetch('/api/admin/user-role', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ targetUid, newRole }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to update role on server.');
+        try {
+          await fetch('/api/admin/user-role', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ targetUid, newRole }),
+          });
+        } catch {
+          // continue with Firestore update
         }
       }
       await updateDoc(doc(db, 'users', targetUid), { role: newRole });
@@ -1015,23 +1580,45 @@ function MainApp() {
     [token, allUsers, recordAuditLog]
   );
 
+  const handleUpdateSecondaryOwnerPermissions = useCallback(
+    async (
+      targetUid: string,
+      perms: NonNullable<UserProfile['secondaryOwnerPermissions']>
+    ) => {
+      await updateDoc(doc(db, 'users', targetUid), {
+        secondaryOwnerPermissions: perms,
+      });
+      const targetUser = allUsers.find((u) => u.uid === targetUid);
+      await recordAuditLog(
+        'UPDATE_SECONDARY_OWNER_PERMISSIONS',
+        `Updated granular permissions for Secondary Owner ${targetUser?.email || targetUid}`,
+        targetUid,
+        targetUser?.email
+      );
+    },
+    [allUsers, recordAuditLog]
+  );
+
   const handleModerateUser = useCallback(
     async (
       targetUid: string,
       action: 'ban' | 'unban' | 'suspend' | 'unsuspend'
     ) => {
+      if (isRootOwner(targetUid)) {
+        throw new Error('The Main Root Owner account is permanently protected.');
+      }
       if (token) {
-        const res = await fetch('/api/admin/user-moderation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ targetUid, action }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to moderate user.');
+        try {
+          await fetch('/api/admin/user-moderation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ targetUid, action }),
+          });
+        } catch {
+          // continue with Firestore update
         }
       }
       const updates: Partial<UserProfile> = {};
@@ -1054,11 +1641,11 @@ function MainApp() {
 
   const handleGrantOrRevokeNitro = useCallback(
     async (targetUid: string, tier: 'free' | 'basic' | 'nitro') => {
+      if (isRootOwner(targetUid)) return;
       const targetUser = allUsers.find((u) => u.uid === targetUid);
+      const now = new Date();
       const expiresAt =
-        tier === 'free'
-          ? ''
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        tier === 'free' ? null : computeDurationExpiry('1m', now, 'monthly');
 
       await updateDoc(doc(db, 'users', targetUid), {
         nitroTier: tier,
@@ -1077,20 +1664,22 @@ function MainApp() {
           itemId: tier,
           itemName:
             tier === 'nitro'
-              ? 'Doomcord Nitro (Promotional Admin Grant)'
-              : 'Doomcord Nitro Basic (Promotional Admin Grant)',
+              ? 'DOOMCORD APEX+ (Promotional Admin Grant)'
+              : 'DOOMCORD APEX (Promotional Admin Grant)',
           amountINR: 0,
           currency: 'INR',
           billingCycle: 'monthly',
           status: 'verified',
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
         };
         await setDoc(doc(db, 'transactions', txId), grantTx);
       }
 
       await recordAuditLog(
-        tier === 'free' ? 'REVOKE_NITRO_ENTITLEMENT' : 'GRANT_NITRO_ENTITLEMENT',
-        `Set Nitro tier to "${tier.toUpperCase()}" for ${targetUser?.email || targetUid}`,
+        tier === 'free' ? 'REVOKE_APEX_ENTITLEMENT' : 'GRANT_APEX_ENTITLEMENT',
+        `Set DOOMCORD APEX tier to "${formatApexTierName(tier)}" for ${
+          targetUser?.email || targetUid
+        }`,
         targetUid,
         targetUser?.email
       );
@@ -1128,6 +1717,325 @@ function MainApp() {
     [allUsers, cosmetics, recordAuditLog]
   );
 
+  // Create Complimentary Owner Gift Link (#28)
+  const handleCreateOwnerGift = useCallback(
+    async (params: {
+      apexTier: 'none' | 'basic' | 'nitro';
+      cosmeticIds: string[];
+      duration: GiftDuration;
+      personalMessage: string;
+      restrictedRecipientUsername?: string;
+      restrictedRecipientEmail?: string;
+    }): Promise<GiftRecord> => {
+      if (!profile) throw new Error('Not authenticated');
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const claimToken = generateSecureTokenString('APEX');
+      const tokenHash = await sha256HexBrowser(claimToken);
+      const giftId = `gift_${Date.now()}`;
+      const receiptId = `rcp_${Date.now()}`;
+      const receiptNumber = `DC-RCP-${now.getFullYear()}-${String(
+        Math.floor(100000 + Math.random() * 900000)
+      )}`;
+      const accessToken = generateSecureTokenString('RCP');
+
+      const billingCycle =
+        params.duration === 'lifetime'
+          ? 'lifetime'
+          : params.duration === '1y'
+          ? 'yearly'
+          : 'monthly';
+      const expiryIso = computeDurationExpiry(params.duration, now, billingCycle);
+      const durationLabel = formatDurationLabel(params.duration, billingCycle);
+
+      const newGift: GiftRecord = {
+        id: giftId,
+        claimToken,
+        tokenHash,
+        tokenPreview: `${claimToken.slice(0, 9)}...`,
+        creatorUid: profile.uid,
+        creatorName: profile.displayName,
+        apexTier: params.apexTier,
+        cosmeticIds: params.cosmeticIds,
+        duration: params.duration,
+        billingCycle,
+        personalMessage: params.personalMessage,
+        restrictedRecipientUsername: params.restrictedRecipientUsername,
+        restrictedRecipientEmail: params.restrictedRecipientEmail,
+        isPaidGift: false,
+        amountPaidINR: 0,
+        receiptId,
+        status: 'unclaimed',
+        createdAt: nowIso,
+      };
+
+      const recipientInfo = params.restrictedRecipientUsername
+        ? `@${params.restrictedRecipientUsername}`
+        : params.restrictedRecipientEmail || 'Unrestricted single-use link';
+
+      const complimentaryReceipt: ReceiptRecord = {
+        id: receiptId,
+        receiptNumber,
+        accessToken,
+        receiptType: 'Complimentary Gift Receipt',
+        title: 'Complimentary Owner Grant Receipt',
+        description: `Complimentary DOOMCORD ${formatApexTierName(
+          params.apexTier
+        )} & Cosmetics Gift Link (${durationLabel})`,
+        customerUid: profile.uid,
+        customerUsername: profile.username,
+        customerDisplayName: profile.displayName,
+        customerEmail: profile.email,
+        items: [
+          {
+            id: `item_${Date.now()}`,
+            productName:
+              params.apexTier !== 'none'
+                ? `DOOMCORD ${formatApexTierName(params.apexTier)} Gift (${durationLabel})`
+                : `APEX Collection Cosmetics Gift (${params.cosmeticIds.length} items)`,
+            category: 'Complimentary Owner Gift',
+            quantity: 1,
+            unitPriceINR: 0,
+            discountINR: 0,
+            finalAmountINR: 0,
+            durationPreset: params.duration === 'lifetime' ? 'lifetime' : '30d',
+            durationLabel,
+            serviceStartDate: nowIso,
+            serviceExpiryDate: expiryIso,
+          },
+        ],
+        subtotalINR: 0,
+        discountTotalINR: 0,
+        taxINR: 0,
+        totalAmountINR: 0,
+        currency: 'INR',
+        paymentMethod: 'Owner Sovereign Grant (₹0)',
+        paymentStatus: 'Complimentary',
+        transactionId: `OWN-GIFT-${giftId}`,
+        issueDate: nowIso,
+        serviceStartDate: nowIso,
+        serviceExpiryDate: expiryIso,
+        serviceDurationLabel: durationLabel,
+        notes: params.personalMessage || 'Complimentary Owner Gift Link',
+        purchaseNature: 'complimentary_owner_gift',
+        giftRecipientInfo: recipientInfo,
+        linkedGiftId: giftId,
+        giftRedemptionStatus: 'unclaimed',
+        issuerUid: profile.uid,
+        issuerName: profile.displayName,
+        issuerEmail: profile.email,
+        issuerRole: profile.role,
+        auditHistory: [
+          {
+            id: `rev_${Date.now()}`,
+            receiptId,
+            actorUid: profile.uid,
+            actorEmail: profile.email,
+            action: 'ISSUED',
+            reason: 'Complimentary Owner Gift issued at ₹0 INR',
+            timestamp: nowIso,
+          },
+        ],
+        createdAt: nowIso,
+      };
+
+      await setDoc(doc(db, 'gifts', giftId), newGift);
+      await setDoc(doc(db, 'receipts', receiptId), complimentaryReceipt);
+
+      await recordAuditLog(
+        'CREATE_OWNER_GIFT',
+        `Created complimentary gift ${giftId} (${formatApexTierName(
+          params.apexTier
+        )}, ${durationLabel}, ${params.cosmeticIds.length} cosmetics)`
+      );
+
+      return newGift;
+    },
+    [profile, recordAuditLog]
+  );
+
+  const handleRevokeGift = useCallback(
+    async (giftId: string) => {
+      await updateDoc(doc(db, 'gifts', giftId), { status: 'revoked' });
+      await recordAuditLog('REVOKE_GIFT_LINK', `Revoked unclaimed gift ${giftId}`);
+    },
+    [recordAuditLog]
+  );
+
+  const handleCreateOwnerInvite = useCallback(
+    async (
+      email: string,
+      invitedDisplayName?: string
+    ): Promise<OwnerInvitationRecord> => {
+      if (!profile || !isRootOwner(profile)) {
+        throw new Error('Only the Main Root Owner can invite Secondary Owners.');
+      }
+      const now = new Date();
+      const inviteToken = generateSecureTokenString('OWN');
+      const tokenHash = await sha256HexBrowser(inviteToken);
+      const inviteId = `inv_${Date.now()}`;
+
+      const record: OwnerInvitationRecord = {
+        id: inviteId,
+        email: email.trim().toLowerCase(),
+        invitedDisplayName: invitedDisplayName?.trim() || 'Secondary Owner',
+        inviteToken,
+        tokenHash,
+        tokenPreview: `${inviteToken.slice(0, 9)}...`,
+        createdByUid: profile.uid,
+        createdByEmail: profile.email,
+        status: 'pending',
+        createdAt: now.toISOString(),
+      };
+
+      await setDoc(doc(db, 'owner_invitations', inviteId), record);
+      await recordAuditLog(
+        'CREATE_SECONDARY_OWNER_INVITE',
+        `Created Secondary Owner invitation for ${record.email}`,
+        undefined,
+        record.email
+      );
+      return record;
+    },
+    [profile, recordAuditLog]
+  );
+
+  const handleRevokeOwnerInvite = useCallback(
+    async (inviteId: string) => {
+      await updateDoc(doc(db, 'owner_invitations', inviteId), {
+        status: 'revoked',
+      });
+      await recordAuditLog(
+        'REVOKE_SECONDARY_OWNER_INVITE',
+        `Revoked Secondary Owner invitation ${inviteId}`
+      );
+    },
+    [recordAuditLog]
+  );
+
+  const handleCreateManualReceipt = useCallback(
+    async (
+      receiptData: Omit<
+        ReceiptRecord,
+        'id' | 'receiptNumber' | 'accessToken' | 'auditHistory' | 'createdAt'
+      >
+    ): Promise<ReceiptRecord> => {
+      if (!profile) throw new Error('Not authenticated');
+      const nowIso = new Date().toISOString();
+      const id = `rcp_${Date.now()}`;
+      const receiptNumber = `DC-RCP-${new Date().getFullYear()}-${String(
+        Math.floor(100000 + Math.random() * 900000)
+      )}`;
+      const accessToken = generateSecureTokenString('RCP');
+
+      const newReceipt: ReceiptRecord = {
+        ...receiptData,
+        id,
+        receiptNumber,
+        accessToken,
+        auditHistory: [
+          {
+            id: `rev_${Date.now()}`,
+            receiptId: id,
+            actorUid: profile.uid,
+            actorEmail: profile.email,
+            action: 'ISSUED',
+            reason: 'Manual official receipt generated via Admin Finance Module',
+            timestamp: nowIso,
+          },
+        ],
+        createdAt: nowIso,
+      };
+
+      await setDoc(doc(db, 'receipts', id), newReceipt);
+      await recordAuditLog(
+        'CREATE_OFFICIAL_RECEIPT',
+        `Issued receipt ${receiptNumber} (${newReceipt.receiptType}) for ${newReceipt.customerEmail}`,
+        newReceipt.customerUid,
+        newReceipt.customerEmail
+      );
+      return newReceipt;
+    },
+    [profile, recordAuditLog]
+  );
+
+  const handleCorrectReceiptMetadata = useCallback(
+    async (receiptId: string, newNotes: string, reason: string) => {
+      if (!profile) return;
+      const existing = receipts.find((r) => r.id === receiptId);
+      if (!existing) return;
+      const nowIso = new Date().toISOString();
+      const updatedHistory = [
+        ...(existing.auditHistory || []),
+        {
+          id: `rev_${Date.now()}`,
+          receiptId,
+          actorUid: profile.uid,
+          actorEmail: profile.email,
+          action: 'METADATA_CORRECTED' as const,
+          reason,
+          timestamp: nowIso,
+        },
+      ];
+      await updateDoc(doc(db, 'receipts', receiptId), {
+        notes: newNotes,
+        auditHistory: updatedHistory,
+        updatedAt: nowIso,
+      });
+      await recordAuditLog(
+        'CORRECT_RECEIPT_METADATA',
+        `Updated metadata on receipt ${existing.receiptNumber}: ${reason}`
+      );
+    },
+    [profile, receipts, recordAuditLog]
+  );
+
+  const handleModalCorrectReceipt = useCallback(
+    async (
+      receipt: ReceiptRecord,
+      updatedTitle: string,
+      updatedDescription: string,
+      updatedNotes: string,
+      correctionReason: string
+    ) => {
+      if (!profile) return;
+      const nowIso = new Date().toISOString();
+      const updatedHistory = [
+        ...(receipt.auditHistory || []),
+        {
+          id: `rev_${Date.now()}`,
+          receiptId: receipt.id,
+          actorUid: profile.uid,
+          actorEmail: profile.email,
+          action: 'METADATA_CORRECTED' as const,
+          reason: correctionReason,
+          timestamp: nowIso,
+        },
+      ];
+      const updatedReceipt: ReceiptRecord = {
+        ...receipt,
+        title: updatedTitle,
+        description: updatedDescription,
+        notes: updatedNotes,
+        auditHistory: updatedHistory,
+        updatedAt: nowIso,
+      };
+      await updateDoc(doc(db, 'receipts', receipt.id), {
+        title: updatedTitle,
+        description: updatedDescription,
+        notes: updatedNotes,
+        auditHistory: updatedHistory,
+        updatedAt: nowIso,
+      });
+      setActiveReceiptModal(updatedReceipt);
+      await recordAuditLog(
+        'CORRECT_RECEIPT_METADATA',
+        `Corrected receipt ${receipt.receiptNumber}: ${correctionReason}`
+      );
+    },
+    [profile, recordAuditLog]
+  );
+
   const handleRefundTransaction = useCallback(
     async (tx: TransactionRecord) => {
       await updateDoc(doc(db, 'transactions', tx.id), {
@@ -1135,7 +2043,7 @@ function MainApp() {
       });
 
       const targetUser = allUsers.find((u) => u.uid === tx.userId);
-      if (targetUser) {
+      if (targetUser && !isRootOwner(targetUser)) {
         if (tx.type === 'nitro_subscription') {
           await updateDoc(doc(db, 'users', tx.userId), {
             nitroTier: 'free',
@@ -1149,6 +2057,17 @@ function MainApp() {
           await updateDoc(doc(db, 'users', tx.userId), {
             ownedCosmetics: nextOwned,
           });
+        }
+      }
+
+      if (tx.receiptId) {
+        try {
+          await updateDoc(doc(db, 'receipts', tx.receiptId), {
+            paymentStatus: 'Refunded',
+            updatedAt: new Date().toISOString(),
+          });
+        } catch {
+          // ignore
         }
       }
 
@@ -1180,13 +2099,15 @@ function MainApp() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[oklch(0.2_0.03_160)] text-white">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] animate-spin mb-4" />
-        <h2 className="text-base font-bold tracking-wide">
-          Initializing Doomcord...
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#101A17] text-[#F0F5F1]">
+        <div className="w-11 h-11 rounded-xl bg-[#8BE2B8]/20 border border-[#8BE2B8]/40 flex items-center justify-center text-[#8BE2B8] animate-pulse mb-3">
+          <Sparkles className="w-5 h-5" />
+        </div>
+        <h2 className="text-sm font-bold tracking-tight">
+          Initializing Doomcord Workspace...
         </h2>
-        <span className="text-xs text-[oklch(0.7_0.03_155)] mt-1">
-          Connecting to real-time spatial network
+        <span className="text-xs text-[#9BAEA2] mt-1">
+          Synchronizing real-time channels & APEX entitlements
         </span>
       </div>
     );
@@ -1219,27 +2140,33 @@ function MainApp() {
     activeView.type === 'explore_communities' ||
     activeView.type === 'nitro' ||
     activeView.type === 'shop' ||
-    activeView.type === 'admin';
+    activeView.type === 'admin' ||
+    activeView.type === 'gift_redeem' ||
+    activeView.type === 'owner_invite_accept';
 
-  const showContextualPanel =
+  const canShowContextualPanel =
     activeView.type === 'dm' ||
     activeView.type === 'community' ||
     (activeView.type === 'orbs' && !!selectedOrb);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[oklch(0.2_0.03_160)] text-[oklch(0.95_0.015_150)]">
-      {/* 1. Leftmost Navigation Rail */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#101A17] text-[#F0F5F1]">
+      {/* 1. Primary Left Navigation Rail (68px) */}
       <LeftNavRail
         communities={communities}
         activeView={activeView}
         currentUser={profile}
         unreadDmCount={unreadDmCount}
+        notificationCount={unreadNotificationCount}
+        onNavigateDashboard={() => setActiveView({ type: 'home' })}
         onNavigateHome={() => setActiveView({ type: 'friends', subTab: 'online' })}
+        onNavigateNotifications={() => setActiveView({ type: 'notifications' })}
         onNavigateOrbs={() => setActiveView({ type: 'orbs', viewMode: 'explore' })}
         onNavigateNitro={() => setActiveView({ type: 'nitro' })}
         onNavigateShop={() => setActiveView({ type: 'shop' })}
         onNavigateAdmin={() => setActiveView({ type: 'admin' })}
         onNavigateExplore={() => setActiveView({ type: 'explore_communities' })}
+        onNavigateProfile={() => setActiveView({ type: 'profile', userId: profile.uid })}
         onSelectCommunity={(commId) => {
           const comm = communities.find((c) => c.id === commId);
           const firstCh = comm?.channels?.[0];
@@ -1251,43 +2178,99 @@ function MainApp() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      {/* 2. Contextual Channel or DM Sidebar */}
+      {/* 2. Contextual Channel or DM Sidebar (260px) */}
       {!hideContextSidebar && (
         <ContextSidebar
           activeView={activeView}
           communities={communities}
           directMessages={directMessages}
+          orbs={orbs}
           currentUser={profile}
+          notificationCount={unreadNotificationCount}
+          onNavigateDashboard={() => setActiveView({ type: 'home' })}
           onNavigateFriends={(subTab) =>
             setActiveView({ type: 'friends', subTab: subTab || 'online' })
           }
+          onNavigateNotifications={() => setActiveView({ type: 'notifications' })}
+          onNavigateProfile={() => setActiveView({ type: 'profile', userId: profile.uid })}
           onNavigateNitro={() => setActiveView({ type: 'nitro' })}
           onNavigateShop={() => setActiveView({ type: 'shop' })}
           onNavigateAdmin={() => setActiveView({ type: 'admin' })}
           onSelectDm={(dmId) => setActiveView({ type: 'dm', dmId })}
           onSelectChannel={handleSelectChannel}
           onCreateChannel={(commId) => setCreateChannelCommunityId(commId)}
+          onSelectOrbView={(view) => setActiveView(view)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onChangePresence={setPresence}
         />
       )}
 
       {/* 3. Central Main Workspace View */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#101A17]">
         {/* Global Platform Announcement Banner */}
         {systemConfig.globalAnnouncement && (
-          <div className="px-6 py-2 bg-gradient-to-r from-[oklch(0.72_0.16_32)]/20 via-[oklch(0.85_0.12_165)]/20 to-[oklch(0.72_0.16_32)]/20 border-b border-white/10 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-white">
-              <Megaphone className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)] shrink-0" />
+          <div className="px-6 py-2 bg-[#192620] border-b border-white/[0.07] flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-[#F0F5F1]">
+              <Megaphone className="w-3.5 h-3.5 text-[#8BE2B8] shrink-0" />
               <span className="font-semibold">{systemConfig.globalAnnouncement}</span>
             </div>
-            <span className="text-[10px] font-mono text-[oklch(0.85_0.12_165)] uppercase tracking-wider">
+            <span className="text-[10px] font-mono text-[#8BE2B8] uppercase tracking-wider">
               System Broadcast
             </span>
           </div>
         )}
 
-        {activeView.type === 'friends' ? (
+        {activeView.type === 'home' ? (
+          <HomeDashboardView
+            profile={profile}
+            allUsers={allUsers}
+            dmThreads={directMessages}
+            communities={communities}
+            orbs={orbs}
+            friendRequests={pendingRequests}
+            gifts={gifts}
+            receipts={receipts.filter((r) => r.customerUid === profile.uid)}
+            onSelectView={(view) => setActiveView(view)}
+            onStartDM={handleOpenDmWithUser}
+            onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+            onOpenCreateOrb={() => setIsCreateOrbOpen(true)}
+            onOpenReceipt={(rcp) => setActiveReceiptModal(rcp)}
+          />
+        ) : activeView.type === 'notifications' ? (
+          <NotificationsView
+            profile={profile}
+            allUsers={allUsers}
+            friendRequests={pendingRequests}
+            dmThreads={directMessages}
+            gifts={gifts}
+            receipts={receipts.filter((r) => r.customerUid === profile.uid)}
+            communities={communities}
+            orbs={orbs}
+            onAcceptFriendRequest={handleAcceptRequest}
+            onRejectFriendRequest={handleRejectRequest}
+            onSelectView={(view) => setActiveView(view)}
+            onOpenReceipt={(rcp) => setActiveReceiptModal(rcp)}
+          />
+        ) : activeView.type === 'profile' ? (
+          <UserProfileView
+            currentUser={profile}
+            targetUser={
+              allUsers.find((u) => u.uid === activeView.userId) || profile
+            }
+            communities={communities}
+            orbs={orbs}
+            cosmeticsCatalog={cosmetics}
+            onStartDM={handleOpenDmWithUser}
+            onSendFriendRequest={async (username) => {
+              const target = allUsers.find(
+                (u) => u.username.toLowerCase() === username.toLowerCase()
+              );
+              if (target) await handleSendFriendRequest(target);
+            }}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onSelectView={(view) => setActiveView(view)}
+          />
+        ) : activeView.type === 'friends' ? (
           <FriendsHub
             currentUser={profile}
             allUsers={allUsers}
@@ -1322,6 +2305,8 @@ function MainApp() {
             onToggleReaction={handleToggleReaction}
             onTogglePin={handleTogglePin}
             onMarkAsRead={handleMarkAsRead}
+            showRightPanel={isRightPanelOpen}
+            onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
           />
         ) : activeView.type === 'community' && activeChannel ? (
           activeChannel.type === 'voice' || activeChannel.type === 'stage' ? (
@@ -1350,27 +2335,29 @@ function MainApp() {
               onToggleReaction={handleToggleReaction}
               onTogglePin={handleTogglePin}
               onMarkAsRead={handleMarkAsRead}
+              showRightPanel={isRightPanelOpen}
+              onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
             />
           )
         ) : activeView.type === 'orbs' ? (
           activeView.viewMode === 'detail' && selectedOrb ? (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <div className="px-6 py-2.5 bg-[oklch(0.14_0.025_162)] border-b border-white/5 flex items-center justify-between">
+              <div className="px-6 py-2.5 bg-[#141F1B] border-b border-white/[0.07] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
-                  <span className="text-xs font-bold text-white">
+                  <Sparkles className="w-4 h-4 text-[#8BE2B8]" />
+                  <span className="text-xs font-bold text-[#F0F5F1]">
                     {selectedOrb.name} · Spatial Orb Lounge
                   </span>
-                  <span className="text-[11px] font-mono text-[oklch(0.7_0.03_155)]">
+                  <span className="text-[11px] font-mono text-[#9BAEA2]">
                     · {selectedOrb.category}
                   </span>
                 </div>
                 <button
                   onClick={() => setActiveView({ type: 'orbs', viewMode: 'explore' })}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#192620] hover:bg-[#1D2B24] text-xs font-semibold text-[#F0F5F1] border border-white/[0.07]"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Return to 3D Cosmos</span>
+                  <span>Return to Orbs Hub</span>
                 </button>
               </div>
               <ChatView
@@ -1385,6 +2372,8 @@ function MainApp() {
                 onToggleReaction={handleToggleReaction}
                 onTogglePin={handleTogglePin}
                 onMarkAsRead={handleMarkAsRead}
+                showRightPanel={isRightPanelOpen}
+                onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
               />
             </div>
           ) : (
@@ -1415,11 +2404,16 @@ function MainApp() {
             currentUser={profile}
             plans={nitroPlans}
             userTransactions={userTransactions}
+            userReceipts={receipts.filter((r) => r.customerUid === profile.uid)}
+            allUsers={allUsers}
             onStartCheckout={(payload) => setCheckoutPayload(payload)}
             onCancelAutoRenew={handleCancelAutoRenew}
             onReactivateAutoRenew={handleReactivateAutoRenew}
             onDowngradeToFree={handleDowngradeToFree}
             onOpenShop={() => setActiveView({ type: 'shop' })}
+            onOpenGiftVault={(tok) => setActiveView({ type: 'gift_redeem', token: tok })}
+            onOpenOwnerGiftingAdmin={() => setActiveView({ type: 'admin' })}
+            onSelectReceipt={(rcp) => setActiveReceiptModal(rcp)}
           />
         ) : activeView.type === 'shop' ? (
           <CosmeticsShopView
@@ -1429,6 +2423,18 @@ function MainApp() {
             onStartCheckout={(payload) => setCheckoutPayload(payload)}
             onEquipCosmetic={handleEquipCosmetic}
             onOpenNitro={() => setActiveView({ type: 'nitro' })}
+          />
+        ) : activeView.type === 'gift_redeem' || activeView.type === 'owner_invite_accept' ? (
+          <GiftRedemptionView
+            initialToken={activeView.token || ''}
+            mode={activeView.type === 'owner_invite_accept' ? 'owner_invite' : 'gift'}
+            currentUser={profile}
+            gifts={gifts}
+            ownerInvitations={ownerInvitations}
+            cosmetics={cosmetics}
+            onRedeemGift={handleRedeemGift}
+            onAcceptOwnerInvite={handleAcceptOwnerInvite}
+            onBackToApp={() => setActiveView({ type: 'home' })}
           />
         ) : activeView.type === 'admin' ? (
           <AdminDashboardView
@@ -1440,6 +2446,9 @@ function MainApp() {
             nitroPlans={nitroPlans}
             cosmetics={cosmetics}
             transactions={transactions}
+            gifts={gifts}
+            ownerInvitations={ownerInvitations}
+            receipts={receipts}
             auditLogs={auditLogs}
             systemConfig={systemConfig}
             onUpdateNitroPlan={handleUpdateNitroPlan}
@@ -1447,9 +2456,17 @@ function MainApp() {
             onDeleteCommunity={handleDeleteCommunity}
             onDeleteOrb={handleDeleteOrb}
             onUpdateUserRole={handleUpdateUserRole}
+            onUpdateSecondaryOwnerPermissions={handleUpdateSecondaryOwnerPermissions}
             onModerateUser={handleModerateUser}
             onGrantOrRevokeNitro={handleGrantOrRevokeNitro}
             onGrantOrRevokeCosmetic={handleGrantOrRevokeCosmetic}
+            onCreateOwnerGift={handleCreateOwnerGift}
+            onRevokeGift={handleRevokeGift}
+            onCreateOwnerInvite={handleCreateOwnerInvite}
+            onRevokeOwnerInvite={handleRevokeOwnerInvite}
+            onCreateManualReceipt={handleCreateManualReceipt}
+            onCorrectReceiptMetadata={handleCorrectReceiptMetadata}
+            onOpenReceiptModal={(rcp) => setActiveReceiptModal(rcp)}
             onRefundTransaction={handleRefundTransaction}
             onUpdateSystemConfig={handleUpdateSystemConfig}
           />
@@ -1467,8 +2484,8 @@ function MainApp() {
         )}
       </div>
 
-      {/* 4. Contextual Side Panel */}
-      {showContextualPanel && (
+      {/* 4. Collapsible Right Contextual Panel (300px) */}
+      {canShowContextualPanel && isRightPanelOpen && (
         <ContextualPanel
           activeView={activeView}
           activeCommunity={activeCommunity}
@@ -1476,6 +2493,7 @@ function MainApp() {
           activeOrb={selectedOrb}
           members={allUsers}
           onSelectMember={handleOpenDmWithUser}
+          onViewProfile={(userId) => setActiveView({ type: 'profile', userId })}
         />
       )}
 
@@ -1515,16 +2533,24 @@ function MainApp() {
         payload={checkoutPayload}
         currentUser={profile}
         authToken={token}
+        allUsers={allUsers}
         onClose={() => setCheckoutPayload(null)}
         onVerifiedSuccess={handleVerifiedCheckoutSuccess}
         onOpenAdminPaymentSettings={
-          profile.role === 'owner' || profile.role === 'admin'
+          isAdminOrAbove(profile)
             ? () => {
                 setCheckoutPayload(null);
                 setActiveView({ type: 'admin' });
               }
             : undefined
         }
+      />
+
+      <ReceiptDocumentModal
+        receipt={activeReceiptModal}
+        currentUser={profile}
+        onClose={() => setActiveReceiptModal(null)}
+        onCorrectReceiptMetadata={handleModalCorrectReceipt}
       />
 
       <ForcePasswordChangeModal

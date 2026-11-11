@@ -447,7 +447,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 }`}
               >
                 <ShoppingBag className="w-4 h-4 text-[#E9987B]" />
-                <span>Cosmetics Shop</span>
+                <span>APEX Collection</span>
               </button>
 
               {(currentUser.role === 'root_owner' ||

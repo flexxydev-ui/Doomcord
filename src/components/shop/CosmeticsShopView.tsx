@@ -53,8 +53,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'All' | CosmeticCategory>('All');
   const [viewMode, setViewMode] = useState<'catalog' | 'inventory'>('catalog');
 
-  const isMainOwner =
-    isRootOwner(currentUser) || Boolean(currentUser.ownerPermanentNitro);
+  const isMainOwner = isRootOwner(currentUser);
 
   // Interactive Sandbox Preview State (starts from user's currently equipped items)
   const [previewEquipped, setPreviewEquipped] = useState<EquippedCosmetics>(

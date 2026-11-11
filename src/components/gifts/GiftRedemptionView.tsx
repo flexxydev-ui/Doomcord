@@ -338,7 +338,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                 <div className="text-xs font-mono text-white/90 mb-3">
                   Duration:{' '}
                   <strong className="text-[oklch(0.85_0.12_165)]">
-                    {formatDurationLabel(matchedGift.duration)}
+                    {formatDurationLabel(matchedGift.duration, matchedGift.billingCycle)}
                   </strong>
                   {matchedGift.duration === 'lifetime' && ' (NEVER EXPIRES)'}
                 </div>
@@ -453,7 +453,11 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
               <span>Single-use SHA-256 hashed token · Atomic transaction verification</span>
             </span>
-            <span className="font-mono">₹0 Complimentary</span>
+            <span className="font-mono">
+              {matchedGift?.isPaidGift
+                ? `Paid APEX Gift (₹${matchedGift.amountPaidINR || 0})`
+                : '₹0 Complimentary'}
+            </span>
           </div>
         </div>
       </div>

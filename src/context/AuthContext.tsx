@@ -19,6 +19,7 @@ import {
   INITIAL_SYSTEM_CONFIG,
   ROOT_OWNER_UUID,
   ROOT_OWNER_EMAIL,
+  isRootOwner,
 } from '../lib/dataService';
 
 interface AuthContextType {
@@ -103,6 +104,7 @@ function buildDefaultRootOwnerProfile(
     nitroExpiresAt: null,
     nitroAutoRenew: true,
     permanentEntitlement: 'OWNER_PERMANENT_APEX',
+    ownerPermanentApex: true,
     ownedCosmetics: mergedCosmetics,
     equippedCosmetics: existing?.equippedCosmetics || {
       avatarDecoration: 'cosm_frame_emerald_crystal',
@@ -238,8 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (snap) => {
         if (snap.exists()) {
           const data = snap.data() as UserProfile;
-          const isRoot =
-            data.uid === ROOT_OWNER_UUID || data.email?.toLowerCase() === ROOT_OWNER_EMAIL;
+          const isRoot = isRootOwner(data);
 
           if (!isRoot && (data.isBanned || data.isSuspended)) {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -303,12 +304,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const safeUpdates = { ...updates };
 
       // Enforce Root Owner immutable protection (#27, #35)
-      if (profile.uid === ROOT_OWNER_UUID) {
+      if (isRootOwner(profile)) {
         safeUpdates.role = 'root_owner';
         safeUpdates.nitroTier = 'nitro';
         safeUpdates.nitroBillingCycle = 'lifetime';
         safeUpdates.nitroExpiresAt = null;
         safeUpdates.permanentEntitlement = 'OWNER_PERMANENT_APEX';
+        safeUpdates.ownerPermanentApex = true;
         safeUpdates.isBanned = false;
         safeUpdates.isSuspended = false;
       }

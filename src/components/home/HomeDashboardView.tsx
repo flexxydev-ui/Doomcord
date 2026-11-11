@@ -58,13 +58,12 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   onOpenCreateOrb,
   onOpenReceipt,
 }) => {
-  const isOwner = isRootOwner(profile.uid);
+  const isOwner = isRootOwner(profile);
   const isSecOwner = isSecondaryOwner(profile);
   const hasApexPlus =
     isOwner ||
     profile.nitroTier === 'nitro' ||
     profile.permanentEntitlement === 'OWNER_PERMANENT_APEX' ||
-    profile.permanentEntitlement === 'OWNER_PERMANENT_NITRO' ||
     profile.permanentEntitlement === 'LIFETIME_APEX_PLUS';
   const hasApexBasic = profile.nitroTier === 'basic' || profile.permanentEntitlement === 'LIFETIME_APEX';
 

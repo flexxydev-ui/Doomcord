@@ -136,12 +136,15 @@ export interface GiftRecord {
   restrictedRecipientUsername?: string;
   restrictedRecipientEmail?: string;
   isPaidGift?: boolean;
+  purchaserUid?: string;
   amountPaidINR?: number;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
+  receiptId?: string;
   status: 'unclaimed' | 'redeemed' | 'revoked' | 'expired';
   redeemedByUid?: string;
   redeemedByEmail?: string;
+  redeemedByUsername?: string;
   redeemedAt?: string;
   linkExpiresAt?: string | null;
   createdAt: string;
@@ -194,7 +197,12 @@ export interface TransactionRecord {
   id: string;
   userId: string;
   userEmail: string;
-  type: 'nitro_subscription' | 'cosmetic_purchase' | 'admin_grant' | 'refund';
+  type:
+    | 'nitro_subscription'
+    | 'cosmetic_purchase'
+    | 'apex_gift_purchase'
+    | 'admin_grant'
+    | 'refund';
   itemId: string;
   itemName: string;
   amountINR: number;
@@ -204,6 +212,9 @@ export interface TransactionRecord {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   billingCycle?: BillingCycle;
+  isGiftPurchase?: boolean;
+  giftId?: string;
+  receiptId?: string;
   createdAt: string;
 }
 

@@ -46,12 +46,11 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
 }) => {
   const isSelf = currentUser.uid === targetUser.uid;
   const isFriend = currentUser.friends?.includes(targetUser.uid);
-  const isOwner = isRootOwner(targetUser.uid);
+  const isOwner = isRootOwner(targetUser);
   const hasApexPlus =
     isOwner ||
     targetUser.nitroTier === 'nitro' ||
     targetUser.permanentEntitlement === 'OWNER_PERMANENT_APEX' ||
-    targetUser.permanentEntitlement === 'OWNER_PERMANENT_NITRO' ||
     targetUser.permanentEntitlement === 'LIFETIME_APEX_PLUS';
   const hasApexBasic =
     targetUser.nitroTier === 'basic' || targetUser.permanentEntitlement === 'LIFETIME_APEX';
