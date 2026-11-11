@@ -6,6 +6,8 @@ import {
   Calendar,
   User,
   ArrowUpRight,
+  Zap,
+  Check,
 } from 'lucide-react';
 import {
   ActiveView,
@@ -19,6 +21,7 @@ import {
   isRootOwner,
   formatRoleLabel,
 } from '../../lib/dataService';
+import { calculateServerBoostState } from '../../lib/chatEnhancements';
 
 interface ContextualPanelProps {
   activeView: ActiveView;
@@ -28,6 +31,7 @@ interface ContextualPanelProps {
   members: UserProfile[];
   onSelectMember: (user: UserProfile) => void;
   onViewProfile?: (userId: string) => void;
+  onBoostCommunity?: (communityId: string) => void;
 }
 
 export const ContextualPanel: React.FC<ContextualPanelProps> = ({
@@ -38,18 +42,19 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
   members,
   onSelectMember,
   onViewProfile,
+  onBoostCommunity,
 }) => {
   const getPresenceColor = (presence: UserPresence) => {
     switch (presence) {
       case 'online':
-        return 'bg-[#6DD5A5]';
+        return 'bg-[#3BA55D]';
       case 'idle':
-        return 'bg-[#E4B869]';
+        return 'bg-[#FAA81A]';
       case 'dnd':
-        return 'bg-[#E57373]';
+        return 'bg-[#ED4245]';
       case 'invisible':
       default:
-        return 'bg-[#718478]';
+        return 'bg-[#706C7B]';
     }
   };
 
@@ -62,15 +67,15 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
       Boolean(recipientProfile.permanentEntitlement);
 
     return (
-      <aside className="w-72 h-full bg-[#141F1B] border-l border-white/[0.06] flex flex-col shrink-0 overflow-y-auto">
-        <div className="h-16 px-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-          <span className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
-            Conversation Details
+      <aside className="w-72 h-full bg-[#0D0D12] border-l border-[#282631] flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
+        <div className="h-14 px-4 border-b border-[#282631] flex items-center justify-between shrink-0">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B]">
+            Profile Overview
           </span>
           {onViewProfile && (
             <button
               onClick={() => onViewProfile(recipientProfile.uid)}
-              className="text-xs font-medium text-[#8BE2B8] hover:underline flex items-center gap-1"
+              className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] flex items-center gap-1 transition-colors"
             >
               <span>Full Profile</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -78,18 +83,18 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
           )}
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-4 space-y-4">
           {/* Banner + Avatar */}
-          <div className="relative mb-10">
+          <div className="relative mb-8">
             <div
-              className="w-full h-24 rounded-xl overflow-hidden border border-white/[0.07]"
+              className="w-full h-20 rounded-lg overflow-hidden border border-[#282631]"
               style={{
                 background: recipientProfile.bannerURL
                   ? `url(${recipientProfile.bannerURL}) center/cover no-repeat`
-                  : 'linear-gradient(135deg, #192620 0%, #24362C 100%)',
+                  : 'linear-gradient(135deg, #17171F 0%, #22212C 100%)',
               }}
             />
-            <div className="absolute -bottom-8 left-4">
+            <div className="absolute -bottom-6 left-3">
               <div className="relative">
                 <img
                   src={
@@ -97,10 +102,10 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
                     generateInitialsAvatar(recipientProfile.displayName)
                   }
                   alt={recipientProfile.displayName}
-                  className="w-16 h-16 rounded-xl object-cover border-4 border-[#141F1B] bg-[#1D2B24]"
+                  className="w-14 h-14 rounded-lg object-cover border-2 border-[#0D0D12] bg-[#17171F]"
                 />
                 <span
-                  className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#141F1B] ${getPresenceColor(
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0D0D12] ${getPresenceColor(
                     recipientProfile.presence
                   )}`}
                 />
@@ -110,63 +115,63 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
 
           {/* Identity Info */}
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-display font-bold text-[#F0F5F1]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-sm font-semibold text-[#F5F3FA]">
                 {recipientProfile.displayName}
               </h3>
               {hasApex && (
-                <Crown className="w-3.5 h-3.5 text-[#D9BB79] shrink-0" />
+                <Crown className="w-3.5 h-3.5 text-[#A47BFF] shrink-0" />
               )}
             </div>
-            <span className="text-xs font-mono text-[#718478] block mt-0.5">
+            <span className="text-xs font-mono text-[#706C7B] block mt-0.5">
               @{recipientProfile.username}
             </span>
 
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              <span className="px-2 py-0.5 rounded bg-[#192620] border border-white/[0.07] text-[10px] font-mono uppercase text-[#8BE2B8]">
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="px-2 py-0.5 rounded bg-[#17171F] border border-[#282631] text-[10px] font-mono uppercase text-[#A47BFF]">
                 {formatRoleLabel(recipientProfile.role, recipientProfile.uid)}
               </span>
               {hasApex && (
-                <span className="px-2 py-0.5 rounded bg-[#192620] border border-[#D9BB79]/30 text-[10px] font-mono uppercase text-[#D9BB79]">
+                <span className="px-2 py-0.5 rounded bg-[#8957F5]/10 border border-[#8957F5]/30 text-[10px] font-mono uppercase text-[#C4B1FF]">
                   {isOwner || recipientProfile.nitroTier === 'nitro'
-                    ? 'DOOMCORD APEX+'
-                    : 'DOOMCORD APEX'}
+                    ? 'APEX+'
+                    : 'APEX'}
                 </span>
               )}
             </div>
           </div>
 
           {/* Status & Bio */}
-          <div className="p-3.5 rounded-xl bg-[#192620] border border-white/[0.06] space-y-3">
+          <div className="p-3 rounded-lg bg-[#101014] border border-[#282631] space-y-2.5">
             {recipientProfile.statusMessage && (
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-[#718478] mb-1">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[#706C7B] mb-0.5">
                   Status
                 </div>
-                <p className="text-xs text-[#F0F5F1]">
+                <p className="text-xs text-[#F5F3FA]">
                   {recipientProfile.statusMessage}
                 </p>
               </div>
             )}
 
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#718478] mb-1">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#706C7B] mb-0.5">
                 About
               </div>
-              <p className="text-xs text-[#9BAEA2] leading-relaxed">
+              <p className="text-xs text-[#A19DAD] leading-relaxed">
                 {recipientProfile.bio || 'No biography written yet.'}
               </p>
             </div>
           </div>
 
           {/* Metadata */}
-          <div className="p-3.5 rounded-xl bg-[#192620] border border-white/[0.06] space-y-2 text-xs text-[#9BAEA2]">
+          <div className="p-3 rounded-lg bg-[#101014] border border-[#282631] space-y-2 text-xs text-[#A19DAD]">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[#718478]">
-                <Calendar className="w-3.5 h-3.5 text-[#8BE2B8]" />
-                <span>Joined</span>
+              <span className="flex items-center gap-1.5 text-[#706C7B]">
+                <Calendar className="w-3.5 h-3.5 text-[#8957F5]" />
+                <span>Member Since</span>
               </span>
-              <span className="font-mono text-[#F0F5F1] tabular-nums">
+              <span className="font-mono text-[#F5F3FA] tabular-nums">
                 {new Date(
                   recipientProfile.createdAt || Date.now()
                 ).toLocaleDateString()}
@@ -174,11 +179,11 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[#718478]">
-                <Shield className="w-3.5 h-3.5 text-[#E9987B]" />
-                <span>Clearance</span>
+              <span className="flex items-center gap-1.5 text-[#706C7B]">
+                <Shield className="w-3.5 h-3.5 text-[#A47BFF]" />
+                <span>Role</span>
               </span>
-              <span className="font-mono text-[#F0F5F1] text-[11px]">
+              <span className="font-mono text-[#F5F3FA] text-[11px]">
                 {formatRoleLabel(recipientProfile.role, recipientProfile.uid)}
               </span>
             </div>
@@ -187,10 +192,10 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
           {onViewProfile && (
             <button
               onClick={() => onViewProfile(recipientProfile.uid)}
-              className="w-full h-9 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-medium text-[#F0F5F1] flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-8 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center justify-center gap-2 transition-colors"
             >
-              <User className="w-3.5 h-3.5 text-[#8BE2B8]" />
-              <span>Open Full Profile</span>
+              <User className="w-3.5 h-3.5 text-[#8957F5]" />
+              <span>View Full Profile</span>
             </button>
           )}
         </div>
@@ -198,36 +203,75 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
     );
   }
 
-  // Community Context: Member Roster grouped by Online / Offline
+  // Community Context: Server Perks + Member Roster grouped by Online / Offline
   if (activeView.type === 'community' && activeCommunity) {
     const onlineMembers = members.filter((m) => m.presence !== 'invisible');
     const offlineMembers = members.filter((m) => m.presence === 'invisible');
+    const boostState = calculateServerBoostState(
+      activeCommunity.boostCount || 0
+    );
 
     return (
-      <aside className="w-64 h-full bg-[#141F1B] border-l border-white/[0.06] flex flex-col shrink-0 overflow-y-auto">
-        <div className="h-16 px-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-          <span className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
-            Community Roster
+      <aside className="w-60 h-full bg-[#0D0D12] border-l border-[#282631] flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
+        <div className="h-14 px-3.5 border-b border-[#282631] flex items-center justify-between shrink-0">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B]">
+            Server Roster
           </span>
-          <span className="text-xs font-mono text-[#8BE2B8] tabular-nums">
+          <span className="text-xs font-mono text-[#8957F5] tabular-nums">
             {members.length}
           </span>
         </div>
 
-        <div className="p-3 space-y-5">
+        <div className="p-2.5 space-y-4">
+          {/* Server Boost Perks Card */}
+          <div className="p-3 rounded-lg bg-[#101014] border border-[#282631] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#A47BFF] flex items-center gap-1">
+                <Zap className="w-3 h-3 text-[#8957F5]" />
+                <span>Boost Level {boostState.level}</span>
+              </span>
+              <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
+                {boostState.boostCount} Boosts
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              {boostState.perks.map((perk) => (
+                <div
+                  key={perk}
+                  className="flex items-center gap-1.5 text-[11px] text-[#A19DAD]"
+                >
+                  <Check className="w-3 h-3 text-[#8957F5] shrink-0" />
+                  <span className="truncate">{perk}</span>
+                </div>
+              ))}
+            </div>
+
+            {onBoostCommunity && (
+              <button
+                type="button"
+                onClick={() => onBoostCommunity(activeCommunity.id)}
+                className="w-full py-1.5 rounded-md bg-[#8957F5] hover:bg-[#7846E4] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Boost This Server</span>
+              </button>
+            )}
+          </div>
+
           {/* Online Members */}
           <div>
-            <div className="px-2 mb-2 text-[10px] font-mono uppercase tracking-wider text-[#718478] tabular-nums">
+            <div className="px-2 mb-1 text-[10px] font-mono uppercase tracking-wider text-[#706C7B] tabular-nums">
               Online — {onlineMembers.length}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {onlineMembers.map((member) => {
                 const isMemberOwner = isRootOwner(member.uid);
                 return (
                   <button
                     key={member.uid}
                     onClick={() => onSelectMember(member)}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#192620] text-left transition-colors group"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#17171F] text-left transition-colors group"
                   >
                     <div className="relative shrink-0">
                       <img
@@ -236,24 +280,24 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
                           generateInitialsAvatar(member.displayName)
                         }
                         alt={member.displayName}
-                        className="w-7 h-7 rounded-lg object-cover bg-[#1D2B24]"
+                        className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
                       />
                       <span
-                        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#141F1B] ${getPresenceColor(
+                        className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0D0D12] ${getPresenceColor(
                           member.presence
                         )}`}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-medium text-[#F0F5F1] group-hover:text-[#8BE2B8] truncate">
+                        <span className="text-xs font-medium text-[#F5F3FA] group-hover:text-[#8957F5] truncate">
                           {member.displayName}
                         </span>
                         {(isMemberOwner || member.nitroTier !== 'free') && (
-                          <Crown className="w-3 h-3 text-[#D9BB79] shrink-0" />
+                          <Crown className="w-3 h-3 text-[#A47BFF] shrink-0" />
                         )}
                       </div>
-                      <span className="text-[10px] text-[#718478] truncate block">
+                      <span className="text-[10px] text-[#706C7B] truncate block">
                         {member.statusMessage || `@${member.username}`}
                       </span>
                     </div>
@@ -266,15 +310,15 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
           {/* Offline Members */}
           {offlineMembers.length > 0 && (
             <div>
-              <div className="px-2 mb-2 text-[10px] font-mono uppercase tracking-wider text-[#718478] tabular-nums">
+              <div className="px-2 mb-1 text-[10px] font-mono uppercase tracking-wider text-[#706C7B] tabular-nums">
                 Offline — {offlineMembers.length}
               </div>
-              <div className="space-y-1 opacity-65">
+              <div className="space-y-0.5 opacity-60">
                 {offlineMembers.map((member) => (
                   <button
                     key={member.uid}
                     onClick={() => onSelectMember(member)}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-[#192620] text-left transition-colors"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#17171F] text-left transition-colors"
                   >
                     <img
                       src={
@@ -282,9 +326,9 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
                         generateInitialsAvatar(member.displayName)
                       }
                       alt={member.displayName}
-                      className="w-7 h-7 rounded-lg object-cover bg-[#1D2B24] grayscale"
+                      className="w-7 h-7 rounded-md object-cover bg-[#17171F] grayscale"
                     />
-                    <span className="text-xs text-[#9BAEA2] truncate">
+                    <span className="text-xs text-[#706C7B] truncate">
                       {member.displayName}
                     </span>
                   </button>
@@ -300,49 +344,49 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
   // Orbs Detail Context
   if (activeView.type === 'orbs' && activeOrb) {
     return (
-      <aside className="w-72 h-full bg-[#141F1B] border-l border-white/[0.06] p-5 flex flex-col shrink-0 overflow-y-auto space-y-5">
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#8BE2B8]">
-          <Sparkles className="w-4 h-4 text-[#E9987B]" />
+      <aside className="w-72 h-full bg-[#0D0D12] border-l border-[#282631] p-4 flex flex-col shrink-0 overflow-y-auto space-y-4 text-[#F5F3FA]">
+        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#8957F5]">
+          <Sparkles className="w-4 h-4 text-[#A47BFF]" />
           <span>Orb Specifications</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#192620] border border-white/[0.06]">
-          <div className="flex items-center gap-2.5 mb-2">
+        <div className="p-3.5 rounded-lg bg-[#101014] border border-[#282631]">
+          <div className="flex items-center gap-2 mb-1.5">
             <span
-              className="w-3.5 h-3.5 rounded-full shrink-0"
+              className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: activeOrb.primaryColor }}
             />
-            <h4 className="text-sm font-display font-bold text-[#F0F5F1]">
+            <h4 className="text-xs font-semibold text-[#F5F3FA]">
               {activeOrb.name}
             </h4>
           </div>
-          <p className="text-xs text-[#9BAEA2] leading-relaxed">
+          <p className="text-xs text-[#A19DAD] leading-relaxed">
             {activeOrb.description}
           </p>
         </div>
 
-        <div className="space-y-2.5 text-xs">
-          <div className="flex justify-between py-1.5 border-b border-white/[0.05]">
-            <span className="text-[#718478]">Category</span>
-            <span className="text-[#F0F5F1] font-medium">
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between py-1.5 border-b border-[#282631]">
+            <span className="text-[#706C7B]">Category</span>
+            <span className="text-[#F5F3FA] font-medium">
               {activeOrb.category}
             </span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-white/[0.05]">
-            <span className="text-[#718478]">Visibility</span>
-            <span className="text-[#F0F5F1] font-medium capitalize">
+          <div className="flex justify-between py-1.5 border-b border-[#282631]">
+            <span className="text-[#706C7B]">Visibility</span>
+            <span className="text-[#F5F3FA] font-medium capitalize">
               {activeOrb.visibility}
             </span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-white/[0.05]">
-            <span className="text-[#718478]">Creator</span>
-            <span className="text-[#F0F5F1] font-medium">
+          <div className="flex justify-between py-1.5 border-b border-[#282631]">
+            <span className="text-[#706C7B]">Creator</span>
+            <span className="text-[#F5F3FA] font-medium">
               {activeOrb.creatorName}
             </span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-white/[0.05]">
-            <span className="text-[#718478]">Members</span>
-            <span className="text-[#8BE2B8] font-mono tabular-nums">
+          <div className="flex justify-between py-1.5 border-b border-[#282631]">
+            <span className="text-[#706C7B]">Members</span>
+            <span className="text-[#8957F5] font-mono tabular-nums">
               {activeOrb.memberCount || 1}
             </span>
           </div>
@@ -350,14 +394,14 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
 
         {activeOrb.tags?.length > 0 && (
           <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[#718478] mb-2">
-              Topics & Tags
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#706C7B] mb-1.5">
+              Tags
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {activeOrb.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded bg-[#192620] border border-white/[0.07] text-[11px] font-mono text-[#9BAEA2]"
+                  className="px-2 py-0.5 rounded bg-[#17171F] border border-[#282631] text-[11px] font-mono text-[#A19DAD]"
                 >
                   #{tag}
                 </span>

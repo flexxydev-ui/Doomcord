@@ -42,6 +42,8 @@ import {
 } from './components/modals/RazorpayCheckoutModal';
 import { ForcePasswordChangeModal } from './components/modals/ForcePasswordChangeModal';
 import { ReceiptDocumentModal } from './components/receipts/ReceiptDocumentModal';
+import { QuickSwitcherModal } from './components/modals/QuickSwitcherModal';
+import { CommunityStarterTemplate } from './lib/chatEnhancements';
 
 import {
   INITIAL_NITRO_PLANS,
@@ -53,6 +55,7 @@ import {
   formatDurationLabel,
   isRootOwner,
   isAdminOrAbove,
+  cleanFirestoreData,
 } from './lib/dataService';
 import { db, testConnection } from './lib/firebase';
 import {
@@ -66,6 +69,7 @@ import {
   ActiveView,
   VoiceParticipant,
   MessageAttachment,
+  PollData,
   NitroPlanConfig,
   CosmeticItem,
   CosmeticCategory,
@@ -146,6 +150,19 @@ function MainApp() {
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [passwordModalDismissed, setPasswordModalDismissed] = useState(false);
   const [activeReceiptModal, setActiveReceiptModal] = useState<ReceiptRecord | null>(null);
+  const [isQuickSwitcherOpen, setIsQuickSwitcherOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K Quick Switcher keyboard shortcut
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsQuickSwitcherOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, []);
 
   // Verify Firebase Firestore connection on initial boot
   useEffect(() => {
@@ -174,17 +191,19 @@ function MainApp() {
     ) => {
       if (!profile) return;
       const logId = `audit_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const entry: AuditLogEntry = {
+      const entry: Record<string, any> = {
         id: logId,
         actorUid: profile.uid,
         actorEmail: profile.email,
         action,
-        targetId: targetUid,
         details: targetEmail ? `[${targetEmail}] ${details}` : details,
         createdAt: new Date().toISOString(),
       };
+      if (targetUid) {
+        entry.targetId = targetUid;
+      }
       try {
-        await setDoc(doc(db, 'audit_logs', logId), entry);
+        await setDoc(doc(db, 'audit_logs', logId), cleanFirestoreData(entry));
       } catch (e) {
         console.warn('Audit log write skipped:', e);
       }
@@ -217,7 +236,7 @@ function MainApp() {
           const chList: Channel[] = [];
           chSnap.forEach((chDoc) => chList.push(chDoc.data() as Channel));
           chList.sort((a, b) => (a.position || 0) - (b.position || 0));
-          comm.channels = chList;
+          comm.channels = chList.length > 0 ? chList : comm.channels || [];
         } catch {
           comm.channels = comm.channels || [];
         }
@@ -491,7 +510,8 @@ function MainApp() {
     async (
       content: string,
       attachments?: MessageAttachment[],
-      replyTo?: { id: string; senderName: string; content: string }
+      replyTo?: { id: string; senderName: string; content: string },
+      poll?: PollData
     ) => {
       if (!profile) return;
       const colRef = getActiveMessagesCollectionRef();
@@ -514,14 +534,17 @@ function MainApp() {
         senderAvatar:
           profile.photoURL ||
           generateInitialsAvatar(profile.displayName || profile.username),
+        senderRole: profile.role,
+        senderNitroTier: profile.nitroTier,
         content,
         attachments: attachments || [],
         replyTo,
+        poll,
         readBy: [profile.uid],
         createdAt: now,
       };
 
-      await setDoc(doc(colRef, msgId), newMessage);
+      await setDoc(doc(colRef, msgId), cleanFirestoreData(newMessage));
 
       if (activeView.type === 'dm') {
         try {
@@ -600,6 +623,53 @@ function MainApp() {
     [activeMessages, getActiveMessagesCollectionRef]
   );
 
+  const handleVotePoll = useCallback(
+    async (messageId: string, optionId: string) => {
+      if (!profile) return;
+      const colRef = getActiveMessagesCollectionRef();
+      if (!colRef) return;
+      const msg = activeMessages.find((m) => m.id === messageId);
+      if (!msg || !msg.poll) return;
+
+      const updatedOptions = msg.poll.options.map((opt) => {
+        const voters = opt.voterIds || [];
+        const hasVoted = voters.includes(profile.uid);
+        if (opt.id === optionId) {
+          return {
+            ...opt,
+            voterIds: hasVoted
+              ? voters.filter((id) => id !== profile.uid)
+              : [...voters, profile.uid],
+          };
+        }
+        return {
+          ...opt,
+          voterIds: voters.filter((id) => id !== profile.uid),
+        };
+      });
+
+      await updateDoc(doc(colRef, messageId), {
+        poll: {
+          ...msg.poll,
+          options: updatedOptions,
+        },
+      });
+    },
+    [profile, activeMessages, getActiveMessagesCollectionRef]
+  );
+
+  const handleToggleBookmark = useCallback(
+    async (messageId: string) => {
+      if (!profile) return;
+      const currentSaved = profile.savedMessages || [];
+      const nextSaved = currentSaved.includes(messageId)
+        ? currentSaved.filter((id) => id !== messageId)
+        : [...currentSaved, messageId];
+      await updateProfile({ savedMessages: nextSaved });
+    },
+    [profile, updateProfile]
+  );
+
   // Real Social Friendship actions
   const handleSendFriendRequest = useCallback(
     async (targetUser: UserProfile) => {
@@ -616,7 +686,7 @@ function MainApp() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
-      await setDoc(doc(db, 'friend_requests', reqId), newReq);
+      await setDoc(doc(db, 'friend_requests', reqId), cleanFirestoreData(newReq));
     },
     [profile]
   );
@@ -713,39 +783,49 @@ function MainApp() {
         unreadCount: 0,
         createdAt: now,
       };
-      await setDoc(doc(db, 'direct_messages', dmId), newDm, { merge: true });
+      await setDoc(doc(db, 'direct_messages', dmId), cleanFirestoreData(newDm), { merge: true });
       setActiveView({ type: 'dm', dmId });
     },
     [profile, dmDocs]
   );
 
-  // Community & Channels creation in Firestore
+  // Community & Channels creation in Firestore (supports 1-click multi-channel starter templates)
   const handleCreateCommunity = useCallback(
-    async (commData: Partial<Community>) => {
+    async (
+      commData: Partial<Community>,
+      template?: CommunityStarterTemplate
+    ) => {
       if (!profile) return;
       const commId = `comm_${Date.now()}`;
-      const ch1Id = `ch_${Date.now()}_1`;
-      const ch2Id = `ch_${Date.now()}_2`;
       const now = new Date().toISOString();
 
-      const ch1: Channel = {
-        id: ch1Id,
+      const channelDefinitions = template?.channels || [
+        {
+          name: 'announcements',
+          topic: 'Official community updates and broadcasts',
+          type: 'announcement' as const,
+        },
+        {
+          name: 'general',
+          topic: 'Main community discussion',
+          type: 'text' as const,
+        },
+        {
+          name: 'Voice Lounge',
+          topic: 'Live WebRTC audio room',
+          type: 'voice' as const,
+        },
+      ];
+
+      const createdChannels: Channel[] = channelDefinitions.map((def, idx) => ({
+        id: `ch_${Date.now()}_${idx + 1}`,
         communityId: commId,
-        name: 'general',
-        topic: 'Main community discussion',
-        type: 'text',
-        position: 1,
+        name: def.name,
+        topic: def.topic,
+        type: def.type,
+        position: idx + 1,
         createdAt: now,
-      };
-      const ch2: Channel = {
-        id: ch2Id,
-        communityId: commId,
-        name: 'Voice Lounge',
-        topic: 'Live WebRTC audio room',
-        type: 'voice',
-        position: 2,
-        createdAt: now,
-      };
+      }));
 
       const newComm: Community = {
         id: commId,
@@ -753,31 +833,63 @@ function MainApp() {
         description: commData.description || 'A real Doomcord community server.',
         iconUrl:
           commData.iconUrl ||
-          generateInitialsAvatar(commData.name || 'Community', '#065f46'),
-        themeColor: commData.themeColor || '#8BE2B8',
+          generateInitialsAvatar(commData.name || 'Community', '#8957F5'),
+        themeColor: commData.themeColor || '#8957F5',
         ownerId: profile.uid,
         isPublic: true,
         members: [profile.uid],
+        channels: createdChannels,
         memberCount: 1,
+        boostCount: 0,
+        boostedBy: [],
         createdAt: now,
       };
 
-      await setDoc(doc(db, 'communities', commId), newComm);
-      await setDoc(doc(db, 'communities', commId, 'channels', ch1Id), ch1);
-      await setDoc(doc(db, 'communities', commId, 'channels', ch2Id), ch2);
+      for (const ch of createdChannels) {
+        await setDoc(
+          doc(db, 'communities', commId, 'channels', ch.id),
+          cleanFirestoreData(ch)
+        );
+      }
+      await setDoc(doc(db, 'communities', commId), cleanFirestoreData(newComm));
 
       const nextJoined = Array.from(
         new Set([...(profile.joinedCommunities || []), commId])
       );
       await updateProfile({ joinedCommunities: nextJoined });
 
+      const defaultTextChannel =
+        createdChannels.find((c) => c.type === 'text') || createdChannels[0];
       setActiveView({
         type: 'community',
         communityId: commId,
-        channelId: ch1Id,
+        channelId: defaultTextChannel.id,
       });
     },
     [profile, updateProfile]
+  );
+
+  const handleBoostCommunity = useCallback(
+    async (communityId: string) => {
+      if (!profile) return;
+      const comm = communities.find((c) => c.id === communityId);
+      if (!comm) return;
+      const nextBoostCount = (comm.boostCount || 0) + 1;
+      const nextBoostedBy = Array.from(
+        new Set([...(comm.boostedBy || []), profile.uid])
+      );
+      await updateDoc(doc(db, 'communities', communityId), {
+        boostCount: nextBoostCount,
+        boostedBy: nextBoostedBy,
+      });
+      await recordAuditLog(
+        'SERVER_BOOST_APPLIED',
+        `User @${profile.username} boosted community "${comm.name}" (Total Boosts: ${nextBoostCount})`,
+        profile.uid,
+        profile.email
+      );
+    },
+    [profile, communities, recordAuditLog]
   );
 
   const handleJoinCommunity = useCallback(
@@ -811,20 +923,29 @@ function MainApp() {
     async (channelData: Partial<Channel>) => {
       if (!createChannelCommunityId) return;
       const chId = `ch_${Date.now()}`;
+      const existingComm = communities.find(
+        (c) => c.id === createChannelCommunityId
+      );
       const newChannel: Channel = {
         id: chId,
         communityId: createChannelCommunityId,
         name: channelData.name || 'new-channel',
         topic: channelData.topic || '',
         type: channelData.type || 'text',
-        position: 10,
+        position: (existingComm?.channels?.length || 0) + 1,
         createdAt: new Date().toISOString(),
       };
 
       await setDoc(
         doc(db, 'communities', createChannelCommunityId, 'channels', chId),
-        newChannel
+        cleanFirestoreData(newChannel)
       );
+
+      if (existingComm) {
+        await updateDoc(doc(db, 'communities', createChannelCommunityId), {
+          channels: [...(existingComm.channels || []), cleanFirestoreData(newChannel)],
+        });
+      }
 
       setActiveView({
         type: 'community',
@@ -833,7 +954,7 @@ function MainApp() {
       });
       setCreateChannelCommunityId(null);
     },
-    [createChannelCommunityId]
+    [createChannelCommunityId, communities]
   );
 
   // Create Orb in Firestore
@@ -847,7 +968,7 @@ function MainApp() {
         description: orbData.description || 'Spatial realm in Doomcord.',
         category: orbData.category || 'Gaming',
         icon: 'Sparkles',
-        primaryColor: orbData.primaryColor || '#8BE2B8',
+        primaryColor: orbData.primaryColor || '#8957F5',
         secondaryColor: orbData.secondaryColor || '#10b981',
         visibility: orbData.visibility || 'public',
         creatorId: profile.uid,
@@ -858,7 +979,7 @@ function MainApp() {
         createdAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, 'orbs', orbId), newOrb);
+      await setDoc(doc(db, 'orbs', orbId), cleanFirestoreData(newOrb));
       setSelectedOrb(newOrb);
     },
     [profile]
@@ -978,7 +1099,7 @@ function MainApp() {
         const recipientUsername = effectiveGiftOptions?.recipientUsername?.trim();
         const recipientEmail = effectiveGiftOptions?.recipientEmail?.trim();
 
-        const giftRecord: GiftRecord = {
+        const giftRecordData: any = {
           id: giftId,
           claimToken,
           tokenHash,
@@ -992,15 +1113,6 @@ function MainApp() {
           personalMessage:
             effectiveGiftOptions?.personalMessage ||
             `Enjoy your DOOMCORD ${formatApexTierName(payload.tier)} membership gift!`,
-          restrictedRecipientUid: effectiveGiftOptions?.recipientUid,
-          restrictedRecipientUsername:
-            recipientMode === 'username' && recipientUsername
-              ? recipientUsername.replace(/^@/, '')
-              : undefined,
-          restrictedRecipientEmail:
-            recipientMode === 'email' && recipientEmail
-              ? recipientEmail.toLowerCase()
-              : undefined,
           isPaidGift: true,
           purchaserUid: profile.uid,
           amountPaidINR: payload.amountINR,
@@ -1010,6 +1122,18 @@ function MainApp() {
           status: 'unclaimed',
           createdAt: nowIso,
         };
+
+        if (effectiveGiftOptions?.recipientUid) {
+          giftRecordData.restrictedRecipientUid = effectiveGiftOptions.recipientUid;
+        }
+        if (recipientMode === 'username' && recipientUsername?.trim()) {
+          giftRecordData.restrictedRecipientUsername = recipientUsername.trim().replace(/^@/, '');
+        }
+        if (recipientMode === 'email' && recipientEmail) {
+          giftRecordData.restrictedRecipientEmail = recipientEmail.toLowerCase();
+        }
+
+        const giftRecord: GiftRecord = cleanFirestoreData(giftRecordData);
 
         const recipientInfoLabel =
           recipientMode === 'username' && recipientUsername
@@ -1101,9 +1225,9 @@ function MainApp() {
           createdAt: nowIso,
         };
 
-        await setDoc(doc(db, 'gifts', giftId), giftRecord);
-        await setDoc(doc(db, 'receipts', receiptId), giftReceipt);
-        await setDoc(doc(db, 'transactions', txId), txRecord);
+        await setDoc(doc(db, 'gifts', giftId), cleanFirestoreData(giftRecord));
+        await setDoc(doc(db, 'receipts', receiptId), cleanFirestoreData(giftReceipt));
+        await setDoc(doc(db, 'transactions', txId), cleanFirestoreData(txRecord));
 
         await recordAuditLog(
           'APEX_GIFT_PURCHASE_CAPTURED',
@@ -1228,7 +1352,7 @@ function MainApp() {
           createdAt: nowIso,
         };
 
-        await setDoc(doc(db, 'receipts', receiptId), membershipReceipt);
+        await setDoc(doc(db, 'receipts', receiptId), cleanFirestoreData(membershipReceipt));
 
         await recordAuditLog(
           'APEX_SUBSCRIPTION_CAPTURED',
@@ -1302,7 +1426,7 @@ function MainApp() {
           createdAt: nowIso,
         };
 
-        await setDoc(doc(db, 'receipts', receiptId), cosmeticReceipt);
+        await setDoc(doc(db, 'receipts', receiptId), cleanFirestoreData(cosmeticReceipt));
 
         await recordAuditLog(
           'COSMETIC_PURCHASE_CAPTURED',
@@ -1426,7 +1550,7 @@ function MainApp() {
         entitlementExpiresAt: expiryIso,
         redeemedAt: nowIso,
       };
-      await setDoc(doc(db, 'gift_redemptions', redId), redRecord);
+      await setDoc(doc(db, 'gift_redemptions', redId), cleanFirestoreData(redRecord));
 
       // Update linked purchaser receipt's giftRedemptionStatus if present
       if (gift.receiptId) {
@@ -1748,7 +1872,10 @@ function MainApp() {
       const expiryIso = computeDurationExpiry(params.duration, now, billingCycle);
       const durationLabel = formatDurationLabel(params.duration, billingCycle);
 
-      const newGift: GiftRecord = {
+      const cleanUsername = params.restrictedRecipientUsername?.trim()?.replace(/^@/, '') || undefined;
+      const cleanEmail = params.restrictedRecipientEmail?.trim()?.toLowerCase() || undefined;
+
+      const newGiftData: any = {
         id: giftId,
         claimToken,
         tokenHash,
@@ -1760,8 +1887,6 @@ function MainApp() {
         duration: params.duration,
         billingCycle,
         personalMessage: params.personalMessage,
-        restrictedRecipientUsername: params.restrictedRecipientUsername,
-        restrictedRecipientEmail: params.restrictedRecipientEmail,
         isPaidGift: false,
         amountPaidINR: 0,
         receiptId,
@@ -1769,11 +1894,20 @@ function MainApp() {
         createdAt: nowIso,
       };
 
-      const recipientInfo = params.restrictedRecipientUsername
-        ? `@${params.restrictedRecipientUsername}`
-        : params.restrictedRecipientEmail || 'Unrestricted single-use link';
+      if (cleanUsername) {
+        newGiftData.restrictedRecipientUsername = cleanUsername;
+      }
+      if (cleanEmail) {
+        newGiftData.restrictedRecipientEmail = cleanEmail;
+      }
 
-      const complimentaryReceipt: ReceiptRecord = {
+      const newGift: GiftRecord = cleanFirestoreData(newGiftData);
+
+      const recipientInfo = cleanUsername
+        ? `@${cleanUsername}`
+        : cleanEmail || 'Unrestricted single-use link';
+
+      const complimentaryReceipt: ReceiptRecord = cleanFirestoreData({
         id: receiptId,
         receiptNumber,
         accessToken,
@@ -1837,10 +1971,10 @@ function MainApp() {
           },
         ],
         createdAt: nowIso,
-      };
+      });
 
-      await setDoc(doc(db, 'gifts', giftId), newGift);
-      await setDoc(doc(db, 'receipts', receiptId), complimentaryReceipt);
+      await setDoc(doc(db, 'gifts', giftId), cleanFirestoreData(newGift));
+      await setDoc(doc(db, 'receipts', receiptId), cleanFirestoreData(complimentaryReceipt));
 
       await recordAuditLog(
         'CREATE_OWNER_GIFT',
@@ -1888,7 +2022,7 @@ function MainApp() {
         createdAt: now.toISOString(),
       };
 
-      await setDoc(doc(db, 'owner_invitations', inviteId), record);
+      await setDoc(doc(db, 'owner_invitations', inviteId), cleanFirestoreData(record));
       await recordAuditLog(
         'CREATE_SECONDARY_OWNER_INVITE',
         `Created Secondary Owner invitation for ${record.email}`,
@@ -1947,7 +2081,7 @@ function MainApp() {
         createdAt: nowIso,
       };
 
-      await setDoc(doc(db, 'receipts', id), newReceipt);
+      await setDoc(doc(db, 'receipts', id), cleanFirestoreData(newReceipt));
       await recordAuditLog(
         'CREATE_OFFICIAL_RECEIPT',
         `Issued receipt ${receiptNumber} (${newReceipt.receiptType}) for ${newReceipt.customerEmail}`,
@@ -2099,14 +2233,16 @@ function MainApp() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#101A17] text-[#F0F5F1]">
-        <div className="w-11 h-11 rounded-xl bg-[#8BE2B8]/20 border border-[#8BE2B8]/40 flex items-center justify-center text-[#8BE2B8] animate-pulse mb-3">
-          <Sparkles className="w-5 h-5" />
-        </div>
-        <h2 className="text-sm font-bold tracking-tight">
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#09090D] text-[#F5F3FA]">
+        <img
+          src="/assets/aistudio/doomcord-icon_378efdf9.png"
+          alt="Doomcord"
+          className="w-14 h-14 object-contain mb-4 animate-pulse"
+        />
+        <h2 className="text-sm font-bold tracking-tight text-[#F5F3FA]">
           Initializing Doomcord Workspace...
         </h2>
-        <span className="text-xs text-[#9BAEA2] mt-1">
+        <span className="text-xs text-[#A19DAD] mt-1">
           Synchronizing real-time channels & APEX entitlements
         </span>
       </div>
@@ -2150,8 +2286,8 @@ function MainApp() {
     (activeView.type === 'orbs' && !!selectedOrb);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#101A17] text-[#F0F5F1]">
-      {/* 1. Primary Left Navigation Rail (68px) */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#09090D] text-[#F5F3FA]">
+      {/* 1. Primary Left Navigation Rail (60px) */}
       <LeftNavRail
         communities={communities}
         activeView={activeView}
@@ -2178,7 +2314,7 @@ function MainApp() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      {/* 2. Contextual Channel or DM Sidebar (260px) */}
+      {/* 2. Contextual Channel or DM Sidebar (240px) */}
       {!hideContextSidebar && (
         <ContextSidebar
           activeView={activeView}
@@ -2199,6 +2335,8 @@ function MainApp() {
           onSelectDm={(dmId) => setActiveView({ type: 'dm', dmId })}
           onSelectChannel={handleSelectChannel}
           onCreateChannel={(commId) => setCreateChannelCommunityId(commId)}
+          onBoostCommunity={handleBoostCommunity}
+          onOpenQuickSwitcher={() => setIsQuickSwitcherOpen(true)}
           onSelectOrbView={(view) => setActiveView(view)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onChangePresence={setPresence}
@@ -2206,15 +2344,15 @@ function MainApp() {
       )}
 
       {/* 3. Central Main Workspace View */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#101A17]">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#09090D]">
         {/* Global Platform Announcement Banner */}
         {systemConfig.globalAnnouncement && (
-          <div className="px-6 py-2 bg-[#192620] border-b border-white/[0.07] flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-[#F0F5F1]">
-              <Megaphone className="w-3.5 h-3.5 text-[#8BE2B8] shrink-0" />
+          <div className="px-6 py-2 bg-[#17171F] border-b border-[#282631] flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-[#F5F3FA]">
+              <Megaphone className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
               <span className="font-semibold">{systemConfig.globalAnnouncement}</span>
             </div>
-            <span className="text-[10px] font-mono text-[#8BE2B8] uppercase tracking-wider">
+            <span className="text-[10px] font-mono text-[#A47BFF] uppercase tracking-wider">
               System Broadcast
             </span>
           </div>
@@ -2304,6 +2442,8 @@ function MainApp() {
             onDeleteMessage={handleDeleteMessage}
             onToggleReaction={handleToggleReaction}
             onTogglePin={handleTogglePin}
+            onVotePoll={handleVotePoll}
+            onToggleBookmark={handleToggleBookmark}
             onMarkAsRead={handleMarkAsRead}
             showRightPanel={isRightPanelOpen}
             onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
@@ -2334,6 +2474,8 @@ function MainApp() {
               onDeleteMessage={handleDeleteMessage}
               onToggleReaction={handleToggleReaction}
               onTogglePin={handleTogglePin}
+              onVotePoll={handleVotePoll}
+              onToggleBookmark={handleToggleBookmark}
               onMarkAsRead={handleMarkAsRead}
               showRightPanel={isRightPanelOpen}
               onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
@@ -2342,19 +2484,19 @@ function MainApp() {
         ) : activeView.type === 'orbs' ? (
           activeView.viewMode === 'detail' && selectedOrb ? (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <div className="px-6 py-2.5 bg-[#141F1B] border-b border-white/[0.07] flex items-center justify-between">
+              <div className="px-6 py-2.5 bg-[#101014] border-b border-[#282631] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 text-[#8BE2B8]" />
-                  <span className="text-xs font-bold text-[#F0F5F1]">
+                  <Sparkles className="w-4 h-4 text-[#8957F5]" />
+                  <span className="text-xs font-bold text-[#F5F3FA]">
                     {selectedOrb.name} · Spatial Orb Lounge
                   </span>
-                  <span className="text-[11px] font-mono text-[#9BAEA2]">
+                  <span className="text-[11px] font-mono text-[#A19DAD]">
                     · {selectedOrb.category}
                   </span>
                 </div>
                 <button
                   onClick={() => setActiveView({ type: 'orbs', viewMode: 'explore' })}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#192620] hover:bg-[#1D2B24] text-xs font-semibold text-[#F0F5F1] border border-white/[0.07]"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#17171F] hover:bg-[#22212C] text-xs font-semibold text-[#F5F3FA] border border-[#282631]"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Return to Orbs Hub</span>
@@ -2371,6 +2513,8 @@ function MainApp() {
                 onDeleteMessage={handleDeleteMessage}
                 onToggleReaction={handleToggleReaction}
                 onTogglePin={handleTogglePin}
+                onVotePoll={handleVotePoll}
+                onToggleBookmark={handleToggleBookmark}
                 onMarkAsRead={handleMarkAsRead}
                 showRightPanel={isRightPanelOpen}
                 onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
@@ -2398,6 +2542,17 @@ function MainApp() {
             joinedCommunityIds={profile.joinedCommunities || []}
             onJoinCommunity={handleJoinCommunity}
             onCreateCommunity={() => setIsCreateCommunityOpen(true)}
+            onLaunchTemplate={(tpl) =>
+              handleCreateCommunity(
+                {
+                  name: tpl.name,
+                  description: tpl.description,
+                  themeColor: tpl.themeColor,
+                  isPublic: true,
+                },
+                tpl
+              )
+            }
           />
         ) : activeView.type === 'nitro' ? (
           <NitroView
@@ -2494,10 +2649,27 @@ function MainApp() {
           members={allUsers}
           onSelectMember={handleOpenDmWithUser}
           onViewProfile={(userId) => setActiveView({ type: 'profile', userId })}
+          onBoostCommunity={handleBoostCommunity}
         />
       )}
 
       {/* Modals */}
+      <QuickSwitcherModal
+        isOpen={isQuickSwitcherOpen}
+        onClose={() => setIsQuickSwitcherOpen(false)}
+        communities={communities}
+        directMessages={directMessages}
+        orbs={orbs}
+        allUsers={allUsers}
+        currentUser={profile}
+        onSelectChannel={handleSelectChannel}
+        onSelectDm={(dmId) => setActiveView({ type: 'dm', dmId })}
+        onStartDmWithUser={handleOpenDmWithUser}
+        onSelectView={(view) => setActiveView(view)}
+        onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+        onOpenCreateOrb={() => setIsCreateOrbOpen(true)}
+      />
+
       <SettingsModal
         currentUser={profile}
         isOpen={isSettingsOpen}

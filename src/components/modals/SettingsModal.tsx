@@ -59,9 +59,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [displayName, setDisplayName] = useState(currentUser.displayName);
   const [bio, setBio] = useState(currentUser.bio || '');
   const [statusMessage, setStatusMessage] = useState(currentUser.statusMessage || '');
-  const [accentColor, setAccentColor] = useState(currentUser.accentColor || '#8BE2B8');
+  const [accentColor, setAccentColor] = useState(currentUser.accentColor || '#8957F5');
   const [secondaryColor, setSecondaryColor] = useState(
-    currentUser.secondaryColor || '#192620'
+    currentUser.secondaryColor || '#17171F'
   );
   const [photoURL, setPhotoURL] = useState(currentUser.photoURL || '');
   const [bannerURL, setBannerURL] = useState(currentUser.bannerURL || '');
@@ -100,19 +100,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       await onChangePassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
-      setPwdFeedback('Account password updated and re-hashed on server.');
+      setPwdFeedback('Account password updated securely.');
     } catch (err: any) {
       setPwdError(err.message || 'Password update failed.');
     }
   };
 
   const ACCENT_PRESETS = [
-    { label: 'Mint', value: '#8BE2B8' },
+    { label: 'Doom Purple', value: '#8957F5' },
+    { label: 'Soft Lavender', value: '#A47BFF' },
+    { label: 'Light Violet', value: '#C4B1FF' },
     { label: 'Coral', value: '#E9987B' },
-    { label: 'Gold', value: '#D9BB79' },
-    { label: 'Emerald', value: '#6DD5A5' },
     { label: 'Sky', value: '#7CC6FE' },
-    { label: 'Rose', value: '#E57373' },
+    { label: 'Emerald', value: '#3BA55D' },
   ];
 
   const NAV_SECTIONS: {
@@ -135,18 +135,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="w-full max-w-4xl h-[660px] flex rounded-2xl bg-[#101A17] border border-white/[0.08] shadow-2xl overflow-hidden text-[#F0F5F1]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="w-full max-w-4xl h-[620px] flex rounded-2xl bg-[#09090D] border border-[#282631] shadow-2xl overflow-hidden text-[#F5F3FA]">
         {/* Left Settings Sidebar */}
-        <aside className="w-60 p-4 bg-[#111B17] border-r border-white/[0.06] flex flex-col justify-between shrink-0">
-          <div className="overflow-y-auto pr-1 space-y-4">
-            <div className="px-3 pt-1">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#718478] block">
-                System Preferences
-              </span>
-              <h3 className="text-sm font-display font-bold text-[#F0F5F1] mt-0.5">
+        <aside className="w-56 p-3.5 bg-[#0D0D12] border-r border-[#282631] flex flex-col justify-between shrink-0">
+          <div className="overflow-y-auto pr-1 space-y-3.5">
+            <div className="px-2 pt-1 flex items-center gap-2">
+              <img
+                src="/assets/aistudio/doomcord-icon_378efdf9.png"
+                alt="Doomcord"
+                className="w-5 h-5 object-contain"
+              />
+              <span className="text-xs font-semibold text-[#F5F3FA]">
                 Settings
-              </h3>
+              </span>
             </div>
 
             <nav className="space-y-0.5">
@@ -157,19 +159,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     key={sec.id}
                     onClick={() => setActiveSection(sec.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                       isActive
-                        ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                        : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                        ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                        : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                     }`}
                   >
                     <Icon
                       className={`w-3.5 h-3.5 ${
                         sec.id === 'apex'
-                          ? 'text-[#D9BB79]'
+                          ? 'text-[#A47BFF]'
                           : isActive
-                          ? 'text-[#8BE2B8]'
-                          : 'text-[#718478]'
+                          ? 'text-[#8957F5]'
+                          : 'text-[#706C7B]'
                       }`}
                     />
                     <span>{sec.label}</span>
@@ -179,10 +181,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </nav>
           </div>
 
-          <div className="pt-3 border-t border-white/[0.06]">
+          <div className="pt-2 border-t border-[#282631]">
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#E57373] hover:bg-[#E57373]/15 rounded-lg transition-colors"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-[#ED4245] hover:bg-[#ED4245]/15 rounded-md transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -191,30 +193,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </aside>
 
         {/* Right Settings Content */}
-        <div className="flex-1 p-8 flex flex-col justify-between overflow-y-auto bg-[#101A17]">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+        <div className="flex-1 p-6 flex flex-col justify-between overflow-y-auto bg-[#09090D]">
+          <div className="space-y-5">
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#282631]">
               <div>
-                <h2 className="text-lg font-display font-bold text-[#F0F5F1]">
+                <h2 className="text-sm font-semibold text-[#F5F3FA]">
                   {NAV_SECTIONS.find((s) => s.id === activeSection)?.label}
                 </h2>
-                <p className="text-xs text-[#9BAEA2] mt-0.5">
-                  Manage your Doomcord account configuration and real-time preferences
+                <p className="text-[11px] text-[#706C7B]">
+                  Manage your Doomcord account and workspace preferences
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620] flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-md text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center justify-center transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {activeSection === 'my_account' && (
-              <div className="space-y-5 max-w-xl">
-                <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-14 h-14 rounded-xl bg-[#1D2B24] border border-white/10 flex items-center justify-center text-base font-display font-bold text-[#8BE2B8] overflow-hidden">
+              <div className="space-y-4 max-w-xl">
+                <div className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-[#17171F] border border-[#282631] flex items-center justify-center text-sm font-bold text-[#8957F5] overflow-hidden">
                       {currentUser.photoURL ? (
                         <img
                           src={currentUser.photoURL}
@@ -227,43 +229,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-display font-bold text-[#F0F5F1]">
+                        <span className="text-xs font-semibold text-[#F5F3FA]">
                           {currentUser.displayName}
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-[#192620] border border-white/10 text-[10px] font-mono text-[#8BE2B8]">
+                        <span className="px-1.5 py-0.5 rounded bg-[#17171F] border border-[#282631] text-[9px] font-mono text-[#8957F5]">
                           {formatRoleLabel(currentUser.role, currentUser.uid)}
                         </span>
                       </div>
-                      <p className="text-xs font-mono text-[#9BAEA2] mt-0.5">
+                      <p className="text-[11px] font-mono text-[#A19DAD] mt-0.5">
                         @{currentUser.username} · {currentUser.email}
                       </p>
-                      <p className="text-[11px] font-mono text-[#718478] mt-1">
+                      <p className="text-[10px] font-mono text-[#706C7B] mt-0.5">
                         UUID: {currentUser.uid}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setActiveSection('profile')}
-                    className="h-8 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold shrink-0"
+                    className="h-7 px-3 rounded-md bg-[#8957F5] hover:bg-[#7a4be6] text-white text-xs font-medium shadow-sm transition-colors shrink-0"
                   >
                     Edit Profile
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                    <div className="text-[11px] font-mono uppercase text-[#718478]">
-                      Account Clearance
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-[#101014] border border-[#282631]">
+                    <div className="text-[10px] font-mono uppercase text-[#706C7B]">
+                      Role Clearance
                     </div>
-                    <div className="text-sm font-semibold text-[#F0F5F1] mt-1">
+                    <div className="text-xs font-semibold text-[#F5F3FA] mt-0.5">
                       {formatRoleLabel(currentUser.role, currentUser.uid)}
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                    <div className="text-[11px] font-mono uppercase text-[#718478]">
-                      APEX Tier
+                  <div className="p-3 rounded-lg bg-[#101014] border border-[#282631]">
+                    <div className="text-[10px] font-mono uppercase text-[#706C7B]">
+                      Membership
                     </div>
-                    <div className="text-sm font-semibold text-[#D9BB79] mt-1">
+                    <div className="text-xs font-semibold text-[#A47BFF] mt-0.5">
                       {isOwner || currentUser.nitroTier === 'nitro'
                         ? 'DOOMCORD APEX+'
                         : currentUser.nitroTier === 'basic'
@@ -276,35 +278,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeSection === 'profile' && (
-              <form onSubmit={handleSaveProfile} className="space-y-4 max-w-xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form onSubmit={handleSaveProfile} className="space-y-3.5 max-w-xl">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                       Display Name
                     </label>
                     <input
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full h-9 bg-[#141F1B] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none focus:border-[#8BE2B8]"
+                      className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
-                      Custom Status Message
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1">
+                      Status Message
                     </label>
                     <input
                       type="text"
                       value={statusMessage}
                       onChange={(e) => setStatusMessage(e.target.value)}
-                      placeholder="What are you working on?"
-                      className="w-full h-9 bg-[#141F1B] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none focus:border-[#8BE2B8]"
+                      placeholder="What's your status?"
+                      className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                     Avatar Image URL
                   </label>
                   <input
@@ -312,12 +314,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={photoURL}
                     onChange={(e) => setPhotoURL(e.target.value)}
                     placeholder="https://..."
-                    className="w-full h-9 bg-[#141F1B] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none focus:border-[#8BE2B8] font-mono"
+                    className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5] font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                     Banner Image URL
                   </label>
                   <input
@@ -325,33 +327,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={bannerURL}
                     onChange={(e) => setBannerURL(e.target.value)}
                     placeholder="https://..."
-                    className="w-full h-9 bg-[#141F1B] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none focus:border-[#8BE2B8] font-mono"
+                    className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5] font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                     Biography
                   </label>
                   <textarea
                     rows={3}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Write a short bio..."
-                    className="w-full bg-[#141F1B] text-[#F0F5F1] text-xs p-3 rounded-lg border border-white/[0.08] outline-none focus:border-[#8BE2B8] resize-none"
+                    placeholder="Tell others about yourself..."
+                    className="w-full bg-[#101014] text-[#F5F3FA] text-xs p-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5] resize-none"
                   />
                 </div>
 
-                <div className="pt-2 flex items-center gap-3">
+                <div className="pt-1 flex items-center gap-2.5">
                   <button
                     type="submit"
-                    className="h-9 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] text-xs font-semibold transition-colors"
+                    className="h-8 px-3.5 rounded-md bg-[#8957F5] hover:bg-[#7a4be6] text-white text-xs font-medium transition-colors shadow-sm"
                   >
-                    Save Profile Changes
+                    Save Changes
                   </button>
                   {savedFeedback && (
-                    <span className="text-xs text-[#8BE2B8] flex items-center gap-1 font-medium">
-                      <Check className="w-3.5 h-3.5" /> Saved to Firestore!
+                    <span className="text-xs text-[#8957F5] flex items-center gap-1 font-medium">
+                      <Check className="w-3.5 h-3.5" /> Saved!
                     </span>
                   )}
                 </div>
@@ -359,14 +361,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeSection === 'security' && (
-              <div className="space-y-4 max-w-xl">
+              <div className="space-y-3 max-w-xl">
                 <form
                   onSubmit={handlePasswordChange}
-                  className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-3.5"
+                  className="p-4 rounded-xl bg-[#101014] border border-[#282631] space-y-3"
                 >
-                  <div className="flex items-center gap-2 font-display font-bold text-[#F0F5F1] text-sm">
-                    <Lock className="w-4 h-4 text-[#8BE2B8]" />
-                    <span>Update Account Password</span>
+                  <div className="flex items-center gap-1.5 text-[#F5F3FA] text-xs font-semibold">
+                    <Lock className="w-3.5 h-3.5 text-[#8957F5]" />
+                    <span>Change Account Password</span>
                   </div>
 
                   <input
@@ -374,24 +376,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     placeholder="Current password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full h-9 bg-[#101A17] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none"
+                    className="w-full h-8 bg-[#17171F] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                     required
                   />
                   <input
                     type="password"
-                    placeholder="New strong password (min 6 characters)"
+                    placeholder="New password (min 6 chars)"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full h-9 bg-[#101A17] text-[#F0F5F1] text-xs px-3 rounded-lg border border-white/[0.08] outline-none"
+                    className="w-full h-8 bg-[#17171F] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                     required
                   />
-                  {pwdError && <div className="text-xs text-[#E57373]">{pwdError}</div>}
+                  {pwdError && <div className="text-xs text-[#ED4245]">{pwdError}</div>}
                   {pwdFeedback && (
-                    <div className="text-xs text-[#8BE2B8]">{pwdFeedback}</div>
+                    <div className="text-xs text-[#8957F5]">{pwdFeedback}</div>
                   )}
                   <button
                     type="submit"
-                    className="h-9 px-4 rounded-lg font-semibold text-xs text-[#101A17] bg-[#8BE2B8]"
+                    className="h-8 px-3 rounded-md font-medium text-xs text-white bg-[#8957F5] hover:bg-[#7a4be6] shadow-sm"
                   >
                     Update Password
                   </button>
@@ -400,33 +402,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeSection === 'privacy' && (
-              <div className="space-y-3 max-w-xl text-xs">
+              <div className="space-y-2.5 max-w-xl text-xs">
                 {[
                   {
-                    title: 'Direct Message Read Receipts',
-                    desc: 'Show checkmarks when you have read incoming direct messages.',
+                    title: 'Message Read Receipts',
+                    desc: 'Display read indicators for direct messages.',
                   },
                   {
-                    title: 'Allow Friend Requests from Community Members',
-                    desc: 'Let members in shared communities send you friend invitations.',
+                    title: 'Allow Direct Messages from Community Members',
+                    desc: 'Allow users in shared spaces to contact you directly.',
                   },
                   {
-                    title: 'Online Presence Visibility',
-                    desc: 'Display your real-time presence indicator to connected friends.',
+                    title: 'Presence Indicator',
+                    desc: 'Share online status with friends.',
                   },
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4"
+                    className="p-3 rounded-lg bg-[#101014] border border-[#282631] flex items-center justify-between gap-3"
                   >
                     <div>
-                      <div className="font-semibold text-[#F0F5F1]">{item.title}</div>
-                      <p className="text-[#9BAEA2] mt-0.5">{item.desc}</p>
+                      <div className="font-medium text-[#F5F3FA]">{item.title}</div>
+                      <p className="text-[11px] text-[#706C7B] mt-0.5">{item.desc}</p>
                     </div>
                     <input
                       type="checkbox"
                       defaultChecked
-                      className="accent-[#8BE2B8] w-4 h-4 cursor-pointer"
+                      className="accent-[#8957F5] w-4 h-4 cursor-pointer"
                     />
                   </div>
                 ))}
@@ -434,10 +436,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeSection === 'appearance' && (
-              <div className="space-y-5 max-w-xl text-xs">
-                <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-3">
-                  <div className="font-semibold text-[#F0F5F1]">
-                    Profile & Workspace Accent Colour
+              <div className="space-y-4 max-w-xl text-xs">
+                <div className="p-4 rounded-xl bg-[#101014] border border-[#282631] space-y-2.5">
+                  <div className="font-semibold text-[#F5F3FA]">
+                    Accent Theme
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     {ACCENT_PRESETS.map((p) => (
@@ -448,14 +450,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           setAccentColor(p.value);
                           onUpdateProfile({ accentColor: p.value });
                         }}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs transition-colors ${
                           accentColor === p.value
-                            ? 'border-[#8BE2B8] text-[#F0F5F1] font-semibold bg-[#192620]'
-                            : 'border-white/[0.07] text-[#9BAEA2] hover:border-white/20'
+                            ? 'border-[#8957F5] text-[#F5F3FA] font-medium bg-[#17171F]'
+                            : 'border-[#282631] text-[#A19DAD] hover:border-[#8957F5]/40'
                         }`}
                       >
                         <span
-                          className="w-3 h-3 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full"
                           style={{ backgroundColor: p.value }}
                         />
                         <span>{p.label}</span>
@@ -467,46 +469,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeSection === 'apex' && (
-              <div className="space-y-4 max-w-xl text-xs">
-                <div className="p-5 rounded-xl bg-[#141F1B] border border-[#D9BB79]/30 space-y-3">
+              <div className="space-y-3.5 max-w-xl text-xs">
+                <div className="p-4 rounded-xl bg-[#101014] border border-[#8957F5]/30 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-display font-bold text-[#F0F5F1] text-sm">
-                      Current Membership:{' '}
+                    <span className="font-semibold text-[#F5F3FA] text-xs">
+                      Membership:{' '}
                       {isOwner || currentUser.nitroTier === 'nitro'
                         ? 'DOOMCORD APEX+'
                         : currentUser.nitroTier === 'basic'
                         ? 'DOOMCORD APEX'
                         : 'DOOMCORD FREE'}
                     </span>
-                    <Crown className="w-4 h-4 text-[#D9BB79]" />
+                    <Crown className="w-4 h-4 text-[#A47BFF]" />
                   </div>
                   {isOwner && (
-                    <div className="text-[11px] font-mono text-[#D9BB79]">
-                      Entitlement: OWNER_PERMANENT_APEX · LIFETIME — NO EXPIRATION
+                    <div className="text-[10px] font-mono text-[#C4B1FF]">
+                      Entitlement: OWNER_PERMANENT_APEX · LIFETIME
                     </div>
                   )}
-                  <p className="text-[#9BAEA2]">
+                  <p className="text-[#A19DAD]">
                     Owned Cosmetics: {currentUser.ownedCosmetics?.length || 0} item(s)
                   </p>
-                  <div className="flex items-center gap-2.5 pt-2">
+                  <div className="flex items-center gap-2 pt-1.5">
                     <button
                       onClick={() => {
                         onClose();
                         onOpenNitro();
                       }}
-                      className="h-9 px-4 rounded-lg font-semibold text-[#101A17] bg-[#D9BB79]"
+                      className="h-8 px-3 rounded-md font-medium text-white bg-[#8957F5] hover:bg-[#7a4be6] shadow-sm transition-colors"
                     >
-                      Open DOOMCORD APEX Hub
+                      APEX Hub
                     </button>
                     <button
                       onClick={() => {
                         onClose();
                         onOpenShop();
                       }}
-                      className="h-9 px-4 rounded-lg font-medium text-[#F0F5F1] bg-[#192620] border border-white/10 flex items-center gap-1.5"
+                      className="h-8 px-3 rounded-md font-medium text-[#F5F3FA] bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center gap-1.5 transition-colors"
                     >
-                      <ShoppingBag className="w-3.5 h-3.5 text-[#8BE2B8]" />
-                      <span>Open Cosmetics Shop</span>
+                      <ShoppingBag className="w-3.5 h-3.5 text-[#8957F5]" />
+                      <span>Cosmetics Shop</span>
                     </button>
                   </div>
                 </div>
@@ -519,25 +521,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               activeSection === 'communities' ||
               activeSection === 'orbs' ||
               activeSection === 'connected_accounts') && (
-              <div className="space-y-3 max-w-xl text-xs">
-                <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-2">
-                  <div className="font-semibold text-[#F0F5F1] capitalize">
-                    {activeSection.replace('_', ' ')} Configuration
+              <div className="space-y-2.5 max-w-xl text-xs">
+                <div className="p-4 rounded-xl bg-[#101014] border border-[#282631] space-y-1.5">
+                  <div className="font-semibold text-[#F5F3FA] capitalize">
+                    {activeSection.replace('_', ' ')}
                   </div>
-                  <p className="text-[#9BAEA2] leading-relaxed">
-                    Real-time synchronization is active for your account ({currentUser.email}). All changes to your {activeSection.replace('_', ' ')} settings persist automatically to Firestore.
+                  <p className="text-[#A19DAD] leading-relaxed">
+                    Account settings for {currentUser.email} sync in real time across Doomcord services.
                   </p>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-white/[0.06]">
+          <div className="flex justify-end pt-3 border-t border-[#282631]">
             <button
               onClick={onClose}
-              className="h-9 px-4 text-xs font-semibold text-[#F0F5F1] bg-[#192620] hover:bg-[#24362C] rounded-lg border border-white/[0.08] transition-colors"
+              className="h-8 px-3.5 text-xs font-medium text-[#F5F3FA] bg-[#17171F] hover:bg-[#22212C] rounded-md border border-[#282631] transition-colors"
             >
-              Close Settings
+              Done
             </button>
           </div>
         </div>

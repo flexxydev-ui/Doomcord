@@ -13,10 +13,47 @@ import {
 
 export const ROOT_OWNER_UUID = '00000000-0000-4000-8000-000000000001';
 export const ROOT_OWNER_EMAIL = 'razorpay@admin.doom';
+export const OWNER_EMAILS = [
+  'razorpay@admin.doom',
+  'kshriyans17@gmail.com',
+  'adrenoxshriyans@gmail.com',
+];
+
+export function isRootOwnerEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return OWNER_EMAILS.includes(email.trim().toLowerCase());
+}
 
 /**
- * Identifies the Main Owner strictly using the protected `root_owner` role
- * and its actual authentication UUID (ROOT_OWNER_UUID).
+ * Recursively cleans an object or array for Firestore serialization:
+ * - Completely removes any object keys where value === undefined
+ * - Filters out undefined items in arrays
+ * - Preserves Date, null, boolean, number, string, and plain objects
+ */
+export function cleanFirestoreData<T>(input: T): T {
+  if (input === null || input === undefined || typeof input !== 'object') {
+    return input;
+  }
+  if (input instanceof Date) {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    return input
+      .filter((v) => v !== undefined)
+      .map((item) => cleanFirestoreData(item)) as unknown as T;
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(input as Record<string, any>)) {
+    if (value !== undefined) {
+      result[key] = cleanFirestoreData(value);
+    }
+  }
+  return result as T;
+}
+
+/**
+ * Identifies the Main Owner strictly using the protected `root_owner` role,
+ * the verified authentication UUID (ROOT_OWNER_UUID), or recognized owner emails.
  */
 export function isRootOwner(
   userOrUid?: Partial<UserProfile> | string | null
@@ -26,7 +63,9 @@ export function isRootOwner(
     return userOrUid === ROOT_OWNER_UUID;
   }
   return (
-    userOrUid.uid === ROOT_OWNER_UUID || userOrUid.role === 'root_owner'
+    userOrUid.uid === ROOT_OWNER_UUID ||
+    userOrUid.role === 'root_owner' ||
+    isRootOwnerEmail(userOrUid.email)
   );
 }
 
@@ -57,7 +96,7 @@ export function formatRoleLabel(role?: PlatformRole, uid?: string): string {
  * Generates a clean, deterministic SVG data-URI avatar from a user's display name or username.
  * Strictly avoids any fake external cartoon personas.
  */
-export function generateInitialsAvatar(name: string, bgHex = '#0f392b'): string {
+export function generateInitialsAvatar(name: string, bgHex = '#22212C'): string {
   const clean = (name || 'U').trim();
   const parts = clean.split(/\s+/);
   const initials =
@@ -69,11 +108,11 @@ export function generateInitialsAvatar(name: string, bgHex = '#0f392b'): string 
     <defs>
       <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="${bgHex}" />
-        <stop offset="100%" stop-color="#051c15" />
+        <stop offset="100%" stop-color="#101014" />
       </linearGradient>
     </defs>
     <rect width="128" height="128" rx="28" fill="url(#g)" />
-    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#a7f3d0" font-family="system-ui, sans-serif" font-weight="700" font-size="48">${initials}</text>
+    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#C4B1FF" font-family="system-ui, sans-serif" font-weight="700" font-size="48">${initials}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

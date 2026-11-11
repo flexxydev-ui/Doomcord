@@ -73,50 +73,51 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
     currentUser.role === 'admin';
 
   return (
-    <aside className="w-[68px] h-full flex flex-col items-center py-3.5 bg-[#111B17] border-r border-white/[0.06] select-none shrink-0 z-30">
-      {/* Doomcord Architectural Brand Mark -> Home Dashboard */}
+    <aside className="w-[60px] h-full flex flex-col items-center py-3 bg-[#0D0D12] border-r border-[#282631] select-none shrink-0 z-30">
+      {/* Official Doomcord Logo -> Home */}
       <button
         onClick={onNavigateDashboard}
-        title="Doomcord Home Dashboard"
-        className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all mb-3 border ${
-          isDashboardActive
-            ? 'bg-[#8BE2B8] text-[#101A17] border-[#8BE2B8] shadow-md'
-            : 'bg-[#192620] text-[#8BE2B8] border-white/[0.08] hover:bg-[#24362C]'
-        }`}
+        title="Doomcord Home"
+        className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-opacity hover:opacity-90 mb-2.5 shrink-0"
       >
-        <span className="font-display font-extrabold text-lg tracking-tight leading-none">
-          D
-        </span>
+        <img
+          src="/assets/aistudio/doomcord-icon_378efdf9.png"
+          alt="Doomcord"
+          className="w-8 h-8 object-contain"
+        />
         {isDashboardActive && (
-          <span className="absolute -left-[13px] top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8BE2B8] rounded-r" />
+          <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#8957F5] rounded-r" />
         )}
       </button>
 
-      <div className="w-7 h-[1px] bg-white/[0.07] mb-3" />
+      <div className="w-5 h-[1px] bg-[#282631] mb-2" />
 
-      {/* Primary Platform Navigation Rail */}
-      <nav className="flex flex-col items-center gap-1.5 mb-3">
-        {/* Home Command */}
+      {/* Primary Navigation Icons */}
+      <nav className="flex flex-col items-center gap-1 mb-2">
+        {/* Home */}
         <button
           onClick={onNavigateDashboard}
-          title="Home Dashboard"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="Home"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isDashboardActive
-              ? 'bg-[#24362C] text-[#8BE2B8]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <Home className="w-4 h-4" />
+          {isDashboardActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
         </button>
 
-        {/* Friends & Direct Messages */}
+        {/* Messages & Friends */}
         <button
           onClick={onNavigateHome}
-          title="Friends & Direct Messages"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="Direct Messages"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isFriendsOrDmActive
-              ? 'bg-[#24362C] text-[#8BE2B8]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           {activeView.type === 'dm' ? (
@@ -124,105 +125,135 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
           ) : (
             <Users className="w-4 h-4" />
           )}
+          {isFriendsOrDmActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
           {unreadDmCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] text-[10px] font-mono font-bold tabular-nums">
-              {unreadDmCount}
-            </span>
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#8957F5]" />
           )}
         </button>
 
-        {/* Orbs Discovery & 3D Space */}
+        {/* Communities Directory */}
+        <button
+          onClick={onNavigateExplore}
+          title="Explore Communities"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+            isExploreActive
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          {isExploreActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
+        </button>
+
+        {/* Orbs Discovery */}
         <button
           onClick={onNavigateOrbs}
-          title="Orbs — Interest Spaces"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="Orbs — Spatial Realms"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isOrbsActive
-              ? 'bg-[#24362C] text-[#E9987B]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <Compass className="w-4 h-4" />
+          {isOrbsActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
         </button>
 
-        {/* Notifications Center */}
+        {/* Notifications */}
         <button
           onClick={onNavigateNotifications}
-          title="Notifications Inbox"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="Notifications"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isNotificationsActive
-              ? 'bg-[#24362C] text-[#8BE2B8]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <Bell className="w-4 h-4" />
+          {isNotificationsActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
           {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] text-[10px] font-mono font-bold tabular-nums">
-              {notificationCount}
-            </span>
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#8957F5]" />
           )}
         </button>
 
         {/* DOOMCORD APEX */}
         <button
           onClick={onNavigateNitro}
-          title="DOOMCORD APEX Membership"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="DOOMCORD APEX"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isNitroActive
-              ? 'bg-[#D9BB79] text-[#101A17]'
-              : 'text-[#D9BB79] hover:bg-[#192620]'
+              ? 'bg-[#8957F5] text-white'
+              : 'text-[#C4B1FF] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <Crown className="w-4 h-4" />
+          {isNitroActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
         </button>
 
         {/* Cosmetics Shop */}
         <button
           onClick={onNavigateShop}
-          title="Cosmetics & Customization Shop"
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+          title="Cosmetics Shop"
+          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
             isShopActive
-              ? 'bg-[#24362C] text-[#8BE2B8]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <ShoppingBag className="w-4 h-4" />
+          {isShopActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
         </button>
 
-        {/* Admin Console */}
+        {/* Admin Console (Owner & Admin only) */}
         {isAdminOrOwner && (
           <button
             onClick={onNavigateAdmin}
-            title="Platform Administration Console"
-            className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            title="Administration Console"
+            className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
               isAdminActive
-                ? 'bg-[#8BE2B8] text-[#101A17]'
-                : 'text-[#8BE2B8] bg-[#8BE2B8]/10 hover:bg-[#8BE2B8]/20'
+                ? 'bg-[#8957F5] text-white'
+                : 'text-[#8957F5] hover:bg-[#17171F]'
             }`}
           >
             <Shield className="w-4 h-4" />
+            {isAdminActive && (
+              <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            )}
           </button>
         )}
       </nav>
 
-      <div className="w-7 h-[1px] bg-white/[0.07] mb-3" />
+      <div className="w-5 h-[1px] bg-[#282631] mb-2" />
 
-      {/* Communities Switcher Rail */}
-      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2 px-2">
+      {/* Communities Quick Switcher Rail */}
+      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-1.5 px-1.5 scrollbar-none">
         {communities.map((comm) => {
           const isActive =
             activeView.type === 'community' && activeView.communityId === comm.id;
           return (
             <div key={comm.id} className="relative flex items-center justify-center w-full">
               {isActive && (
-                <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8BE2B8] rounded-r" />
+                <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#8957F5] rounded-r" />
               )}
               <button
                 onClick={() => onSelectCommunity(comm.id)}
                 title={comm.name}
-                className={`w-10 h-10 rounded-xl overflow-hidden transition-all border flex items-center justify-center ${
+                className={`w-9 h-9 rounded-lg overflow-hidden transition-all flex items-center justify-center text-xs font-semibold ${
                   isActive
-                    ? 'border-[#8BE2B8] shadow-sm'
-                    : 'border-white/[0.07] hover:border-white/25'
+                    ? 'ring-1 ring-[#8957F5] text-white'
+                    : 'text-[#A19DAD] hover:text-[#F5F3FA] bg-[#17171F] hover:bg-[#22212C] border border-[#282631]'
                 }`}
               >
                 {comm.iconUrl ? (
@@ -232,59 +263,44 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center font-display font-bold text-xs text-[#101A17]"
-                    style={{ backgroundColor: comm.themeColor || '#8BE2B8' }}
-                  >
-                    {comm.name.slice(0, 2).toUpperCase()}
-                  </div>
+                  <span>{comm.name.slice(0, 2).toUpperCase()}</span>
                 )}
               </button>
             </div>
           );
         })}
 
-        {/* Create Community */}
+        {/* Create Community Quick Action */}
         <button
           onClick={onCreateCommunity}
           title="Create Community"
-          className="w-10 h-10 rounded-xl bg-[#192620] hover:bg-[#24362C] border border-dashed border-white/15 hover:border-[#8BE2B8] text-[#8BE2B8] flex items-center justify-center transition-colors shrink-0"
+          className="w-9 h-9 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-dashed border-[#282631] hover:border-[#8957F5] text-[#A19DAD] hover:text-[#8957F5] flex items-center justify-center transition-colors shrink-0"
         >
-          <Plus className="w-4 h-4" />
-        </button>
-
-        {/* Public Communities Directory */}
-        <button
-          onClick={onNavigateExplore}
-          title="Explore Communities Directory"
-          className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
-            isExploreActive
-              ? 'bg-[#24362C] border-[#8BE2B8] text-[#8BE2B8]'
-              : 'bg-[#192620] border-white/[0.07] text-[#9BAEA2] hover:text-[#F0F5F1]'
-          }`}
-        >
-          <Globe className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Bottom Profile & Settings */}
-      <div className="flex flex-col items-center gap-1.5 pt-3 border-t border-white/[0.06] w-full">
+      <div className="flex flex-col items-center gap-1 pt-2.5 border-t border-[#282631] w-full shrink-0">
         <button
           onClick={onNavigateProfile}
-          title="My User Profile"
-          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+          title="My Profile"
+          className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
             isProfileActive
-              ? 'bg-[#24362C] text-[#8BE2B8]'
-              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+              ? 'bg-[#22212C] text-[#8957F5]'
+              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
           }`}
         >
           <User className="w-4 h-4" />
+          {isProfileActive && (
+            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          )}
         </button>
 
         <button
           onClick={onOpenSettings}
           title="Settings"
-          className="w-9 h-9 rounded-lg text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620] flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-lg text-[#A19DAD] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center justify-center transition-colors"
         >
           <Settings className="w-4 h-4" />
         </button>

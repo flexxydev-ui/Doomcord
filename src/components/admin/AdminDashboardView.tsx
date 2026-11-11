@@ -247,8 +247,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     useState<CosmeticCategory>('Avatar Decorations');
   const [newCosmPrice, setNewCosmPrice] = useState(39);
   const [newCosmRarity, setNewCosmRarity] = useState<CosmeticRarity>('Rare');
-  const [newCosmColor1, setNewCosmColor1] = useState('#8BE2B8');
-  const [newCosmColor2, setNewCosmColor2] = useState('#E9987B');
+  const [newCosmColor1, setNewCosmColor1] = useState('#8957F5');
+  const [newCosmColor2, setNewCosmColor2] = useState('#C4B1FF');
 
   useEffect(() => {
     fetch('/api/razorpay/status')
@@ -263,13 +263,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
   if (!isAdminOrAbove(currentUser)) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-[#101A17]">
-        <div className="max-w-md p-6 rounded-xl bg-[#141F1B] border border-[#E57373]/40 text-center space-y-2">
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#09090D]">
+        <div className="max-w-md p-6 rounded-xl bg-[#101014] border border-[#E57373]/40 text-center space-y-2">
           <AlertTriangle className="w-8 h-8 text-[#E57373] mx-auto" />
-          <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+          <h2 className="text-base font-display font-bold text-[#F5F3FA]">
             Access Restricted
           </h2>
-          <p className="text-xs text-[#9BAEA2]">
+          <p className="text-xs text-[#A19DAD]">
             This console is restricted to authorized Doomcord Owners and Administrators.
           </p>
         </div>
@@ -478,7 +478,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       priceINR: Number(newCosmPrice) || 39,
       rarity: newCosmRarity,
       nitroEligible: 'basic',
-      cssPreviewClass: 'ring-2 ring-[#8BE2B8]',
+      cssPreviewClass: 'ring-2 ring-[#8957F5]',
       previewColorPrimary: newCosmColor1,
       previewColorSecondary: newCosmColor2,
       enabled: true,
@@ -509,37 +509,41 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#101A17] text-[#F0F5F1] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#09090D] text-[#F5F3FA] overflow-hidden">
       {/* Header */}
-      <header className="px-8 py-4 bg-[#101A17] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-4 shrink-0">
+      <header className="px-8 py-4 bg-[#09090D] border-b border-[#282631] flex flex-wrap items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#192620] border border-[#8BE2B8]/30 flex items-center justify-center text-[#8BE2B8]">
-            <Shield className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-[#17171F] border border-[#8957F5]/30 flex items-center justify-center p-2">
+            <img
+              src="/assets/aistudio/doomcord-icon_378efdf9.png"
+              alt="Doomcord"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-base font-display font-bold text-[#F0F5F1]">
+              <h1 className="text-base font-display font-bold text-[#F5F3FA]">
                 Doomcord Platform Administration Console
               </h1>
-              <span className="px-2 py-0.5 rounded bg-[#192620] border border-[#D9BB79]/30 text-[10px] font-mono uppercase text-[#D9BB79]">
+              <span className="px-2 py-0.5 rounded bg-[#17171F] border border-[#A47BFF]/30 text-[10px] font-mono uppercase text-[#A47BFF]">
                 {formatRoleLabel(currentUser.role, currentUser.uid)}
               </span>
             </div>
-            <p className="text-xs font-mono text-[#718478]">
+            <p className="text-xs font-mono text-[#706C7B]">
               {currentUser.email} · UUID: {currentUser.uid}
             </p>
           </div>
         </div>
 
         {statusMessage && (
-          <div className="px-4 py-2 rounded-lg bg-[#192620] border border-[#8BE2B8]/40 text-xs font-medium text-[#8BE2B8]">
+          <div className="px-4 py-2 rounded-lg bg-[#17171F] border border-[#8957F5]/40 text-xs font-medium text-[#8957F5]">
             {statusMessage}
           </div>
         )}
       </header>
 
       {/* Navigation Tabs */}
-      <div className="px-8 py-2.5 bg-[#141F1B] border-b border-white/[0.06] flex items-center gap-1.5 overflow-x-auto shrink-0">
+      <div className="px-8 py-2.5 bg-[#101014] border-b border-[#282631] flex items-center gap-1.5 overflow-x-auto shrink-0">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.id;
@@ -549,11 +553,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-2 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 active
-                  ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620]'
+                  ? 'bg-[#22212C] text-[#F5F3FA] font-semibold'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA] hover:bg-[#17171F]'
               }`}
             >
-              <Icon className="w-3.5 h-3.5 text-[#8BE2B8]" />
+              <Icon className="w-3.5 h-3.5 text-[#8957F5]" />
               <span>{t.label}</span>
             </button>
           );
@@ -566,50 +570,50 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                <span className="text-[11px] font-mono uppercase text-[#718478]">
+              <div className="p-5 rounded-xl bg-[#101014] border border-[#282631]">
+                <span className="text-[11px] font-mono uppercase text-[#706C7B]">
                   Verified Revenue (INR)
                 </span>
-                <div className="text-2xl font-display font-bold text-[#8BE2B8] mt-1 tabular-nums">
+                <div className="text-2xl font-display font-bold text-[#8957F5] mt-1 tabular-nums">
                   ₹{totalRevenueINR.toLocaleString('en-IN')}
                 </div>
-                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                <span className="text-[11px] text-[#A19DAD] mt-1 block tabular-nums">
                   {verifiedTransactions.length} verified transactions
                 </span>
               </div>
 
-              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                <span className="text-[11px] font-mono uppercase text-[#718478]">
+              <div className="p-5 rounded-xl bg-[#101014] border border-[#282631]">
+                <span className="text-[11px] font-mono uppercase text-[#706C7B]">
                   Active APEX Members
                 </span>
-                <div className="text-2xl font-display font-bold text-[#D9BB79] mt-1 tabular-nums">
+                <div className="text-2xl font-display font-bold text-[#A47BFF] mt-1 tabular-nums">
                   {activeNitroUsersCount}
                 </div>
-                <span className="text-[11px] text-[#9BAEA2] mt-1 block">
+                <span className="text-[11px] text-[#A19DAD] mt-1 block">
                   Includes Root Owner permanent APEX+
                 </span>
               </div>
 
-              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                <span className="text-[11px] font-mono uppercase text-[#718478]">
+              <div className="p-5 rounded-xl bg-[#101014] border border-[#282631]">
+                <span className="text-[11px] font-mono uppercase text-[#706C7B]">
                   Issued Official Receipts
                 </span>
-                <div className="text-2xl font-display font-bold text-[#F0F5F1] mt-1 tabular-nums">
+                <div className="text-2xl font-display font-bold text-[#F5F3FA] mt-1 tabular-nums">
                   {receipts.length}
                 </div>
-                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                <span className="text-[11px] text-[#A19DAD] mt-1 block tabular-nums">
                   {gifts.length} total gifts generated
                 </span>
               </div>
 
-              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
-                <span className="text-[11px] font-mono uppercase text-[#718478]">
+              <div className="p-5 rounded-xl bg-[#101014] border border-[#282631]">
+                <span className="text-[11px] font-mono uppercase text-[#706C7B]">
                   Registered Accounts
                 </span>
-                <div className="text-2xl font-display font-bold text-[#F0F5F1] mt-1 tabular-nums">
+                <div className="text-2xl font-display font-bold text-[#F5F3FA] mt-1 tabular-nums">
                   {users.length}
                 </div>
-                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                <span className="text-[11px] text-[#A19DAD] mt-1 block tabular-nums">
                   {communities.length} communities · {orbs.length} Orbs
                 </span>
               </div>
@@ -619,39 +623,39 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => setActiveTab('owners')}
-                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+                className="p-5 rounded-xl bg-[#101014] hover:bg-[#17171F] border border-[#282631] text-left transition-colors"
               >
-                <UserCheck className="w-5 h-5 text-[#D9BB79] mb-2" />
-                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                <UserCheck className="w-5 h-5 text-[#A47BFF] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                   Owner Hierarchy (#35)
                 </h3>
-                <p className="text-xs text-[#9BAEA2] mt-1">
+                <p className="text-xs text-[#A19DAD] mt-1">
                   Invite Secondary Owners and configure granular permissions while Root Owner remains protected.
                 </p>
               </button>
 
               <button
                 onClick={() => setActiveTab('gifts')}
-                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+                className="p-5 rounded-xl bg-[#101014] hover:bg-[#17171F] border border-[#282631] text-left transition-colors"
               >
-                <Gift className="w-5 h-5 text-[#8BE2B8] mb-2" />
-                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                <Gift className="w-5 h-5 text-[#8957F5] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                   Unlimited Gifting Studio (#28)
                 </h3>
-                <p className="text-xs text-[#9BAEA2] mt-1">
+                <p className="text-xs text-[#A19DAD] mt-1">
                   Generate ₹0 complimentary APEX, Lifetime APEX+, and cosmetic gift links for any user.
                 </p>
               </button>
 
               <button
                 onClick={() => setActiveTab('receipts')}
-                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+                className="p-5 rounded-xl bg-[#101014] hover:bg-[#17171F] border border-[#282631] text-left transition-colors"
               >
-                <Receipt className="w-5 h-5 text-[#E9987B] mb-2" />
-                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                <Receipt className="w-5 h-5 text-[#C4B1FF] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                   Finance → Receipts (#36)
                 </h3>
-                <p className="text-xs text-[#9BAEA2] mt-1">
+                <p className="text-xs text-[#A19DAD] mt-1">
                   Create, customize, print, and manage official DC-2026-XXXXXX receipts with duration tracking.
                 </p>
               </button>
@@ -663,17 +667,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {activeTab === 'users' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-sm font-display font-bold text-[#F0F5F1]">
+              <h2 className="text-sm font-display font-bold text-[#F5F3FA]">
                 Registered Users ({users.length})
               </h2>
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-[#718478] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#706C7B] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Search @username or email..."
-                  className="h-8 pl-8 pr-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none w-60"
+                  className="h-8 pl-8 pr-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] outline-none w-60"
                 />
               </div>
             </div>
@@ -694,26 +698,26 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   return (
                     <div
                       key={u.uid}
-                      className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex flex-wrap items-center justify-between gap-4"
+                      className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex flex-wrap items-center justify-between gap-4"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-[#F0F5F1]">
+                          <span className="text-sm font-semibold text-[#F5F3FA]">
                             {u.displayName}
                           </span>
-                          <span className="text-xs font-mono text-[#718478]">
+                          <span className="text-xs font-mono text-[#706C7B]">
                             @{u.username}
                           </span>
-                          <span className="px-2 py-0.5 rounded bg-[#192620] border border-white/10 text-[10px] font-mono uppercase text-[#8BE2B8]">
+                          <span className="px-2 py-0.5 rounded bg-[#17171F] border border-[#282631] text-[10px] font-mono uppercase text-[#8957F5]">
                             {formatRoleLabel(u.role, u.uid)}
                           </span>
                           {isTargetRoot && (
-                            <span className="px-2 py-0.5 rounded bg-[#D9BB79]/15 border border-[#D9BB79]/40 text-[10px] font-mono text-[#D9BB79]">
+                            <span className="px-2 py-0.5 rounded bg-[#A47BFF]/15 border border-[#A47BFF]/40 text-[10px] font-mono text-[#A47BFF]">
                               PROTECTED ROOT OWNER · OWNER_PERMANENT_APEX
                             </span>
                           )}
                         </div>
-                        <p className="text-xs font-mono text-[#9BAEA2] mt-0.5">
+                        <p className="text-xs font-mono text-[#A19DAD] mt-0.5">
                           {u.email} · UUID: {u.uid}
                         </p>
                       </div>
@@ -732,7 +736,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                   `Updated @${u.username} role to ${e.target.value}.`
                                 );
                               }}
-                              className="h-8 px-2.5 rounded-lg bg-[#192620] border border-white/10 text-xs text-[#F0F5F1]"
+                              className="h-8 px-2.5 rounded-lg bg-[#17171F] border border-[#282631] text-xs text-[#F5F3FA]"
                             >
                               <option value="member">Member</option>
                               <option value="moderator">Moderator</option>
@@ -754,7 +758,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 `Updated @${u.username} APEX tier to ${e.target.value}.`
                               );
                             }}
-                            className="h-8 px-2.5 rounded-lg bg-[#192620] border border-[#D9BB79]/30 text-xs text-[#D9BB79]"
+                            className="h-8 px-2.5 rounded-lg bg-[#17171F] border border-[#A47BFF]/30 text-xs text-[#A47BFF]"
                           >
                             <option value="free">DOOMCORD FREE</option>
                             <option value="basic">DOOMCORD APEX</option>
@@ -771,7 +775,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 `${u.isBanned ? 'Unbanned' : 'Banned'} @${u.username}.`
                               );
                             }}
-                            className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#E57373]"
+                            className="h-8 px-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs text-[#E57373]"
                           >
                             {u.isBanned ? 'Unban' : 'Ban'}
                           </button>
@@ -788,32 +792,32 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {activeTab === 'owners' && (
           <div className="space-y-6">
             {/* Root Owner Protected Card */}
-            <div className="p-6 rounded-xl bg-[#141F1B] border border-[#D9BB79]/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="p-6 rounded-xl bg-[#101014] border border-[#A47BFF]/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#D9BB79]">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#A47BFF]">
                   <Shield className="w-4 h-4" />
                   <span>Main Owner — Root Authority (root_owner)</span>
                 </div>
-                <h2 className="text-lg font-display font-bold text-[#F0F5F1] mt-1">
+                <h2 className="text-lg font-display font-bold text-[#F5F3FA] mt-1">
                   Permanent Root Owner Protection Active
                 </h2>
-                <p className="text-xs text-[#9BAEA2] mt-1">
-                  Account UUID <span className="font-mono text-[#F0F5F1]">{ROOT_OWNER_UUID}</span> (razorpay@admin.doom) is permanently protected by Firestore security rules and server guards. Secondary owners can never demote, suspend, or modify the Main Owner.
+                <p className="text-xs text-[#A19DAD] mt-1">
+                  Account UUID <span className="font-mono text-[#F5F3FA]">{ROOT_OWNER_UUID}</span> (razorpay@admin.doom) is permanently protected by Firestore security rules and server guards. Secondary owners can never demote, suspend, or modify the Main Owner.
                 </p>
               </div>
-              <span className="px-3 py-1.5 rounded-lg bg-[#192620] border border-[#D9BB79]/40 text-xs font-mono text-[#D9BB79] shrink-0">
+              <span className="px-3 py-1.5 rounded-lg bg-[#17171F] border border-[#A47BFF]/40 text-xs font-mono text-[#A47BFF] shrink-0">
                 ROOT OWNER IMMUTABLE
               </span>
             </div>
 
             {/* Create New Secondary Owner Invitation (Main Owner Only) */}
             {isRoot && (
-              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4">
+              <div className="p-6 rounded-xl bg-[#101014] border border-[#282631] space-y-4">
                 <div>
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                     Owner Management → Create New Owner
                   </h3>
-                  <p className="text-xs text-[#9BAEA2] mt-0.5">
+                  <p className="text-xs text-[#A19DAD] mt-0.5">
                     Invite a trusted team member to become a Secondary Owner (`secondary_owner`). They will set their own password securely upon accepting the invitation link.
                   </p>
                 </div>
@@ -843,7 +847,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     placeholder="New owner email address..."
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none"
+                    className="h-10 px-3.5 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] outline-none"
                     required
                   />
                   <input
@@ -851,11 +855,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     placeholder="Optional display name..."
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
-                    className="h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none"
+                    className="h-10 px-3.5 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] outline-none"
                   />
                   <button
                     type="submit"
-                    className="h-10 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center justify-center gap-2"
+                    className="h-10 px-4 rounded-lg bg-[#8957F5] hover:bg-[#7846E4] text-white font-semibold text-xs flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create Owner Invitation</span>
@@ -863,18 +867,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </form>
 
                 {createdInviteLink && (
-                  <div className="p-4 rounded-xl bg-[#192620] border border-[#8BE2B8]/30 flex items-center justify-between gap-4">
+                  <div className="p-4 rounded-xl bg-[#17171F] border border-[#8957F5]/30 flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="text-[11px] font-mono uppercase text-[#8BE2B8]">
+                      <div className="text-[11px] font-mono uppercase text-[#8957F5]">
                         Single-Use Secondary Owner Onboarding Link
                       </div>
-                      <div className="text-xs font-mono text-[#F0F5F1] truncate mt-1">
+                      <div className="text-xs font-mono text-[#F5F3FA] truncate mt-1">
                         {createdInviteLink}
                       </div>
                     </div>
                     <button
                       onClick={() => copyText(createdInviteLink, 'owner_inv')}
-                      className="h-8 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                      className="h-8 px-3 rounded-lg bg-[#8957F5] text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
                     >
                       {copiedId === 'owner_inv' ? (
                         <>
@@ -895,7 +899,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
             {/* Registered Owners & Secondary Owner Permission Controls */}
             <div className="space-y-3">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#A19DAD]">
                 Registered Platform Owners ({ownerAccounts.length})
               </h3>
               {ownerAccounts.map((ownerAcc) => {
@@ -913,28 +917,28 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 return (
                   <div
                     key={ownerAcc.uid}
-                    className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
+                    className="p-5 rounded-xl bg-[#101014] border border-[#282631] space-y-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2.5">
-                          <span className="text-sm font-display font-bold text-[#F0F5F1]">
+                          <span className="text-sm font-display font-bold text-[#F5F3FA]">
                             {ownerAcc.displayName}
                           </span>
-                          <span className="text-xs font-mono text-[#718478]">
+                          <span className="text-xs font-mono text-[#706C7B]">
                             @{ownerAcc.username}
                           </span>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
                               isAccRoot
-                                ? 'bg-[#D9BB79]/20 text-[#D9BB79] border border-[#D9BB79]/40'
-                                : 'bg-[#8BE2B8]/15 text-[#8BE2B8] border border-[#8BE2B8]/30'
+                                ? 'bg-[#A47BFF]/20 text-[#A47BFF] border border-[#A47BFF]/40'
+                                : 'bg-[#8957F5]/15 text-[#8957F5] border border-[#8957F5]/30'
                             }`}
                           >
                             {isAccRoot ? 'ROOT OWNER' : 'SECONDARY OWNER'}
                           </span>
                         </div>
-                        <p className="text-xs font-mono text-[#9BAEA2] mt-1">
+                        <p className="text-xs font-mono text-[#A19DAD] mt-1">
                           {ownerAcc.email} · Created{' '}
                           {new Date(ownerAcc.createdAt).toLocaleDateString()}
                         </p>
@@ -948,7 +952,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                               `Revoked Secondary Owner status from @${ownerAcc.username}.`
                             );
                           }}
-                          className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-[#E57373]/30 text-xs text-[#E57373]"
+                          className="h-8 px-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#E57373]/30 text-xs text-[#E57373]"
                         >
                           Revoke Owner Role
                         </button>
@@ -956,8 +960,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     </div>
 
                     {!isAccRoot && isRoot && (
-                      <div className="pt-3 border-t border-white/[0.06]">
-                        <div className="text-[11px] font-mono uppercase text-[#718478] mb-2.5">
+                      <div className="pt-3 border-t border-[#282631]">
+                        <div className="text-[11px] font-mono uppercase text-[#706C7B] mb-2.5">
                           Granular Secondary Owner Permissions
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -989,7 +993,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           ).map((p) => (
                             <label
                               key={p.key}
-                              className="flex items-center gap-2 p-2 rounded-lg bg-[#192620] border border-white/[0.05] text-xs text-[#F0F5F1] cursor-pointer"
+                              className="flex items-center gap-2 p-2 rounded-lg bg-[#17171F] border border-[#282631] text-xs text-[#F5F3FA] cursor-pointer"
                             >
                               <input
                                 type="checkbox"
@@ -1007,7 +1011,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                     `Updated permissions for @${ownerAcc.username}.`
                                   );
                                 }}
-                                className="accent-[#8BE2B8]"
+                                className="accent-[#8957F5]"
                               />
                               <span>{p.label}</span>
                             </label>
@@ -1023,22 +1027,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             {/* Pending Owner Invitations */}
             {ownerInvitations.length > 0 && (
               <div className="space-y-2.5">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                <h3 className="text-xs font-mono uppercase tracking-wider text-[#A19DAD]">
                   Owner Invitations History ({ownerInvitations.length})
                 </h3>
                 {ownerInvitations.map((inv) => (
                   <div
                     key={inv.id}
-                    className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4"
+                    className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between gap-4"
                   >
                     <div>
-                      <div className="text-xs font-semibold text-[#F0F5F1]">
+                      <div className="text-xs font-semibold text-[#F5F3FA]">
                         {inv.email}{' '}
-                        <span className="font-mono text-[#8BE2B8] uppercase ml-2">
+                        <span className="font-mono text-[#8957F5] uppercase ml-2">
                           [{inv.status}]
                         </span>
                       </div>
-                      <div className="text-[11px] font-mono text-[#718478]">
+                      <div className="text-[11px] font-mono text-[#706C7B]">
                         Token: {inv.tokenPreview} · Created{' '}
                         {new Date(inv.createdAt).toLocaleDateString()}
                       </div>
@@ -1047,7 +1051,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     {inv.status === 'pending' && isRoot && (
                       <button
                         onClick={() => onRevokeOwnerInvite(inv.id)}
-                        className="h-8 px-3 rounded-lg bg-[#192620] text-xs text-[#E57373]"
+                        className="h-8 px-3 rounded-lg bg-[#17171F] text-xs text-[#E57373]"
                       >
                         Revoke
                       </button>
@@ -1063,24 +1067,24 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {activeTab === 'gifts' && (
           <div className="space-y-6">
             {canCreateGifts ? (
-              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-5">
+              <div className="p-6 rounded-xl bg-[#101014] border border-[#282631] space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                    <h2 className="text-base font-display font-bold text-[#F5F3FA]">
                       Owner Unlimited Gifting Studio (₹0 Complimentary)
                     </h2>
-                    <p className="text-xs text-[#9BAEA2] mt-0.5">
+                    <p className="text-xs text-[#A19DAD] mt-0.5">
                       Generate single-use gift links for DOOMCORD APEX, DOOMCORD APEX+, Lifetime APEX+, or any Cosmetic item without payment.
                     </p>
                   </div>
-                  <span className="px-3 py-1 rounded bg-[#192620] border border-[#8BE2B8]/30 text-xs font-mono text-[#8BE2B8]">
+                  <span className="px-3 py-1 rounded bg-[#17171F] border border-[#8957F5]/30 text-xs font-mono text-[#8957F5]">
                     COST: ₹0 INR
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1.5">
                       APEX Membership Tier
                     </label>
                     <select
@@ -1090,7 +1094,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           e.target.value as 'none' | 'basic' | 'nitro'
                         )
                       }
-                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-10 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     >
                       <option value="nitro">DOOMCORD APEX+ (Full Tier)</option>
                       <option value="basic">DOOMCORD APEX (Basic Tier)</option>
@@ -1099,7 +1103,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1.5">
                       Entitlement Duration
                     </label>
                     <select
@@ -1107,7 +1111,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       onChange={(e) =>
                         setGiftDuration(e.target.value as GiftDuration)
                       }
-                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-10 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     >
                       <option value="lifetime">
                         Lifetime / Permanent (Never Expires)
@@ -1121,7 +1125,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1.5">
                       Restrict to @username (Optional)
                     </label>
                     <input
@@ -1129,18 +1133,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       placeholder="Leave blank for anyone with link..."
                       value={giftRecipientUsername}
                       onChange={(e) => setGiftRecipientUsername(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      className="w-full h-10 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                     />
                   </div>
                 </div>
 
                 {/* Optional Cosmetics Selector */}
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-2">
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-2">
                     Include Bonus Cosmetics ({giftSelectedCosmetics.length}{' '}
                     selected)
                   </label>
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 rounded-lg bg-[#101A17] border border-white/[0.06]">
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 rounded-lg bg-[#09090D] border border-[#282631]">
                     {cosmetics.map((c) => {
                       const selected = giftSelectedCosmetics.includes(c.id);
                       return (
@@ -1156,8 +1160,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           }
                           className={`px-2.5 py-1 rounded text-xs transition-colors border ${
                             selected
-                              ? 'bg-[#24362C] border-[#8BE2B8] text-[#8BE2B8] font-semibold'
-                              : 'bg-[#141F1B] border-white/[0.06] text-[#9BAEA2]'
+                              ? 'bg-[#22212C] border-[#8957F5] text-[#8957F5] font-semibold'
+                              : 'bg-[#101014] border-[#282631] text-[#A19DAD]'
                           }`}
                         >
                           {c.name}
@@ -1169,14 +1173,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                   <div className="md:col-span-2">
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1.5">
                       Personal Gift Message
                     </label>
                     <input
                       type="text"
                       value={giftMessage}
                       onChange={(e) => setGiftMessage(e.target.value)}
-                      className="w-full h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-10 px-3.5 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     />
                   </div>
 
@@ -1203,7 +1207,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         showFlash(err.message || 'Failed to create gift.');
                       }
                     }}
-                    className="h-10 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center justify-center gap-2"
+                    className="h-10 px-4 rounded-lg bg-[#8957F5] hover:bg-[#7846E4] text-white font-semibold text-xs flex items-center justify-center gap-2"
                   >
                     <Gift className="w-4 h-4" />
                     <span>Generate Free Gift Link</span>
@@ -1211,18 +1215,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </div>
 
                 {generatedGiftUrl && (
-                  <div className="p-4 rounded-xl bg-[#192620] border border-[#D9BB79]/40 flex items-center justify-between gap-4">
+                  <div className="p-4 rounded-xl bg-[#17171F] border border-[#A47BFF]/40 flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="text-[11px] font-mono uppercase text-[#D9BB79]">
+                      <div className="text-[11px] font-mono uppercase text-[#A47BFF]">
                         Shareable Gift Claim URL (Single-Use)
                       </div>
-                      <div className="text-xs font-mono text-[#F0F5F1] truncate mt-1">
+                      <div className="text-xs font-mono text-[#F5F3FA] truncate mt-1">
                         {generatedGiftUrl}
                       </div>
                     </div>
                     <button
                       onClick={() => copyText(generatedGiftUrl, 'gift_new')}
-                      className="h-8 px-3.5 rounded-lg bg-[#D9BB79] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                      className="h-8 px-3.5 rounded-lg bg-[#8957F5] text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
                     >
                       {copiedId === 'gift_new' ? (
                         <>
@@ -1240,18 +1244,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 )}
               </div>
             ) : (
-              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] text-xs text-[#9BAEA2]">
+              <div className="p-6 rounded-xl bg-[#101014] border border-[#282631] text-xs text-[#A19DAD]">
                 Your Secondary Owner account does not currently have gift generation permission enabled.
               </div>
             )}
 
             {/* Gift Records Table */}
             <div className="space-y-3">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#A19DAD]">
                 Generated Gifts Ledger ({gifts.length})
               </h3>
               {gifts.length === 0 ? (
-                <div className="p-8 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
+                <div className="p-8 rounded-xl bg-[#101014] border border-[#282631] text-center text-xs text-[#A19DAD]">
                   No gifts generated yet.
                 </div>
               ) : (
@@ -1263,11 +1267,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     return (
                       <div
                         key={g.id}
-                        className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex flex-wrap items-center justify-between gap-4"
+                        className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex flex-wrap items-center justify-between gap-4"
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-[#F0F5F1]">
+                            <span className="text-xs font-semibold text-[#F5F3FA]">
                               {g.apexTier === 'nitro'
                                 ? 'DOOMCORD APEX+'
                                 : g.apexTier === 'basic'
@@ -1275,20 +1279,20 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 : 'Cosmetic Bundle'}{' '}
                               ({g.duration.toUpperCase()})
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono uppercase text-[#8BE2B8]">
+                            <span className="px-2 py-0.5 rounded bg-[#17171F] text-[10px] font-mono uppercase text-[#8957F5]">
                               {g.status}
                             </span>
                             {g.isPaidGift ? (
-                              <span className="text-[10px] font-mono text-[#D9BB79]">
+                              <span className="text-[10px] font-mono text-[#A47BFF]">
                                 Paid Gift (₹{g.amountPaidINR})
                               </span>
                             ) : (
-                              <span className="text-[10px] font-mono text-[#9BAEA2]">
+                              <span className="text-[10px] font-mono text-[#A19DAD]">
                                 Owner Complimentary (₹0)
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] font-mono text-[#718478] mt-1">
+                          <p className="text-[11px] font-mono text-[#706C7B] mt-1">
                             Token: {g.tokenPreview} · Created by {g.creatorName}
                             {g.redeemedByEmail
                               ? ` · Redeemed by ${g.redeemedByEmail}`
@@ -1300,11 +1304,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           {giftUrl && g.status === 'unclaimed' && (
                             <button
                               onClick={() => copyText(giftUrl, g.id)}
-                              className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#F0F5F1] flex items-center gap-1.5"
+                              className="h-8 px-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs text-[#F5F3FA] flex items-center gap-1.5"
                             >
                               {copiedId === g.id ? (
                                 <>
-                                  <Check className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                                  <Check className="w-3.5 h-3.5 text-[#8957F5]" />
                                   <span>Copied</span>
                                 </>
                               ) : (
@@ -1322,7 +1326,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 await onRevokeGift(g.id);
                                 showFlash(`Revoked gift ${g.tokenPreview}.`);
                               }}
-                              className="h-8 px-3 rounded-lg bg-[#192620] border border-[#E57373]/30 text-xs text-[#E57373]"
+                              className="h-8 px-3 rounded-lg bg-[#17171F] border border-[#E57373]/30 text-xs text-[#E57373]"
                             >
                               Revoke
                             </button>
@@ -1342,10 +1346,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                <h2 className="text-base font-display font-bold text-[#F5F3FA]">
                   Admin Dashboard → Finance → Receipts
                 </h2>
-                <p className="text-xs text-[#9BAEA2] mt-0.5">
+                <p className="text-xs text-[#A19DAD] mt-0.5">
                   Create, customize, download, and manage official Doomcord receipts (`DC-2026-XXXXXX`) with automated duration & expiration tracking.
                 </p>
               </div>
@@ -1353,7 +1357,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               {canManageReceipts && (
                 <button
                   onClick={() => setShowReceiptForm(!showReceiptForm)}
-                  className="h-9 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center gap-2"
+                  className="h-9 px-4 rounded-lg bg-[#8957F5] hover:bg-[#7846E4] text-white font-semibold text-xs flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
@@ -1366,21 +1370,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             {showReceiptForm && canManageReceipts && (
               <form
                 onSubmit={handleIssueReceiptSubmit}
-                className="p-6 rounded-xl bg-[#141F1B] border border-[#8BE2B8]/30 space-y-5"
+                className="p-6 rounded-xl bg-[#101014] border border-[#8957F5]/30 space-y-5"
               >
-                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                   Create Official Doomcord Receipt
                 </h3>
 
                 {/* Quick Select Registered User */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                       Auto-Fill from Registered User
                     </label>
                     <select
                       onChange={(e) => handleSelectReceiptCustomer(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     >
                       <option value="">Select user or enter manually...</option>
                       {users.map((u) => (
@@ -1392,7 +1396,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                       Receipt Template Type
                     </label>
                     <select
@@ -1402,7 +1406,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         setRcpType(val);
                         setRcpTitle(val.replace(' Receipt', ''));
                       }}
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     >
                       <option value="APEX Membership Receipt">
                         APEX Membership Receipt
@@ -1434,7 +1438,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                    <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                       Payment Status
                     </label>
                     <select
@@ -1444,7 +1448,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           e.target.value as ReceiptPaymentStatus
                         )
                       }
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     >
                       <option value="Paid">Paid</option>
                       <option value="Complimentary">Complimentary (₹0)</option>
@@ -1458,7 +1462,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 {/* Customer Details */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Customer Username
                     </label>
                     <input
@@ -1466,12 +1470,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       value={rcpCustomerUsername}
                       onChange={(e) => setRcpCustomerUsername(e.target.value)}
                       placeholder="username"
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Customer Display Name
                     </label>
                     <input
@@ -1479,12 +1483,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       value={rcpCustomerDisplayName}
                       onChange={(e) => setRcpCustomerDisplayName(e.target.value)}
                       placeholder="Display Name"
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Customer Email
                     </label>
                     <input
@@ -1492,12 +1496,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       value={rcpCustomerEmail}
                       onChange={(e) => setRcpCustomerEmail(e.target.value)}
                       placeholder="user@domain.com"
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Customer UUID
                     </label>
                     <input
@@ -1505,22 +1509,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       value={rcpCustomerUid}
                       onChange={(e) => setRcpCustomerUid(e.target.value)}
                       placeholder="UUID"
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                       required
                     />
                   </div>
                 </div>
 
                 {/* Line Item & Duration Configuration */}
-                <div className="p-4 rounded-xl bg-[#101A17] border border-white/[0.06] space-y-3">
+                <div className="p-4 rounded-xl bg-[#09090D] border border-[#282631] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#8BE2B8]">
+                    <span className="text-xs font-semibold text-[#8957F5]">
                       Product / Service Line Item & Duration Configuration
                     </span>
                     <button
                       type="button"
                       onClick={handleAddReceiptLineItem}
-                      className="text-xs text-[#8BE2B8] hover:underline"
+                      className="text-xs text-[#8957F5] hover:underline"
                     >
                       + Add Another Line Item
                     </button>
@@ -1528,18 +1532,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div className="lg:col-span-2">
-                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      <label className="text-[11px] text-[#A19DAD] block mb-1">
                         Product or Service Name
                       </label>
                       <input
                         type="text"
                         value={rcpItemName}
                         onChange={(e) => setRcpItemName(e.target.value)}
-                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                        className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA]"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      <label className="text-[11px] text-[#A19DAD] block mb-1">
                         Quantity
                       </label>
                       <input
@@ -1547,11 +1551,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         min={1}
                         value={rcpItemQty}
                         onChange={(e) => setRcpItemQty(Number(e.target.value))}
-                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                        className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      <label className="text-[11px] text-[#A19DAD] block mb-1">
                         Unit Price (₹ INR)
                       </label>
                       <input
@@ -1559,11 +1563,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         min={0}
                         value={rcpItemPrice}
                         onChange={(e) => setRcpItemPrice(Number(e.target.value))}
-                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                        className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      <label className="text-[11px] text-[#A19DAD] block mb-1">
                         Discount (₹ INR)
                       </label>
                       <input
@@ -1573,7 +1577,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         onChange={(e) =>
                           setRcpItemDiscount(Number(e.target.value))
                         }
-                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                        className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                       />
                     </div>
                   </div>
@@ -1581,7 +1585,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   {/* Duration Selector */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div>
-                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      <label className="text-[11px] text-[#A19DAD] block mb-1">
                         Service Duration Preset
                       </label>
                       <select
@@ -1591,7 +1595,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             e.target.value as ReceiptDurationPreset
                           )
                         }
-                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                        className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA]"
                       >
                         <option value="1d">1 Day</option>
                         <option value="3d">3 Days</option>
@@ -1612,7 +1616,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     {rcpDurationPreset === 'custom' && (
                       <>
                         <div>
-                          <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                          <label className="text-[11px] text-[#A19DAD] block mb-1">
                             Custom Duration Value
                           </label>
                           <input
@@ -1622,11 +1626,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             onChange={(e) =>
                               setRcpCustomVal(Number(e.target.value))
                             }
-                            className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                            className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                          <label className="text-[11px] text-[#A19DAD] block mb-1">
                             Custom Unit
                           </label>
                           <select
@@ -1636,7 +1640,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 e.target.value as CustomDurationUnit
                               )
                             }
-                            className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                            className="w-full h-9 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA]"
                           >
                             <option value="minutes">Minutes</option>
                             <option value="hours">Hours</option>
@@ -1654,36 +1658,36 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 {/* Payment Method, Transaction ID, Notes */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Payment Method
                     </label>
                     <input
                       type="text"
                       value={rcpPaymentMethod}
                       onChange={(e) => setRcpPaymentMethod(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Transaction ID
                     </label>
                     <input
                       type="text"
                       value={rcpTxId}
                       onChange={(e) => setRcpTxId(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                    <label className="text-[11px] text-[#A19DAD] block mb-1">
                       Additional Notes
                     </label>
                     <input
                       type="text"
                       value={rcpNotes}
                       onChange={(e) => setRcpNotes(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                     />
                   </div>
                 </div>
@@ -1692,13 +1696,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReceiptForm(false)}
-                    className="h-9 px-4 rounded-lg bg-[#192620] text-xs text-[#9BAEA2]"
+                    className="h-9 px-4 rounded-lg bg-[#17171F] text-xs text-[#A19DAD]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="h-9 px-5 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
+                    className="h-9 px-5 rounded-lg bg-[#8957F5] text-white font-semibold text-xs"
                   >
                     Issue Official Receipt
                   </button>
@@ -1709,7 +1713,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             {/* Receipts Management Table */}
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#A19DAD]">
                   Issued Receipts ({receipts.length})
                 </span>
                 <input
@@ -1717,12 +1721,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   value={receiptSearch}
                   onChange={(e) => setReceiptSearch(e.target.value)}
                   placeholder="Search DC-2026-..., username, or email..."
-                  className="h-8 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none w-64"
+                  className="h-8 px-3 rounded-lg bg-[#101014] border border-[#282631] text-xs text-[#F5F3FA] outline-none w-64"
                 />
               </div>
 
               {receipts.length === 0 ? (
-                <div className="p-8 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
+                <div className="p-8 rounded-xl bg-[#101014] border border-[#282631] text-center text-xs text-[#A19DAD]">
                   No receipts issued yet. Click "+ Create New Receipt" above or complete an APEX purchase/gift to generate one.
                 </div>
               ) : (
@@ -1746,22 +1750,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       return (
                         <div
                           key={rcp.id}
-                          className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-3"
+                          className="p-4 rounded-xl bg-[#101014] border border-[#282631] space-y-3"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <div className="flex items-center gap-2.5">
-                                <span className="text-xs font-mono font-bold text-[#8BE2B8]">
+                                <span className="text-xs font-mono font-bold text-[#8957F5]">
                                   {rcp.receiptNumber}
                                 </span>
-                                <span className="text-sm font-semibold text-[#F0F5F1]">
+                                <span className="text-sm font-semibold text-[#F5F3FA]">
                                   {rcp.title}
                                 </span>
-                                <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono uppercase text-[#D9BB79]">
+                                <span className="px-2 py-0.5 rounded bg-[#17171F] text-[10px] font-mono uppercase text-[#A47BFF]">
                                   {rcp.paymentStatus}
                                 </span>
                               </div>
-                              <p className="text-xs text-[#9BAEA2] mt-1 font-mono tabular-nums">
+                              <p className="text-xs text-[#A19DAD] mt-1 font-mono tabular-nums">
                                 Customer: {rcp.customerDisplayName} (@
                                 {rcp.customerUsername}) · ₹{rcp.totalAmountINR}{' '}
                                 INR · Duration: {rcp.serviceDurationLabel} (
@@ -1772,7 +1776,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => onOpenReceiptModal(rcp)}
-                                className="h-8 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5"
+                                className="h-8 px-3 rounded-lg bg-[#8957F5] text-white text-xs font-semibold flex items-center gap-1.5"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                                 <span>View / Print PDF</span>
@@ -1780,11 +1784,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                               <button
                                 onClick={() => copyText(shareUrl, rcp.id)}
-                                className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#F0F5F1] flex items-center gap-1.5"
+                                className="h-8 px-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs text-[#F5F3FA] flex items-center gap-1.5"
                               >
                                 {copiedId === rcp.id ? (
                                   <>
-                                    <Check className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                                    <Check className="w-3.5 h-3.5 text-[#8957F5]" />
                                     <span>Copied</span>
                                   </>
                                 ) : (
@@ -1806,7 +1810,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                     setEditReceiptNotes(rcp.notes);
                                     setEditReceiptReason('');
                                   }}
-                                  className="h-8 px-3 rounded-lg bg-[#192620] border border-white/10 text-xs text-[#9BAEA2] hover:text-[#F0F5F1]"
+                                  className="h-8 px-3 rounded-lg bg-[#17171F] border border-[#282631] text-xs text-[#A19DAD] hover:text-[#F5F3FA]"
                                 >
                                   Amend Notes
                                 </button>
@@ -1815,7 +1819,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           </div>
 
                           {editingReceiptId === rcp.id && (
-                            <div className="pt-3 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                            <div className="pt-3 border-t border-[#282631] grid grid-cols-1 md:grid-cols-3 gap-2.5">
                               <input
                                 type="text"
                                 value={editReceiptNotes}
@@ -1823,7 +1827,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                   setEditReceiptNotes(e.target.value)
                                 }
                                 placeholder="Updated receipt notes..."
-                                className="h-8 px-3 rounded bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                                className="h-8 px-3 rounded bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                               />
                               <input
                                 type="text"
@@ -1832,7 +1836,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                   setEditReceiptReason(e.target.value)
                                 }
                                 placeholder="Audit reason for metadata amendment..."
-                                className="h-8 px-3 rounded bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                                className="h-8 px-3 rounded bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                               />
                               <button
                                 onClick={async () => {
@@ -1847,7 +1851,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                     `Recorded audited metadata correction on ${rcp.receiptNumber}.`
                                   );
                                 }}
-                                className="h-8 px-3 rounded bg-[#8BE2B8] text-[#101A17] text-xs font-semibold"
+                                className="h-8 px-3 rounded bg-[#8957F5] text-white text-xs font-semibold"
                               >
                                 Save Audited Amendment
                               </button>
@@ -1868,17 +1872,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             {nitroPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
+                className="p-5 rounded-xl bg-[#101014] border border-[#282631] space-y-4"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                     {plan.name}
                   </h3>
-                  <Crown className="w-4 h-4 text-[#D9BB79]" />
+                  <Crown className="w-4 h-4 text-[#A47BFF]" />
                 </div>
                 <div className="space-y-2.5 text-xs">
                   <div>
-                    <label className="text-[#9BAEA2] block mb-1">
+                    <label className="text-[#A19DAD] block mb-1">
                       Monthly Price (₹ INR)
                     </label>
                     <input
@@ -1890,11 +1894,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           monthlyPriceINR: Number(e.target.value),
                         })
                       }
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-[#F0F5F1] font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-[#F5F3FA] font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[#9BAEA2] block mb-1">
+                    <label className="text-[#A19DAD] block mb-1">
                       Yearly Price (₹ INR)
                     </label>
                     <input
@@ -1906,7 +1910,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           yearlyPriceINR: Number(e.target.value),
                         })
                       }
-                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-[#F0F5F1] font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-[#F5F3FA] font-mono"
                     />
                   </div>
                 </div>
@@ -1920,10 +1924,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           <div className="space-y-6">
             <form
               onSubmit={handleCreateCosmetic}
-              className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+              className="p-5 rounded-xl bg-[#101014] border border-[#282631] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
             >
               <div>
-                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                <label className="text-[11px] text-[#A19DAD] block mb-1">
                   Cosmetic Name
                 </label>
                 <input
@@ -1931,12 +1935,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   value={newCosmName}
                   onChange={(e) => setNewCosmName(e.target.value)}
                   placeholder="Emerald Halo"
-                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                  className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                   required
                 />
               </div>
               <div>
-                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                <label className="text-[11px] text-[#A19DAD] block mb-1">
                   Category
                 </label>
                 <select
@@ -1944,7 +1948,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   onChange={(e) =>
                     setNewCosmCategory(e.target.value as CosmeticCategory)
                   }
-                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                  className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                 >
                   <option value="Avatar Decorations">Avatar Decorations</option>
                   <option value="Profile Effects">Profile Effects</option>
@@ -1955,18 +1959,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                <label className="text-[11px] text-[#A19DAD] block mb-1">
                   Price (₹ INR)
                 </label>
                 <input
                   type="number"
                   value={newCosmPrice}
                   onChange={(e) => setNewCosmPrice(Number(e.target.value))}
-                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
+                  className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                <label className="text-[11px] text-[#A19DAD] block mb-1">
                   Rarity
                 </label>
                 <select
@@ -1974,7 +1978,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   onChange={(e) =>
                     setNewCosmRarity(e.target.value as CosmeticRarity)
                   }
-                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                  className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA]"
                 >
                   <option value="Common">Common</option>
                   <option value="Rare">Rare</option>
@@ -1985,7 +1989,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
               <button
                 type="submit"
-                className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
+                className="h-9 px-4 rounded-lg bg-[#8957F5] text-white font-semibold text-xs"
               >
                 + Add Cosmetic
               </button>
@@ -1995,13 +1999,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               {cosmetics.map((c) => (
                 <div
                   key={c.id}
-                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                  className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between"
                 >
                   <div>
-                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                    <div className="text-xs font-semibold text-[#F5F3FA]">
                       {c.name}
                     </div>
-                    <div className="text-[11px] font-mono text-[#9BAEA2]">
+                    <div className="text-[11px] font-mono text-[#A19DAD]">
                       {c.category} · ₹{c.priceINR} INR · {c.rarity}
                     </div>
                   </div>
@@ -2011,8 +2015,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     }
                     className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase ${
                       c.enabled
-                        ? 'bg-[#8BE2B8]/20 text-[#8BE2B8]'
-                        : 'bg-white/5 text-[#718478]'
+                        ? 'bg-[#8957F5]/20 text-[#8957F5]'
+                        : 'bg-white/5 text-[#706C7B]'
                     }`}
                   >
                     {c.enabled ? 'Enabled' : 'Disabled'}
@@ -2028,13 +2032,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           <div className="space-y-6">
             <form
               onSubmit={handleSaveRazorpayConfig}
-              className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
+              className="p-6 rounded-xl bg-[#101014] border border-[#282631] space-y-4"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                <h3 className="text-sm font-display font-bold text-[#F5F3FA]">
                   Razorpay Gateway Configuration (INR)
                 </h3>
-                <span className="text-xs font-mono text-[#8BE2B8]">
+                <span className="text-xs font-mono text-[#8957F5]">
                   Status:{' '}
                   {rzpStatus?.configured ? 'LIVE KEYS SET' : 'AWAITING KEYS'}
                 </span>
@@ -2042,7 +2046,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-[#9BAEA2] block mb-1">
+                  <label className="text-xs text-[#A19DAD] block mb-1">
                     Razorpay Key ID
                   </label>
                   <input
@@ -2050,11 +2054,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     value={rzpKeyId}
                     onChange={(e) => setRzpKeyId(e.target.value)}
                     placeholder="rzp_live_..."
-                    className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
+                    className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#9BAEA2] block mb-1">
+                  <label className="text-xs text-[#A19DAD] block mb-1">
                     Razorpay Key Secret (Server-Only)
                   </label>
                   <input
@@ -2062,14 +2066,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     value={rzpKeySecret}
                     onChange={(e) => setRzpKeySecret(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
+                    className="w-full h-9 px-3 rounded-lg bg-[#09090D] border border-[#282631] text-xs text-[#F5F3FA] font-mono"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
+                className="h-9 px-4 rounded-lg bg-[#8957F5] text-white font-semibold text-xs"
               >
                 Save Razorpay Configuration
               </button>
@@ -2081,25 +2085,25 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {activeTab === 'moderation' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <h3 className="text-xs font-mono uppercase text-[#9BAEA2]">
+              <h3 className="text-xs font-mono uppercase text-[#A19DAD]">
                 Communities ({communities.length})
               </h3>
               {communities.map((c) => (
                 <div
                   key={c.id}
-                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                  className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between"
                 >
                   <div>
-                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                    <div className="text-xs font-semibold text-[#F5F3FA]">
                       {c.name}
                     </div>
-                    <div className="text-[11px] text-[#718478] font-mono">
+                    <div className="text-[11px] text-[#706C7B] font-mono">
                       {c.members?.length || 1} members
                     </div>
                   </div>
                   <button
                     onClick={() => onDeleteCommunity(c.id)}
-                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#192620]"
+                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#17171F]"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -2108,25 +2112,25 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-xs font-mono uppercase text-[#9BAEA2]">
+              <h3 className="text-xs font-mono uppercase text-[#A19DAD]">
                 Orbs ({orbs.length})
               </h3>
               {orbs.map((o) => (
                 <div
                   key={o.id}
-                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                  className="p-4 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between"
                 >
                   <div>
-                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                    <div className="text-xs font-semibold text-[#F5F3FA]">
                       {o.name}
                     </div>
-                    <div className="text-[11px] text-[#718478] font-mono">
+                    <div className="text-[11px] text-[#706C7B] font-mono">
                       {o.category} · {o.memberCount || 1} members
                     </div>
                   </div>
                   <button
                     onClick={() => onDeleteOrb(o.id)}
-                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#192620]"
+                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#17171F]"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -2139,11 +2143,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {/* 10. SECURITY AUDIT REPORT (#32) */}
         {activeTab === 'security_audit' && (
           <div className="space-y-4">
-            <div className="p-5 rounded-xl bg-[#141F1B] border border-[#8BE2B8]/30">
-              <h2 className="text-sm font-display font-bold text-[#F0F5F1]">
+            <div className="p-5 rounded-xl bg-[#101014] border border-[#8957F5]/30">
+              <h2 className="text-sm font-display font-bold text-[#F5F3FA]">
                 Comprehensive Platform Security Audit & Hardening Report (#32)
               </h2>
-              <p className="text-xs text-[#9BAEA2] mt-1">
+              <p className="text-xs text-[#A19DAD] mt-1">
                 All 10 security domains audited and verified across Authentication, Authorization, Firestore Rules, Razorpay HMAC Verification, and Cryptographic Gift/Receipt Tokens.
               </p>
             </div>
@@ -2152,23 +2156,23 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               {SECURITY_AUDIT_REPORT_DATA.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-2"
+                  className="p-4 rounded-xl bg-[#101014] border border-[#282631] space-y-2"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-[#8BE2B8]">
+                      <span className="text-xs font-mono text-[#8957F5]">
                         {item.id}
                       </span>
-                      <span className="text-xs font-semibold text-[#F0F5F1]">
+                      <span className="text-xs font-semibold text-[#F5F3FA]">
                         {item.vulnerability}
                       </span>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono text-[#8BE2B8]">
+                    <span className="px-2 py-0.5 rounded bg-[#17171F] text-[10px] font-mono text-[#8957F5]">
                       {item.status}
                     </span>
                   </div>
-                  <p className="text-xs text-[#9BAEA2]">
-                    <strong className="text-[#F0F5F1]">Remediation:</strong>{' '}
+                  <p className="text-xs text-[#A19DAD]">
+                    <strong className="text-[#F5F3FA]">Remediation:</strong>{' '}
                     {item.fixImplemented}
                   </p>
                 </div>
@@ -2183,15 +2187,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             {auditLogs.map((log) => (
               <div
                 key={log.id}
-                className="p-3.5 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4 text-xs"
+                className="p-3.5 rounded-xl bg-[#101014] border border-[#282631] flex items-center justify-between gap-4 text-xs"
               >
                 <div>
-                  <span className="font-mono text-[#8BE2B8] font-semibold">
+                  <span className="font-mono text-[#8957F5] font-semibold">
                     {log.action}
                   </span>
-                  <span className="text-[#9BAEA2] ml-2">{log.details}</span>
+                  <span className="text-[#A19DAD] ml-2">{log.details}</span>
                 </div>
-                <span className="text-[11px] font-mono text-[#718478] shrink-0 tabular-nums">
+                <span className="text-[11px] font-mono text-[#706C7B] shrink-0 tabular-nums">
                   {log.actorEmail} · {new Date(log.createdAt).toLocaleString()}
                 </span>
               </div>

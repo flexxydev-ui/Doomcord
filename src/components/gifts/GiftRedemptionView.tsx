@@ -174,25 +174,25 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
     : [];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-[oklch(0.2_0.03_160)] via-[oklch(0.16_0.028_161)] to-[oklch(0.13_0.025_162)] overflow-y-auto p-6 md:p-10">
+    <div className="flex-1 flex flex-col h-full bg-[#09090D] overflow-y-auto p-6 md:p-10">
       <div className="max-w-2xl w-full mx-auto my-auto">
         <button
           onClick={onBackToApp}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[oklch(0.17_0.028_161)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10 mb-6"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#101014] hover:bg-white/10 text-xs font-semibold text-white border border-[#282631] mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Doomcord Workspace</span>
         </button>
 
         {/* Card Container */}
-        <div className="p-8 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="p-8 rounded-3xl bg-[#101014] border border-[#282631] shadow-2xl relative overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-white shadow-xl">
+              <div className="p-3 rounded-2xl bg-[#8957F5] text-white shadow-xl">
                 {matchedInvite ? <Crown className="w-6 h-6" /> : <Gift className="w-6 h-6" />}
               </div>
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-widest text-[oklch(0.85_0.12_165)] block">
+                <span className="text-[11px] font-mono uppercase tracking-widest text-[#8957F5] block">
                   DOOMCORD APEX · RISE ABOVE. STAND APART.
                 </span>
                 <h1 className="text-2xl font-black text-white tracking-tight">
@@ -206,7 +206,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
 
           {/* Token Input Bar */}
           <div className="mb-6">
-            <label className="text-[11px] font-bold text-[oklch(0.7_0.03_155)] uppercase tracking-wider block mb-1.5">
+            <label className="text-[11px] font-bold text-[#A19DAD] uppercase tracking-wider block mb-1.5">
               Enter or Paste Gift URL / Secure Token
             </label>
             <input
@@ -217,23 +217,23 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                 setClaimedSuccess(false);
               }}
               placeholder="https://doomcord.com/gift/APEX-... or OWN-..."
-              className="w-full bg-[oklch(0.235_0.032_158)] text-xs font-mono text-white px-4 py-3 rounded-2xl border border-white/10 focus:border-[oklch(0.85_0.12_165)] outline-none"
+              className="w-full bg-[#17171F] text-xs font-mono text-white px-4 py-3 rounded-2xl border border-[#282631] focus:border-[#8957F5] outline-none"
             />
           </div>
 
           {/* CASE A: Matched Secondary Owner Invitation (#35.2) */}
           {matchedInvite && (
             <div className="space-y-5">
-              <div className="p-5 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-[oklch(0.85_0.12_165)]/30">
-                <div className="text-xs font-mono text-[oklch(0.85_0.12_165)] uppercase mb-1">
+              <div className="p-5 rounded-2xl bg-[#17171F] border border-[#8957F5]/30">
+                <div className="text-xs font-mono text-[#8957F5] uppercase mb-1">
                   Issued by Main Root Owner ({matchedInvite.createdByEmail})
                 </div>
                 <h3 className="text-base font-bold text-white mb-1">
                   Invited Email: {matchedInvite.email}
                 </h3>
-                <p className="text-xs text-[oklch(0.7_0.03_155)]">
+                <p className="text-xs text-[#A19DAD]">
                   Status: <strong className="text-white uppercase">{matchedInvite.status}</strong> ·
-                  Role Granted: <strong className="text-[oklch(0.85_0.12_165)]">secondary_owner</strong>
+                  Role Granted: <strong className="text-[#8957F5]">secondary_owner</strong>
                 </p>
               </div>
 
@@ -243,7 +243,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                   <h4 className="text-sm font-bold text-white">
                     Secondary Owner Account Activated!
                   </h4>
-                  <p className="text-xs text-[oklch(0.7_0.03_155)] mt-1">
+                  <p className="text-xs text-[#A19DAD] mt-1">
                     Your Secondary Owner privileges and APEX+ entitlements are now active.
                   </p>
                 </div>
@@ -262,7 +262,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                       value={inviteDisplayName}
                       onChange={(e) => setInviteDisplayName(e.target.value)}
                       placeholder="Your Display Name"
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3.5 py-2.5 rounded-xl border border-white/10 outline-none"
+                      className="w-full bg-[#17171F] text-xs text-white px-3.5 py-2.5 rounded-xl border border-[#282631] outline-none"
                       required
                     />
                   </div>
@@ -275,7 +275,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                       value={inviteUsername}
                       onChange={(e) => setInviteUsername(e.target.value)}
                       placeholder="secondary_owner_handle"
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-xs font-mono text-white px-3.5 py-2.5 rounded-xl border border-white/10 outline-none"
+                      className="w-full bg-[#17171F] text-xs font-mono text-white px-3.5 py-2.5 rounded-xl border border-[#282631] outline-none"
                       required
                     />
                   </div>
@@ -288,7 +288,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                       value={invitePassword}
                       onChange={(e) => setInvitePassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3.5 py-2.5 rounded-xl border border-white/10 outline-none"
+                      className="w-full bg-[#17171F] text-xs text-white px-3.5 py-2.5 rounded-xl border border-[#282631] outline-none"
                       required
                     />
                   </div>
@@ -300,7 +300,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                   <button
                     type="submit"
                     disabled={claiming}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-xs font-bold text-white shadow-xl"
+                    className="w-full py-3 rounded-xl bg-[#8957F5] hover:bg-[#7846E4] text-xs font-bold text-white shadow-xl"
                   >
                     {claiming
                       ? 'Activating Secondary Owner Account...'
@@ -315,12 +315,12 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
           {matchedGift && (
             <div className="space-y-6">
               {/* Animated Gift Vault Showcase */}
-              <div className="p-6 rounded-3xl bg-gradient-to-br from-[oklch(0.14_0.025_162)] via-[oklch(0.2_0.035_160)] to-[oklch(0.14_0.025_162)] border border-[oklch(0.85_0.12_165)]/30 text-center relative">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] flex items-center justify-center text-white shadow-[0_0_35px_rgba(16,185,129,0.5)] animate-pulse">
+              <div className="p-6 rounded-3xl bg-[#101014] border border-[#8957F5]/30 text-center relative">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-[#8957F5] flex items-center justify-center text-white shadow-[0_0_35px_rgba(137,87,245,0.4)] animate-pulse">
                   <Gift className="w-10 h-10" />
                 </div>
 
-                <div className="text-xs font-mono text-[oklch(0.85_0.12_165)] uppercase tracking-wider mb-1">
+                <div className="text-xs font-mono text-[#8957F5] uppercase tracking-wider mb-1">
                   {matchedGift.isPaidGift
                     ? `DOOMCORD APEX Gift Purchased By ${matchedGift.creatorName}`
                     : `Complimentary Official Gift From ${matchedGift.creatorName}`}
@@ -337,29 +337,29 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
 
                 <div className="text-xs font-mono text-white/90 mb-3">
                   Duration:{' '}
-                  <strong className="text-[oklch(0.85_0.12_165)]">
+                  <strong className="text-[#8957F5]">
                     {formatDurationLabel(matchedGift.duration, matchedGift.billingCycle)}
                   </strong>
                   {matchedGift.duration === 'lifetime' && ' (NEVER EXPIRES)'}
                 </div>
 
                 {matchedGift.personalMessage && (
-                  <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-black/30 border border-white/10 text-xs italic text-[oklch(0.95_0.015_150)]">
+                  <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-black/30 border border-[#282631] text-xs italic text-[#F5F3FA]">
                     "{matchedGift.personalMessage}"
                   </div>
                 )}
 
                 {/* Gifted Cosmetics List */}
                 {giftedCosmeticObjects.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/10 text-left">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[oklch(0.7_0.03_155)] block mb-2">
+                  <div className="mt-4 pt-4 border-t border-[#282631] text-left">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#A19DAD] block mb-2">
                       Included APEX Collection Items ({giftedCosmeticObjects.length})
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {giftedCosmeticObjects.map((c) => (
                         <div
                           key={c.id}
-                          className="p-2.5 rounded-xl bg-[oklch(0.17_0.028_161)] border border-white/10 flex items-center gap-2.5"
+                          className="p-2.5 rounded-xl bg-[#101014] border border-[#282631] flex items-center gap-2.5"
                         >
                           <div
                             className="w-4 h-4 rounded-full shrink-0"
@@ -367,7 +367,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                           />
                           <div className="min-w-0">
                             <div className="text-xs font-bold text-white truncate">{c.name}</div>
-                            <div className="text-[10px] text-[oklch(0.7_0.03_155)]">
+                            <div className="text-[10px] text-[#A19DAD]">
                               {c.category} · {c.rarity}
                             </div>
                           </div>
@@ -379,7 +379,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
 
                 {/* Recipient Restriction Notice */}
                 {(matchedGift.restrictedRecipientEmail || matchedGift.restrictedRecipientUsername) && (
-                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-mono text-[oklch(0.84_0.14_85)]">
+                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-mono text-[#C4B1FF]">
                     <UserCheck className="w-3.5 h-3.5" />
                     <span>
                       Restricted to recipient:{' '}
@@ -407,7 +407,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                       ? 'Gift Unlocked & Activated on Your Account!'
                       : 'This Single-Use Gift Link Has Already Been Redeemed'}
                   </h3>
-                  <p className="text-xs text-[oklch(0.7_0.03_155)]">
+                  <p className="text-xs text-[#A19DAD]">
                     {matchedGift.redeemedByEmail
                       ? `Claimed by ${matchedGift.redeemedByEmail} on ${new Date(
                           matchedGift.redeemedAt || Date.now()
@@ -423,7 +423,7 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
                 <button
                   onClick={handleClaimGift}
                   disabled={claiming}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-sm font-black text-white shadow-xl hover:opacity-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-[#8957F5] hover:bg-[#7846E4] text-sm font-black text-white shadow-xl hover:opacity-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>
@@ -437,20 +437,20 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
           )}
 
           {!matchedGift && !matchedInvite && tokenInput.trim() !== '' && (
-            <div className="p-6 rounded-2xl bg-[oklch(0.14_0.025_162)] border border-white/5 text-center">
-              <Lock className="w-6 h-6 text-[oklch(0.7_0.03_155)] mx-auto mb-2" />
+            <div className="p-6 rounded-2xl bg-[#0D0D12] border border-[#282631] text-center">
+              <Lock className="w-6 h-6 text-[#A19DAD] mx-auto mb-2" />
               <div className="text-xs font-bold text-white">
                 No Matching Unclaimed Gift or Invitation Found
               </div>
-              <p className="text-[11px] text-[oklch(0.7_0.03_155)] mt-1">
+              <p className="text-[11px] text-[#A19DAD] mt-1">
                 Verify that you pasted the full `APEX-...` gift token or `OWN-...` invitation token.
               </p>
             </div>
           )}
 
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-[oklch(0.7_0.03_155)]">
+          <div className="mt-6 pt-4 border-t border-[#282631] flex items-center justify-between text-[11px] text-[#A19DAD]">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#8957F5]" />
               <span>Single-use SHA-256 hashed token · Atomic transaction verification</span>
             </span>
             <span className="font-mono">

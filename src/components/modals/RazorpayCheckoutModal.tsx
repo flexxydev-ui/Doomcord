@@ -100,7 +100,7 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // #3 Send as a Gift State
+  // Send as a Gift State
   const [sendAsGift, setSendAsGift] = useState(false);
   const [recipientMode, setRecipientMode] = useState<'username' | 'email' | 'anyone'>('anyone');
   const [recipientUsername, setRecipientUsername] = useState('');
@@ -165,8 +165,8 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
 
   const billingPeriodLabel =
     payload.billingCycle === 'yearly'
-      ? '1 Yearly Billing Period (1 Year)'
-      : '1 Monthly Billing Period (1 Month)';
+      ? '1 Year'
+      : '1 Month';
 
   const methodLabels: Record<'upi' | 'card' | 'netbanking' | 'wallet', string> = {
     upi: 'Razorpay UPI / AutoPay',
@@ -206,7 +206,7 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
       }
       if (allUsers.length > 0 && !matchedRecipientUser) {
         setErrorMessage(
-          `No registered Doomcord user found with username "@${normalizedUsername}". Check the spelling or choose an unrestricted gift link.`
+          `No registered user found with username "@${normalizedUsername}". Check the spelling or choose an unrestricted gift link.`
         );
         return false;
       }
@@ -315,7 +315,7 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
           is_gift: sendAsGift ? 'true' : 'false',
         },
         theme: {
-          color: '#8BE2B8',
+          color: '#8957F5',
         },
         handler: async (response: {
           razorpay_order_id: string;
@@ -391,15 +391,15 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
       ? `@${normalizedUsername}`
       : recipientMode === 'email' && recipientEmail.trim()
       ? recipientEmail.trim()
-      : 'Unrestricted Gift Link (Shareable with anyone)';
+      : 'Unrestricted Gift Link';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-2xl bg-[#101A17] border border-white/[0.08] shadow-2xl overflow-hidden text-[#F0F5F1]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-[#09090D] border border-[#282631] shadow-2xl overflow-hidden text-[#F5F3FA]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#111B17] border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#192620] border border-[#8BE2B8]/30 flex items-center justify-center text-[#8BE2B8]">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-[#0D0D12] border-b border-[#282631]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-[#17171F] border border-[#8957F5]/30 flex items-center justify-center text-[#8957F5]">
               {sendAsGift ? (
                 <Gift className="w-4 h-4" />
               ) : (
@@ -407,65 +407,64 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
               )}
             </div>
             <div>
-              <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+              <h3 className="text-xs font-semibold text-[#F5F3FA]">
                 {sendAsGift
-                  ? 'DOOMCORD APEX — Gift Purchase Checkout (INR)'
-                  : 'DOOMCORD APEX — Official Checkout (INR)'}
+                  ? 'APEX — Gift Checkout (INR)'
+                  : 'APEX — Checkout (INR)'}
               </h3>
-              <span className="text-[11px] text-[#718478] font-mono">
-                Merchant UPI Reference:{' '}
-                {gatewayStatus?.merchantUpiId || 'adrenoxshriyans@fam'}
+              <span className="text-[10px] text-[#706C7B] font-mono">
+                Verified Razorpay Gateway
               </span>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620]"
+            className="p-1 rounded-md text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F]"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5 max-h-[82vh] overflow-y-auto">
+        <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
           {verifiedReceipt ? (
-            <div className="text-center py-4 space-y-4">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#192620] border border-[#8BE2B8]/40 flex items-center justify-center text-[#8BE2B8]">
+            <div className="text-center py-3 space-y-3.5">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-[#17171F] border border-[#8957F5]/40 flex items-center justify-center text-[#8957F5]">
                 {verifiedReceipt.completion?.gift ? (
-                  <Gift className="w-8 h-8" />
+                  <Gift className="w-6 h-6" />
                 ) : (
-                  <CheckCircle2 className="w-8 h-8" />
+                  <CheckCircle2 className="w-6 h-6" />
                 )}
               </div>
 
               <div>
-                <h4 className="text-base font-display font-bold text-[#F0F5F1]">
+                <h4 className="text-sm font-semibold text-[#F5F3FA]">
                   {verifiedReceipt.completion?.gift
-                    ? 'APEX Gift Purchased & Ready to Share!'
-                    : 'Payment Cryptographically Verified'}
+                    ? 'APEX Gift Ready to Share!'
+                    : 'Payment Verified'}
                 </h4>
-                <p className="text-xs text-[#9BAEA2] mt-1">
+                <p className="text-xs text-[#A19DAD] mt-0.5">
                   {verifiedReceipt.completion?.gift
-                    ? 'Your membership was NOT activated on your account. Share the unique gift link below so the recipient can claim their APEX benefits.'
-                    : `Your entitlement (${payload.itemName}) is now active on your account.`}
+                    ? 'Share the single-use gift link below with the recipient.'
+                    : `Your membership (${payload.itemName}) is now active.`}
                 </p>
               </div>
 
-              {/* If Purchased as a Gift: Show Unique Gift Link & Copy/Share Actions */}
+              {/* If Purchased as a Gift */}
               {verifiedReceipt.completion?.gift &&
                 verifiedReceipt.completion.claimUrl && (
-                  <div className="p-4 rounded-xl bg-[#141F1B] border border-[#8BE2B8]/40 text-left space-y-3">
+                  <div className="p-3.5 rounded-lg bg-[#101014] border border-[#8957F5]/40 text-left space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#8BE2B8]">
-                        Unique Single-Use Gift Redemption Link
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5]">
+                        Gift Redemption Link
                       </span>
-                      <span className="text-[10px] font-mono text-[#9BAEA2]">
+                      <span className="text-[10px] font-mono text-[#706C7B]">
                         {billingPeriodLabel}
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-[#101A17] border border-white/10 font-mono text-[11px] text-[#F0F5F1] break-all">
+                    <div className="p-2 rounded bg-[#17171F] border border-[#282631] font-mono text-[11px] text-[#F5F3FA] break-all">
                       {verifiedReceipt.completion.canonicalGiftUrl}
                     </div>
 
@@ -479,17 +478,17 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
                           setCopiedGiftUrl(true);
                           setTimeout(() => setCopiedGiftUrl(false), 2500);
                         }}
-                        className="flex-1 py-2 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs flex items-center justify-center gap-1.5"
+                        className="flex-1 py-1.5 px-3 rounded-md bg-[#8957F5] hover:bg-[#7a4be6] text-white font-medium text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                       >
                         {copiedGiftUrl ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>Copied Gift Link!</span>
+                            <span>Copied!</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3.5 h-3.5" />
-                            <span>Copy Gift Link</span>
+                            <span>Copy Link</span>
                           </>
                         )}
                       </button>
@@ -497,40 +496,40 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const shareText = `I sent you a ${payload.itemName} gift on DOOMCORD APEX! Claim it here: ${verifiedReceipt.completion?.claimUrl}`;
+                          const shareText = `Here's your DOOMCORD ${payload.itemName} gift: ${verifiedReceipt.completion?.claimUrl}`;
                           navigator.clipboard.writeText(shareText);
                           setCopiedGiftUrl(true);
                           setTimeout(() => setCopiedGiftUrl(false), 2500);
                         }}
-                        className="py-2 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] text-[#F0F5F1] font-semibold text-xs flex items-center gap-1.5 border border-white/10"
+                        className="py-1.5 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] text-[#F5F3FA] font-medium text-xs flex items-center gap-1 border border-[#282631]"
                       >
                         <Share2 className="w-3.5 h-3.5" />
-                        <span>Share Gift</span>
+                        <span>Share</span>
                       </button>
                     </div>
                   </div>
                 )}
 
-              <div className="p-3.5 rounded-xl bg-[#141F1B] border border-white/[0.06] text-left font-mono text-[11px] space-y-1">
+              <div className="p-3 rounded-lg bg-[#101014] border border-[#282631] text-left font-mono text-[11px] space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-[#718478]">Order ID:</span>
-                  <span className="text-[#F0F5F1]">{verifiedReceipt.orderId}</span>
+                  <span className="text-[#706C7B]">Order ID:</span>
+                  <span className="text-[#F5F3FA]">{verifiedReceipt.orderId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#718478]">Payment ID:</span>
-                  <span className="text-[#8BE2B8]">{verifiedReceipt.paymentId}</span>
+                  <span className="text-[#706C7B]">Payment ID:</span>
+                  <span className="text-[#8957F5]">{verifiedReceipt.paymentId}</span>
                 </div>
                 {verifiedReceipt.completion?.receipt && (
                   <div className="flex justify-between">
-                    <span className="text-[#718478]">Official Receipt ID:</span>
-                    <span className="text-[#F0F5F1] font-bold">
+                    <span className="text-[#706C7B]">Receipt:</span>
+                    <span className="text-[#F5F3FA] font-bold">
                       {verifiedReceipt.completion.receipt.receiptNumber}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-[#718478]">Amount Paid:</span>
-                  <span className="text-[#F0F5F1] tabular-nums">
+                  <span className="text-[#706C7B]">Amount:</span>
+                  <span className="text-[#F5F3FA] tabular-nums">
                     ₹{payload.amountINR} INR
                   </span>
                 </div>
@@ -547,15 +546,15 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
                         onOpenReceiptModal(rec);
                       }
                     }}
-                    className="flex-1 py-2.5 px-4 text-xs font-semibold text-[#F0F5F1] bg-[#192620] hover:bg-[#24362C] rounded-lg border border-white/10 flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 px-3 text-xs font-medium text-[#F5F3FA] bg-[#17171F] hover:bg-[#22212C] rounded-md border border-[#282631] flex items-center justify-center gap-1.5"
                   >
-                    <FileText className="w-3.5 h-3.5 text-[#8BE2B8]" />
-                    <span>View Official Receipt</span>
+                    <FileText className="w-3.5 h-3.5 text-[#8957F5]" />
+                    <span>View Receipt</span>
                   </button>
                 )}
                 <button
                   onClick={onClose}
-                  className="flex-1 py-2.5 text-xs font-semibold text-[#101A17] bg-[#8BE2B8] rounded-lg"
+                  className="flex-1 py-2 text-xs font-medium text-white bg-[#8957F5] hover:bg-[#7a4be6] rounded-md shadow-sm"
                 >
                   Done
                 </button>
@@ -563,93 +562,78 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
             </div>
           ) : (
             <>
-              {/* 1. Selected Membership Plan Summary Card */}
-              <div className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.08] flex items-center justify-between">
+              {/* Plan Summary Card */}
+              <div className="p-3.5 rounded-lg bg-[#101014] border border-[#282631] flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8BE2B8]">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5]">
                     {isSubscription
                       ? sendAsGift
                         ? `APEX Gift · ${billingPeriodLabel}`
-                        : `Recurring ${payload.billingCycle} Membership`
-                      : 'One-Time APEX Collection Order'}
+                        : `${payload.billingCycle} Membership`
+                      : 'Item Order'}
                   </span>
-                  <h4 className="text-sm font-display font-bold text-[#F0F5F1] mt-0.5">
+                  <h4 className="text-xs font-semibold text-[#F5F3FA] mt-0.5">
                     {payload.itemName}
                   </h4>
-                  <p className="text-xs text-[#9BAEA2] mt-0.5">
+                  <p className="text-[11px] text-[#706C7B]">
                     {payload.description}
                   </p>
                 </div>
-                <div className="text-right shrink-0 ml-4">
-                  <span className="text-xl font-display font-bold text-[#F0F5F1] font-mono tabular-nums">
+                <div className="text-right shrink-0 ml-3">
+                  <span className="text-lg font-bold text-[#F5F3FA] font-mono tabular-nums">
                     ₹{payload.amountINR}
                   </span>
-                  <span className="block text-[10px] text-[#718478] font-mono">
-                    INR{' '}
-                    {isSubscription
-                      ? `/ ${payload.billingCycle === 'yearly' ? 'yr' : 'mo'}`
-                      : ''}
+                  <span className="block text-[10px] text-[#706C7B] font-mono">
+                    INR
                   </span>
                 </div>
               </div>
 
-              {/* 2. SEND AS A GIFT CHECKBOX (#3) */}
+              {/* SEND AS A GIFT CHECKBOX */}
               {isSubscription && (
                 <div
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`p-3.5 rounded-lg border transition-all ${
                     sendAsGift
-                      ? 'bg-[#192620] border-[#8BE2B8]/50'
-                      : 'bg-[#141F1B] border-white/[0.07]'
+                      ? 'bg-[#17171F] border-[#8957F5]/50'
+                      : 'bg-[#101014] border-[#282631]'
                   }`}
                 >
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={isRootOwner(currentUser) ? true : sendAsGift}
                       disabled={isRootOwner(currentUser)}
                       onChange={(e) => setSendAsGift(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 accent-[#8BE2B8] rounded cursor-pointer"
+                      className="mt-0.5 w-4 h-4 accent-[#8957F5] rounded cursor-pointer"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#F0F5F1] flex items-center gap-1.5">
-                          <Gift className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-[#F5F3FA] flex items-center gap-1">
+                          <Gift className="w-3.5 h-3.5 text-[#8957F5]" />
                           <span>Send as a gift</span>
                         </span>
-                        <span className="text-[10px] font-mono text-[#8BE2B8]">
+                        <span className="text-[10px] font-mono text-[#A47BFF]">
                           · {billingPeriodLabel}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#9BAEA2] mt-0.5 leading-relaxed">
-                        Give someone special access to Doomcord premium features. Purchase APEX or APEX+ for another person.
+                      <p className="text-[11px] text-[#706C7B] mt-0.5 leading-relaxed">
+                        Purchase this membership for someone else and generate a shareable gift link.
                       </p>
                     </div>
                   </label>
 
-                  {/* Expanded Gift Configuration Section */}
+                  {/* Expanded Gift Configuration */}
                   {sendAsGift && (
-                    <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-4">
+                    <div className="mt-3 pt-3 border-t border-[#282631] space-y-3">
                       <div>
-                        <label className="text-xs font-bold text-[#F0F5F1] block mb-2">
-                          Gift this membership to someone
+                        <label className="text-xs font-medium text-[#F5F3FA] block mb-1.5">
+                          Recipient Type
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           {[
-                            {
-                              id: 'username',
-                              label: 'Doomcord Username',
-                              icon: User,
-                            },
-                            {
-                              id: 'email',
-                              label: 'Recipient Email',
-                              icon: Mail,
-                            },
-                            {
-                              id: 'anyone',
-                              label: 'Unrestricted Link',
-                              icon: Globe,
-                            },
+                            { id: 'username', label: 'Username', icon: User },
+                            { id: 'email', label: 'Email', icon: Mail },
+                            { id: 'anyone', label: 'Link Only', icon: Globe },
                           ].map((opt) => {
                             const Icon = opt.icon;
                             const active = recipientMode === opt.id;
@@ -658,14 +642,14 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
                                 key={opt.id}
                                 type="button"
                                 onClick={() => setRecipientMode(opt.id as any)}
-                                className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs transition-colors text-left ${
+                                className={`flex items-center gap-1.5 p-2 rounded-md border text-xs transition-colors text-left ${
                                   active
-                                    ? 'bg-[#24362C] border-[#8BE2B8] text-[#F0F5F1] font-semibold'
-                                    : 'bg-[#101A17] border-white/[0.06] text-[#9BAEA2] hover:text-[#F0F5F1]'
+                                    ? 'bg-[#22212C] border-[#8957F5] text-[#F5F3FA]'
+                                    : 'bg-[#101014] border-[#282631] text-[#A19DAD] hover:text-[#F5F3FA]'
                                 }`}
                               >
-                                <Icon className="w-3.5 h-3.5 text-[#8BE2B8] shrink-0" />
-                                <span className="truncate">{opt.label}</span>
+                                <Icon className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
+                                <span>{opt.label}</span>
                               </button>
                             );
                           })}
@@ -674,95 +658,55 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
 
                       {recipientMode === 'username' && (
                         <div>
-                          <label className="text-[11px] font-semibold text-[#F0F5F1] block mb-1">
-                            Recipient's Doomcord Username
+                          <label className="text-[11px] font-medium text-[#A19DAD] block mb-1">
+                            Recipient's Username
                           </label>
                           <input
                             type="text"
                             value={recipientUsername}
                             onChange={(e) => setRecipientUsername(e.target.value)}
-                            placeholder="e.g. shadow_walker"
-                            className="w-full bg-[#101A17] text-[#F0F5F1] text-xs font-mono px-3.5 py-2 rounded-lg border border-white/10 outline-none focus:border-[#8BE2B8]"
+                            placeholder="@username"
+                            className="w-full bg-[#101014] text-[#F5F3FA] text-xs font-mono px-3 py-1.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                           />
                         </div>
                       )}
 
                       {recipientMode === 'email' && (
                         <div>
-                          <label className="text-[11px] font-semibold text-[#F0F5F1] block mb-1">
-                            Recipient's Account Email
+                          <label className="text-[11px] font-medium text-[#A19DAD] block mb-1">
+                            Recipient's Email
                           </label>
                           <input
                             type="email"
                             value={recipientEmail}
                             onChange={(e) => setRecipientEmail(e.target.value)}
-                            placeholder="friend@domain.com"
-                            className="w-full bg-[#101A17] text-[#F0F5F1] text-xs font-mono px-3.5 py-2 rounded-lg border border-white/10 outline-none focus:border-[#8BE2B8]"
+                            placeholder="recipient@example.com"
+                            className="w-full bg-[#101014] text-[#F5F3FA] text-xs font-mono px-3 py-1.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                           />
                         </div>
                       )}
 
                       <div>
-                        <label className="text-[11px] font-semibold text-[#F0F5F1] block mb-1">
-                          Personal Gift Message (Optional)
+                        <label className="text-[11px] font-medium text-[#A19DAD] block mb-1">
+                          Personal Message
                         </label>
                         <input
                           type="text"
                           value={personalMessage}
                           onChange={(e) => setPersonalMessage(e.target.value)}
-                          placeholder="Write a personal message for the recipient..."
-                          className="w-full bg-[#101A17] text-[#F0F5F1] text-xs px-3.5 py-2 rounded-lg border border-white/10 outline-none focus:border-[#8BE2B8]"
+                          placeholder="Add a message..."
+                          className="w-full bg-[#101014] text-[#F5F3FA] text-xs px-3 py-1.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5]"
                         />
-                      </div>
-
-                      {/* Live Gift Summary Preview */}
-                      <div className="p-3.5 rounded-xl bg-[#101A17] border border-[#8BE2B8]/30 space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-[#8BE2B8]">
-                          <span>Live Gift Summary Preview</span>
-                          <span>DOOMCORD APEX GIFT</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#9BAEA2]">Selected Membership:</span>
-                          <span className="text-[#F0F5F1] font-bold">
-                            {payload.itemName}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#9BAEA2]">Membership Duration:</span>
-                          <span className="text-[#F0F5F1] font-mono">
-                            {billingPeriodLabel}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#9BAEA2]">Intended Recipient:</span>
-                          <span className="text-[#8BE2B8] font-mono">
-                            {recipientSummaryLabel}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#9BAEA2]">Payment Method:</span>
-                          <span className="text-[#F0F5F1] font-mono">
-                            {methodLabels[selectedMethod]}
-                          </span>
-                        </div>
-                        <div className="flex justify-between pt-1 border-t border-white/10">
-                          <span className="text-[#F0F5F1] font-bold">
-                            Total Gift Price:
-                          </span>
-                          <span className="text-[#8BE2B8] font-bold font-mono tabular-nums">
-                            ₹{payload.amountINR} INR
-                          </span>
-                        </div>
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Supported Payment Methods Selector */}
+              {/* Payment Methods */}
               <div>
-                <label className="text-xs font-semibold text-[#F0F5F1] block mb-2">
-                  Preferred Payment Method
+                <label className="text-xs font-medium text-[#A19DAD] block mb-1.5">
+                  Payment Method
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
@@ -778,102 +722,67 @@ export const RazorpayCheckoutModal: React.FC<RazorpayCheckoutModalProps> = ({
                         key={m.id}
                         type="button"
                         onClick={() => setSelectedMethod(m.id as any)}
-                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border text-xs transition-colors ${
+                        className={`flex flex-col items-center gap-1 p-2 rounded-md border text-xs transition-colors ${
                           active
-                            ? 'bg-[#24362C] border-[#8BE2B8] text-[#F0F5F1] font-semibold'
-                            : 'bg-[#141F1B] border-white/[0.06] text-[#9BAEA2] hover:text-[#F0F5F1]'
+                            ? 'bg-[#17171F] border-[#8957F5] text-[#F5F3FA]'
+                            : 'bg-[#101014] border-[#282631] text-[#A19DAD] hover:text-[#F5F3FA]'
                         }`}
                       >
-                        <Icon className="w-4 h-4 text-[#8BE2B8]" />
-                        <span>{m.label}</span>
+                        <Icon className="w-3.5 h-3.5 text-[#8957F5]" />
+                        <span className="text-[11px]">{m.label}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Explicit Recurring Consent for Self Subscriptions */}
+              {/* Consent for Self Subscriptions */}
               {isSubscription && !sendAsGift && (
-                <label className="flex items-start gap-2.5 p-3 rounded-lg bg-[#141F1B] border border-white/[0.06] cursor-pointer text-xs">
+                <label className="flex items-start gap-2 p-2.5 rounded-md bg-[#101014] border border-[#282631] cursor-pointer text-xs">
                   <input
                     type="checkbox"
                     checked={recurringConsent}
                     onChange={(e) => setRecurringConsent(e.target.checked)}
-                    className="mt-0.5 accent-[#8BE2B8]"
+                    className="mt-0.5 accent-[#8957F5]"
                   />
-                  <span className="text-[#9BAEA2] leading-relaxed">
+                  <span className="text-[#A19DAD] text-[11px] leading-relaxed">
                     I authorize recurring {payload.billingCycle} charges of{' '}
-                    <strong className="text-[#F0F5F1] font-mono">
+                    <strong className="text-[#F5F3FA] font-mono">
                       ₹{payload.amountINR} INR
                     </strong>{' '}
-                    via Razorpay Subscriptions / UPI AutoPay until cancelled in APEX Membership Management.
+                    via Razorpay Subscriptions until cancelled in Settings.
                   </span>
                 </label>
               )}
 
-              {/* Gateway Configuration Warning if API Keys are missing */}
-              {!loadingStatus && gatewayStatus && !gatewayStatus.configured && (
-                <div className="p-4 rounded-xl bg-[#D9BB79]/15 border border-[#D9BB79]/40 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#D9BB79]">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>Razorpay API Keys Not Configured Yet</span>
-                  </div>
-                  <p className="text-[11px] text-[#F0F5F1] leading-relaxed">
-                    Doomcord strictly enforces real server-side payment verification and never fakes live payment completions. To enable live or test Razorpay Checkout:
-                  </p>
-                  <ul className="list-disc list-inside text-[11px] text-[#9BAEA2] space-y-1 font-mono">
-                    {(gatewayStatus.missingSteps || []).map((step, idx) => (
-                      <li key={idx}>{step}</li>
-                    ))}
-                  </ul>
-                  {(currentUser.role === 'root_owner' ||
-                    currentUser.role === 'secondary_owner' ||
-                    currentUser.role === 'owner' ||
-                    currentUser.role === 'admin') &&
-                    onOpenAdminPaymentSettings && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onClose();
-                          onOpenAdminPaymentSettings();
-                        }}
-                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D9BB79] text-[#101A17] font-semibold text-xs"
-                      >
-                        <span>Configure Razorpay Keys in Admin Console</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                </div>
-              )}
-
               {errorMessage && (
-                <div className="p-3 rounded-lg bg-[#E57373]/15 border border-[#E57373]/40 text-xs text-[#E57373]">
+                <div className="p-2.5 rounded-md bg-[#ED4245]/15 border border-[#ED4245]/40 text-xs text-[#ED4245]">
                   {errorMessage}
                 </div>
               )}
 
-              {/* Footer Action (#3: "Purchase Gift" when checked, "Purchase APEX" / "Purchase APEX+" when unchecked) */}
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-[#718478]">
-                  <Lock className="w-3.5 h-3.5 text-[#8BE2B8]" />
-                  <span>256-bit HMAC-SHA256 Server Verification</span>
+              {/* Footer Action */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1 text-[10px] text-[#706C7B]">
+                  <Lock className="w-3 h-3 text-[#8957F5]" />
+                  <span>256-bit Secure Gateway</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleLaunchRazorpay}
                   disabled={processing}
-                  className="px-5 py-2.5 text-xs font-bold text-[#101A17] bg-[#8BE2B8] hover:bg-[#7AD4A8] rounded-lg shadow-lg disabled:opacity-40 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#8957F5] hover:bg-[#7a4be6] rounded-md shadow-sm disabled:opacity-40 transition-colors flex items-center gap-1.5"
                 >
                   {sendAsGift && <Gift className="w-3.5 h-3.5" />}
                   <span>
                     {processing
-                      ? 'Connecting to Razorpay...'
+                      ? 'Connecting...'
                       : sendAsGift
                       ? 'Purchase Gift'
                       : isSubscription
                       ? `Purchase ${planNameLabel}`
-                      : `Purchase Item (₹${payload.amountINR})`}
+                      : `Purchase (₹${payload.amountINR})`}
                   </span>
                 </button>
               </div>

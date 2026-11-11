@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { 
   Mic, MicOff, Volume2, VolumeX, PhoneOff, 
-  Radio, Sparkles, Users, Signal 
+  Radio, Signal 
 } from 'lucide-react';
 import { VoiceParticipant, UserProfile } from '../../types';
 
@@ -16,9 +16,8 @@ interface VoiceChannelDockProps {
 export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
   channelName,
   communityName,
-  currentUser,
   participants,
-  onDisconnect
+  onDisconnect,
 }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
@@ -46,7 +45,7 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
         });
 
         if (!isMounted) {
-          stream.getTracks().forEach(t => t.stop());
+          stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
@@ -107,7 +106,7 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
       clearInterval(pingInterval);
       cancelAnimationFrame(animFrameRef.current);
       if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(t => t.stop());
+        audioStreamRef.current.getTracks().forEach((t) => t.stop());
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
@@ -117,10 +116,10 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
 
   // Toggle mic track mute
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => {
+    setIsMuted((prev) => {
       const next = !prev;
       if (audioStreamRef.current) {
-        audioStreamRef.current.getAudioTracks().forEach(track => {
+        audioStreamRef.current.getAudioTracks().forEach((track) => {
           track.enabled = !next;
         });
       }
@@ -130,21 +129,21 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
 
   // Toggle deafen
   const toggleDeafen = useCallback(() => {
-    setIsDeafened(prev => !prev);
+    setIsDeafened((prev) => !prev);
   }, []);
 
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-[oklch(0.14_0.025_162)] border-t border-white/5">
+    <div className="flex items-center justify-between px-4 py-2 bg-[#0D0D12] border-t border-[#282631]">
       {/* Channel info and connection telemetry */}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-8 h-8 rounded-xl bg-[oklch(0.85_0.12_165)]/20 border border-[oklch(0.85_0.12_165)]/40 flex items-center justify-center text-[oklch(0.85_0.12_165)] shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-[#8957F5]/20 border border-[#8957F5]/40 flex items-center justify-center text-[#8957F5] shadow-sm">
             <Radio className="w-4 h-4 animate-pulse" />
           </div>
           {/* Speaking volume indicator ring */}
           {isSpeaking && (
             <div 
-              className="absolute -inset-1 rounded-xl border-2 border-[oklch(0.85_0.12_165)] transition-all pointer-events-none"
+              className="absolute -inset-1 rounded-lg border-2 border-[#8957F5] transition-all pointer-events-none"
               style={{ opacity: volumeLevel / 100 }}
             />
           )}
@@ -152,32 +151,32 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
 
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white tracking-wide truncate max-w-[140px]">
+            <span className="text-xs font-semibold text-[#F5F3FA] tracking-wide truncate max-w-[140px]">
               {channelName}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-[oklch(0.85_0.12_165)] font-mono tabular-nums">
-              <Signal className="w-3 h-3 text-[oklch(0.85_0.12_165)]" />
+            <span className="flex items-center gap-1 text-[10px] text-[#8957F5] font-mono tabular-nums">
+              <Signal className="w-3 h-3 text-[#8957F5]" />
               {pingMs}ms RTC
             </span>
           </div>
-          <span className="text-[11px] text-[oklch(0.7_0.03_155)] block truncate max-w-[140px]">
+          <span className="text-[11px] text-[#706C7B] block truncate max-w-[140px]">
             {communityName}
           </span>
         </div>
       </div>
 
       {/* Microphone real-time visualizer meter */}
-      <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[oklch(0.17_0.028_161)] border border-white/5">
-        <div className="w-24 h-2 bg-[oklch(0.235_0.032_158)] rounded-full overflow-hidden flex items-center p-0.5">
+      <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#101014] border border-[#282631]">
+        <div className="w-24 h-2 bg-[#17171F] rounded-full overflow-hidden flex items-center p-0.5">
           <div 
             className="h-full rounded-full transition-all duration-75"
             style={{ 
               width: `${isMuted ? 0 : volumeLevel}%`,
-              backgroundColor: volumeLevel > 60 ? 'oklch(0.72 0.16 32)' : 'oklch(0.85 0.12 165)'
+              backgroundColor: volumeLevel > 60 ? '#A47BFF' : '#8957F5'
             }}
           />
         </div>
-        <span className="text-[10px] text-[oklch(0.7_0.03_155)] font-mono tabular-nums">
+        <span className="text-[10px] text-[#706C7B] font-mono tabular-nums">
           {isMuted ? 'MUTE' : `${volumeLevel}%`}
         </span>
       </div>
@@ -187,10 +186,10 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
         <button
           onClick={toggleMute}
           title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-          className={`p-2 rounded-xl border transition-all ${
+          className={`p-2 rounded-lg border transition-colors ${
             isMuted 
-              ? 'bg-[oklch(0.72 0.15 355)]/20 border-[oklch(0.72 0.15 355)]/40 text-[oklch(0.72 0.15 355)]' 
-              : 'bg-[oklch(0.235_0.032_158)] border-white/5 text-[oklch(0.95_0.015_150)] hover:bg-[oklch(0.26_0.035_156)]'
+              ? 'bg-[#ED4245]/20 border-[#ED4245]/40 text-[#ED4245]' 
+              : 'bg-[#17171F] border-[#282631] text-[#F5F3FA] hover:bg-[#22212C]'
           }`}
         >
           {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -199,10 +198,10 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
         <button
           onClick={toggleDeafen}
           title={isDeafened ? 'Undeafen Audio' : 'Deafen Audio'}
-          className={`p-2 rounded-xl border transition-all ${
+          className={`p-2 rounded-lg border transition-colors ${
             isDeafened 
-              ? 'bg-[oklch(0.72 0.15 355)]/20 border-[oklch(0.72 0.15 355)]/40 text-[oklch(0.72 0.15 355)]' 
-              : 'bg-[oklch(0.235_0.032_158)] border-white/5 text-[oklch(0.95_0.015_150)] hover:bg-[oklch(0.26_0.035_156)]'
+              ? 'bg-[#ED4245]/20 border-[#ED4245]/40 text-[#ED4245]' 
+              : 'bg-[#17171F] border-[#282631] text-[#F5F3FA] hover:bg-[#22212C]'
           }`}
         >
           {isDeafened ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -211,7 +210,7 @@ export const VoiceChannelDock: React.FC<VoiceChannelDockProps> = ({
         <button
           onClick={onDisconnect}
           title="Disconnect from Voice"
-          className="p-2 rounded-xl bg-[oklch(0.72 0.15 355)]/20 border border-[oklch(0.72 0.15 355)]/40 text-[oklch(0.72 0.15 355)] hover:bg-[oklch(0.72 0.15 355)]/40 transition-all"
+          className="p-2 rounded-lg bg-[#ED4245]/20 border border-[#ED4245]/40 text-[#ED4245] hover:bg-[#ED4245]/30 transition-colors"
         >
           <PhoneOff className="w-4 h-4" />
         </button>

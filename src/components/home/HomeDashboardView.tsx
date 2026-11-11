@@ -97,26 +97,26 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-[#101A17] text-[#F0F5F1]">
-      {/* Top Workspace Header */}
-      <header className="sticky top-0 z-20 h-16 px-8 bg-[#101A17]/95 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-mono uppercase tracking-widest text-[#8BE2B8]">
-            Workspace
+    <div className="flex-1 h-full overflow-y-auto bg-[#09090D] text-[#F5F3FA]">
+      {/* Top Header */}
+      <header className="sticky top-0 z-20 h-14 px-6 bg-[#09090D]/90 backdrop-blur-md border-b border-[#282631] flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-mono uppercase tracking-wider text-[#8957F5]">
+            Overview
           </span>
-          <span className="text-[#718478]">/</span>
-          <h1 className="font-display font-bold text-base text-[#F0F5F1]">Home Command</h1>
+          <span className="text-[#282631]">/</span>
+          <h1 className="font-semibold text-sm text-[#F5F3FA]">Home Command</h1>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onSelectView({ type: 'notifications' })}
-            className="h-9 px-3.5 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.07] text-xs font-medium text-[#F0F5F1] flex items-center gap-2 transition-colors whitespace-nowrap"
+            className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1.5 transition-colors whitespace-nowrap"
           >
-            <Bell className="w-3.5 h-3.5 text-[#8BE2B8]" />
+            <Bell className="w-3.5 h-3.5 text-[#8957F5]" />
             <span>Inbox</span>
             {pendingIncomingRequests.length + unclaimedGiftsForMe.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] font-mono font-bold text-[10px] tabular-nums">
+              <span className="px-1.5 py-0.2 rounded-full bg-[#8957F5] text-white font-mono font-bold text-[10px] tabular-nums">
                 {pendingIncomingRequests.length + unclaimedGiftsForMe.length}
               </span>
             )}
@@ -124,20 +124,20 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
           <button
             onClick={() => onSelectView({ type: 'profile', userId: profile.uid })}
-            className="h-9 px-3.5 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.07] text-xs font-medium text-[#F0F5F1] flex items-center gap-2 transition-colors whitespace-nowrap"
+            className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1.5 transition-colors whitespace-nowrap"
           >
-            <User className="w-3.5 h-3.5 text-[#9BAEA2]" />
+            <User className="w-3.5 h-3.5 text-[#A19DAD]" />
             <span>My Profile</span>
           </button>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
         {/* Identity & Quick Launch Banner */}
-        <section className="rounded-xl bg-[#141F1B] border border-white/[0.07] p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
+        <section className="rounded-xl bg-[#101014] border border-[#282631] p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-3.5">
             <div className="relative shrink-0">
-              <div className="w-14 h-14 rounded-xl bg-[#1D2B24] border border-[#8BE2B8]/30 flex items-center justify-center text-lg font-display font-bold text-[#8BE2B8] overflow-hidden">
+              <div className="w-12 h-12 rounded-lg bg-[#17171F] border border-[#8957F5]/30 flex items-center justify-center text-base font-bold text-[#8957F5] overflow-hidden">
                 {profile.photoURL ? (
                   <img
                     src={profile.photoURL}
@@ -149,56 +149,56 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                 )}
               </div>
               <span
-                className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#141F1B] ${
+                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#101014] ${
                   profile.presence === 'online'
-                    ? 'bg-[#6DD5A5]'
+                    ? 'bg-[#3BA55D]'
                     : profile.presence === 'idle'
-                    ? 'bg-[#E4B869]'
+                    ? 'bg-[#FAA81A]'
                     : profile.presence === 'dnd'
-                    ? 'bg-[#E57373]'
-                    : 'bg-[#718478]'
+                    ? 'bg-[#ED4245]'
+                    : 'bg-[#706C7B]'
                 }`}
               />
             </div>
 
             <div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-xl font-display font-bold text-[#F0F5F1]">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-semibold text-[#F5F3FA]">
                   {greeting}, {profile.displayName}
                 </h2>
                 {isOwner && (
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#D9BB79] border-l border-white/15 pl-2.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#A47BFF] border-l border-[#282631] pl-2">
                     ROOT OWNER
                   </span>
                 )}
                 {!isOwner && isSecOwner && (
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#8BE2B8] border-l border-white/15 pl-2.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5] border-l border-[#282631] pl-2">
                     {formatRoleLabel(profile.role, profile.uid)}
                   </span>
                 )}
                 {hasApexPlus && (
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#8BE2B8] border-l border-white/15 pl-2.5 flex items-center gap-1">
-                    <Crown className="w-3 h-3 text-[#D9BB79]" />
-                    APEX+ ACTIVE
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#C4B1FF] border-l border-[#282631] pl-2 flex items-center gap-1">
+                    <Crown className="w-3 h-3 text-[#A47BFF]" />
+                    APEX+
                   </span>
                 )}
                 {!hasApexPlus && hasApexBasic && (
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#8BE2B8] border-l border-white/15 pl-2.5">
-                    APEX ACTIVE
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5] border-l border-[#282631] pl-2">
+                    APEX
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#9BAEA2] mt-1">
-                @{profile.username} · {profile.statusMessage || 'Ready to connect across Doomcord communities and Orbs'}
+              <p className="text-xs text-[#A19DAD] mt-0.5">
+                @{profile.username} · {profile.statusMessage || 'Connect and collaborate on Doomcord.'}
               </p>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onSelectView({ type: 'friends', subTab: 'add' })}
-              className="h-9 px-3.5 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
+              className="h-8 px-3 rounded-md bg-[#8957F5] hover:bg-[#7a4be6] text-white font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Add Friend</span>
@@ -206,45 +206,45 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
             <button
               onClick={onOpenCreateCommunity}
-              className="h-9 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-[#F0F5F1] font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
+              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#F5F3FA] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
-              <Plus className="w-3.5 h-3.5 text-[#8BE2B8]" />
-              <span>Create Community</span>
+              <Plus className="w-3.5 h-3.5 text-[#8957F5]" />
+              <span>New Community</span>
             </button>
 
             <button
               onClick={onOpenCreateOrb}
-              className="h-9 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-[#F0F5F1] font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
+              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#F5F3FA] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
-              <Compass className="w-3.5 h-3.5 text-[#E9987B]" />
-              <span>Create Orb</span>
+              <Compass className="w-3.5 h-3.5 text-[#A47BFF]" />
+              <span>New Orb</span>
             </button>
 
             <button
               onClick={() => onSelectView({ type: 'nitro' })}
-              className="h-9 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-[#D9BB79]/30 text-[#D9BB79] font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
+              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#8957F5]/30 text-[#C4B1FF] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
-              <Crown className="w-3.5 h-3.5" />
-              <span>DOOMCORD APEX</span>
+              <Crown className="w-3.5 h-3.5 text-[#8957F5]" />
+              <span>APEX</span>
             </button>
           </div>
         </section>
 
-        {/* Key Platform Metrics Strip (Real Data) */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Platform Metrics */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
             onClick={() => onSelectView({ type: 'friends', subTab: 'all' })}
-            className="text-left rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] p-4 transition-colors"
+            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
           >
-            <div className="flex items-center justify-between text-xs text-[#9BAEA2] mb-2">
-              <span>Connected Friends</span>
-              <Users className="w-4 h-4 text-[#8BE2B8]" />
+            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
+              <span>Friends</span>
+              <Users className="w-4 h-4 text-[#8957F5]" />
             </div>
-            <div className="text-2xl font-display font-bold text-[#F0F5F1] tabular-nums">
+            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
               {friends.length}
             </div>
-            <div className="text-[11px] text-[#718478] mt-1 tabular-nums">
-              {onlineFriends.length} currently active
+            <div className="text-[11px] text-[#706C7B] mt-0.5 tabular-nums">
+              {onlineFriends.length} online now
             </div>
           </button>
 
@@ -254,71 +254,71 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                 ? onSelectView({ type: 'dm', dmId: dmThreads[0].id })
                 : onSelectView({ type: 'friends', subTab: 'all' })
             }
-            className="text-left rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] p-4 transition-colors"
+            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
           >
-            <div className="flex items-center justify-between text-xs text-[#9BAEA2] mb-2">
-              <span>Direct Conversations</span>
-              <MessageSquare className="w-4 h-4 text-[#8BE2B8]" />
+            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
+              <span>Conversations</span>
+              <MessageSquare className="w-4 h-4 text-[#8957F5]" />
             </div>
-            <div className="text-2xl font-display font-bold text-[#F0F5F1] tabular-nums">
+            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
               {dmThreads.length}
             </div>
-            <div className="text-[11px] text-[#718478] mt-1">
-              Encrypted direct threads
+            <div className="text-[11px] text-[#706C7B] mt-0.5">
+              Direct message channels
             </div>
           </button>
 
           <button
             onClick={() => onSelectView({ type: 'explore_communities' })}
-            className="text-left rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] p-4 transition-colors"
+            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
           >
-            <div className="flex items-center justify-between text-xs text-[#9BAEA2] mb-2">
-              <span>Joined Communities</span>
-              <Hash className="w-4 h-4 text-[#E9987B]" />
+            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
+              <span>Communities</span>
+              <Hash className="w-4 h-4 text-[#A47BFF]" />
             </div>
-            <div className="text-2xl font-display font-bold text-[#F0F5F1] tabular-nums">
+            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
               {joinedCommunities.length}
             </div>
-            <div className="text-[11px] text-[#718478] mt-1 tabular-nums">
-              {communities.length} public spaces available
+            <div className="text-[11px] text-[#706C7B] mt-0.5 tabular-nums">
+              {communities.length} total discoverable
             </div>
           </button>
 
           <button
             onClick={() => onSelectView({ type: 'orbs', viewMode: 'explore' })}
-            className="text-left rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] p-4 transition-colors"
+            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
           >
-            <div className="flex items-center justify-between text-xs text-[#9BAEA2] mb-2">
-              <span>Active Orbs</span>
-              <Compass className="w-4 h-4 text-[#D9BB79]" />
+            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
+              <span>Spatial Orbs</span>
+              <Compass className="w-4 h-4 text-[#C4B1FF]" />
             </div>
-            <div className="text-2xl font-display font-bold text-[#F0F5F1] tabular-nums">
+            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
               {orbs.length}
             </div>
-            <div className="text-[11px] text-[#718478] mt-1">
-              Interactive interest spheres
+            <div className="text-[11px] text-[#706C7B] mt-0.5">
+              Interactive 3D spaces
             </div>
           </button>
         </section>
 
-        {/* Main Two-Column Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (7 cols): Recent Conversations & Communities */}
-          <div className="lg:col-span-7 space-y-6">
+        {/* Main Two-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Left Column (7 cols): Conversations & Communities */}
+          <div className="lg:col-span-7 space-y-5">
             {/* Recent Conversations */}
-            <div className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
                     Recent Conversations
                   </h3>
-                  <p className="text-xs text-[#718478] mt-0.5">
-                    Continue where you left off in direct messages
+                  <p className="text-[11px] text-[#706C7B]">
+                    Pick up where you left off
                   </p>
                 </div>
                 <button
                   onClick={() => onSelectView({ type: 'friends', subTab: 'all' })}
-                  className="text-xs font-medium text-[#8BE2B8] hover:underline flex items-center gap-1 whitespace-nowrap"
+                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] flex items-center gap-1 transition-colors"
                 >
                   <span>All Friends</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -326,24 +326,24 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               </div>
 
               {dmThreads.length === 0 ? (
-                <div className="p-8 text-center">
-                  <MessageSquare className="w-8 h-8 text-[#718478] mx-auto mb-2.5 opacity-60" />
-                  <p className="text-sm font-medium text-[#F0F5F1]">
+                <div className="p-6 text-center">
+                  <MessageSquare className="w-7 h-7 text-[#706C7B] mx-auto mb-2 opacity-60" />
+                  <p className="text-xs font-medium text-[#F5F3FA]">
                     No direct conversations yet
                   </p>
-                  <p className="text-xs text-[#9BAEA2] mt-1 max-w-sm mx-auto">
-                    Add a friend by username or select a member from any community to start a direct conversation.
+                  <p className="text-[11px] text-[#706C7B] mt-0.5 max-w-sm mx-auto">
+                    Add a friend by username or message a member from any community.
                   </p>
                   <button
                     onClick={() => onSelectView({ type: 'friends', subTab: 'add' })}
-                    className="mt-4 h-8 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-medium text-[#8BE2B8] inline-flex items-center gap-1.5 transition-colors"
+                    className="mt-3 h-7 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#8957F5] inline-flex items-center gap-1.5 transition-colors"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     <span>Find Friends</span>
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.05]">
+                <div className="divide-y divide-[#282631]/60">
                   {dmThreads.slice(0, 5).map((dm) => {
                     const otherUid =
                       dm.participants.find((id) => id !== profile.uid) || dm.participants[0];
@@ -357,10 +357,10 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                       <button
                         key={dm.id}
                         onClick={() => onSelectView({ type: 'dm', dmId: dm.id })}
-                        className="w-full px-5 py-3.5 hover:bg-[#192620] flex items-center justify-between gap-4 transition-colors text-left"
+                        className="w-full px-4 py-2.5 hover:bg-[#17171F] flex items-center justify-between gap-3 transition-colors text-left"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-lg bg-[#1D2B24] border border-white/10 flex items-center justify-center text-xs font-bold text-[#8BE2B8] shrink-0 overflow-hidden">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-md bg-[#17171F] border border-[#282631] flex items-center justify-center text-xs font-bold text-[#8957F5] shrink-0 overflow-hidden">
                             {peer?.photoURL ? (
                               <img
                                 src={peer.photoURL}
@@ -372,27 +372,27 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-[#F0F5F1] truncate">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-[#F5F3FA] truncate">
                                 {peerName}
                               </span>
-                              <span className="text-[11px] font-mono text-[#718478] truncate">
+                              <span className="text-[10px] font-mono text-[#706C7B] truncate">
                                 @{peerUsername}
                               </span>
                             </div>
-                            <p className="text-xs text-[#9BAEA2] truncate mt-0.5">
-                              {dm.lastMessageText || 'Open conversation thread'}
+                            <p className="text-[11px] text-[#A19DAD] truncate">
+                              {dm.lastMessageText || 'Open thread'}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {dm.lastMessageAt && (
-                            <span className="text-[11px] font-mono text-[#718478] tabular-nums">
+                            <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
                               {new Date(dm.lastMessageAt).toLocaleDateString()}
                             </span>
                           )}
-                          <ArrowUpRight className="w-4 h-4 text-[#718478]" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-[#706C7B]" />
                         </div>
                       </button>
                     );
@@ -402,26 +402,26 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             </div>
 
             {/* Joined Communities */}
-            <div className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
                     Your Communities
                   </h3>
-                  <p className="text-xs text-[#718478] mt-0.5">
-                    Real-time channels, announcements, and voice rooms
+                  <p className="text-[11px] text-[#706C7B]">
+                    Active spaces and voice channels
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onSelectView({ type: 'explore_communities' })}
-                    className="text-xs font-medium text-[#9BAEA2] hover:text-[#F0F5F1] transition-colors"
+                    className="text-xs font-medium text-[#A19DAD] hover:text-[#F5F3FA] transition-colors"
                   >
                     Directory
                   </button>
                   <button
                     onClick={onOpenCreateCommunity}
-                    className="h-7 px-2.5 rounded-md bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-medium text-[#8BE2B8] flex items-center gap-1 transition-colors"
+                    className="h-6 px-2 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[11px] font-medium text-[#8957F5] flex items-center gap-1 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     <span>New</span>
@@ -430,31 +430,31 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               </div>
 
               {joinedCommunities.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Hash className="w-8 h-8 text-[#718478] mx-auto mb-2.5 opacity-60" />
-                  <p className="text-sm font-medium text-[#F0F5F1]">
-                    You haven't joined any communities yet
+                <div className="p-6 text-center">
+                  <Hash className="w-7 h-7 text-[#706C7B] mx-auto mb-2 opacity-60" />
+                  <p className="text-xs font-medium text-[#F5F3FA]">
+                    No communities joined yet
                   </p>
-                  <p className="text-xs text-[#9BAEA2] mt-1 max-w-sm mx-auto">
-                    Create your own community workspace or explore public communities built by real users.
+                  <p className="text-[11px] text-[#706C7B] mt-0.5 max-w-sm mx-auto">
+                    Create your own server or explore available spaces.
                   </p>
-                  <div className="mt-4 flex items-center justify-center gap-2.5">
+                  <div className="mt-3 flex items-center justify-center gap-2">
                     <button
                       onClick={onOpenCreateCommunity}
-                      className="h-8 px-3.5 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold"
+                      className="h-7 px-3 rounded-md bg-[#8957F5] text-white text-xs font-medium shadow-sm"
                     >
                       Create Community
                     </button>
                     <button
                       onClick={() => onSelectView({ type: 'explore_communities' })}
-                      className="h-8 px-3.5 rounded-lg bg-[#1D2B24] text-[#F0F5F1] text-xs font-medium border border-white/[0.08]"
+                      className="h-7 px-3 rounded-md bg-[#17171F] text-[#F5F3FA] text-xs font-medium border border-[#282631]"
                     >
                       Browse Directory
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5">
                   {joinedCommunities.map((comm) => {
                     const firstChannelId = comm.channels?.[0]?.id || 'general';
                     return (
@@ -467,22 +467,22 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                             channelId: firstChannelId,
                           })
                         }
-                        className="p-4 rounded-xl bg-[#192620] hover:bg-[#24362C] border border-white/[0.06] text-left transition-colors flex items-start gap-3.5"
+                        className="p-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-left transition-colors flex items-start gap-2.5"
                       >
                         <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center font-display font-bold text-sm text-[#101A17] shrink-0"
-                          style={{ backgroundColor: comm.themeColor || '#8BE2B8' }}
+                          className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs text-white shrink-0"
+                          style={{ backgroundColor: comm.themeColor || '#8957F5' }}
                         >
                           {comm.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-semibold text-[#F0F5F1] truncate">
+                          <h4 className="text-xs font-semibold text-[#F5F3FA] truncate">
                             {comm.name}
                           </h4>
-                          <p className="text-xs text-[#9BAEA2] line-clamp-1 mt-0.5">
+                          <p className="text-[11px] text-[#706C7B] line-clamp-1">
                             {comm.description || 'Community workspace'}
                           </p>
-                          <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-[#718478] tabular-nums">
+                          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-[#706C7B] tabular-nums">
                             <span>{comm.members?.length || 1} members</span>
                             <span>·</span>
                             <span>{comm.channels?.length || 1} channels</span>
@@ -496,32 +496,32 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column (5 cols): Notifications/Activity, Orbs & Quick Links */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Notifications & Pending Actions Summary */}
-            <div className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-[#8BE2B8]" />
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+          {/* Right Column (5 cols): Notifications, Orbs & Actions */}
+          <div className="lg:col-span-5 space-y-5">
+            {/* Notifications & Pending Actions */}
+            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-[#8957F5]" />
+                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
                     Notifications & Activity
                   </h3>
                 </div>
                 <button
                   onClick={() => onSelectView({ type: 'notifications' })}
-                  className="text-xs font-medium text-[#8BE2B8] hover:underline"
+                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] transition-colors"
                 >
                   Open Inbox
                 </button>
               </div>
 
-              <div className="p-4 space-y-2.5">
+              <div className="p-3 space-y-2">
                 {pendingIncomingRequests.length === 0 &&
                 unclaimedGiftsForMe.length === 0 &&
                 myReceipts.length === 0 ? (
-                  <div className="py-6 text-center">
-                    <p className="text-xs text-[#9BAEA2]">
-                      You're all caught up. Incoming friend requests, gifts, and billing receipts appear here.
+                  <div className="py-5 text-center">
+                    <p className="text-xs text-[#706C7B]">
+                      You're all caught up. No pending requests or gifts.
                     </p>
                   </div>
                 ) : (
@@ -530,18 +530,18 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                       <button
                         key={req.id}
                         onClick={() => onSelectView({ type: 'friends', subTab: 'pending' })}
-                        className="w-full p-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.06] flex items-center justify-between text-left transition-colors"
+                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center justify-between text-left transition-colors"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <UserPlus className="w-4 h-4 text-[#8BE2B8] shrink-0" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <UserPlus className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F0F5F1] truncate">
+                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
                               Friend request from @{req.fromUsername}
                             </p>
-                            <p className="text-[11px] text-[#9BAEA2]">Click to review request</p>
+                            <p className="text-[10px] text-[#A19DAD]">Review request</p>
                           </div>
                         </div>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-[#718478] shrink-0" />
+                        <ArrowUpRight className="w-3 h-3 text-[#706C7B] shrink-0" />
                       </button>
                     ))}
 
@@ -554,18 +554,18 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                             token: gift.claimToken || gift.tokenPreview,
                           })
                         }
-                        className="w-full p-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-[#D9BB79]/30 flex items-center justify-between text-left transition-colors"
+                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#8957F5]/30 flex items-center justify-between text-left transition-colors"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <Gift className="w-4 h-4 text-[#D9BB79] shrink-0" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Gift className="w-3.5 h-3.5 text-[#A47BFF] shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F0F5F1] truncate">
-                              Unclaimed DOOMCORD APEX Gift from {gift.creatorName}
+                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
+                              APEX Gift from {gift.creatorName}
                             </p>
-                            <p className="text-[11px] text-[#D9BB79]">Click to claim your gift</p>
+                            <p className="text-[10px] text-[#A47BFF]">Click to claim</p>
                           </div>
                         </div>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-[#D9BB79] shrink-0" />
+                        <ArrowUpRight className="w-3 h-3 text-[#A47BFF] shrink-0" />
                       </button>
                     ))}
 
@@ -573,20 +573,20 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                       <button
                         key={rcp.id}
                         onClick={() => onOpenReceipt(rcp)}
-                        className="w-full p-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.06] flex items-center justify-between text-left transition-colors"
+                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center justify-between text-left transition-colors"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <Receipt className="w-4 h-4 text-[#8BE2B8] shrink-0" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Receipt className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F0F5F1] truncate">
-                              Receipt {rcp.receiptNumber} · {rcp.title}
+                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
+                              Receipt {rcp.receiptNumber}
                             </p>
-                            <p className="text-[11px] font-mono text-[#9BAEA2] tabular-nums">
+                            <p className="text-[10px] font-mono text-[#706C7B] tabular-nums">
                               ₹{rcp.totalAmountINR} · {rcp.paymentStatus}
                             </p>
                           </div>
                         </div>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-[#718478] shrink-0" />
+                        <ArrowUpRight className="w-3 h-3 text-[#706C7B] shrink-0" />
                       </button>
                     ))}
                   </>
@@ -595,70 +595,70 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             </div>
 
             {/* Featured Orbs */}
-            <div className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
                     Featured Orbs
                   </h3>
-                  <p className="text-xs text-[#718478] mt-0.5">
-                    Interactive interest spaces & 3D constellation
+                  <p className="text-[11px] text-[#706C7B]">
+                    3D spaces & thematic realms
                   </p>
                 </div>
                 <button
                   onClick={() => onSelectView({ type: 'orbs', viewMode: 'explore' })}
-                  className="text-xs font-medium text-[#8BE2B8] hover:underline"
+                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] transition-colors"
                 >
                   Explore All
                 </button>
               </div>
 
               {orbs.length === 0 ? (
-                <div className="p-6 text-center">
-                  <Compass className="w-7 h-7 text-[#718478] mx-auto mb-2 opacity-60" />
-                  <p className="text-xs text-[#9BAEA2]">
-                    No Orbs created yet. Launch the first interactive Orb for your interest group.
+                <div className="p-5 text-center">
+                  <Compass className="w-6 h-6 text-[#706C7B] mx-auto mb-1.5 opacity-60" />
+                  <p className="text-xs text-[#706C7B]">
+                    No Orbs created yet.
                   </p>
                   <button
                     onClick={onOpenCreateOrb}
-                    className="mt-3 h-8 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-medium text-[#E9987B]"
+                    className="mt-2.5 h-7 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#A47BFF]"
                   >
                     + Create First Orb
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.05]">
+                <div className="divide-y divide-[#282631]/60">
                   {orbs.slice(0, 4).map((orb) => (
                     <button
                       key={orb.id}
                       onClick={() =>
                         onSelectView({ type: 'orbs', orbId: orb.id, viewMode: 'detail' })
                       }
-                      className="w-full px-5 py-3.5 hover:bg-[#192620] flex items-center justify-between gap-3 text-left transition-colors"
+                      className="w-full px-4 py-2.5 hover:bg-[#17171F] flex items-center justify-between gap-2.5 text-left transition-colors"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[#101A17] shrink-0"
-                          style={{ backgroundColor: orb.primaryColor || '#8BE2B8' }}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                          style={{ backgroundColor: orb.primaryColor || '#8957F5' }}
                         >
                           {orb.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-[#F0F5F1] truncate">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-[#F5F3FA] truncate">
                               {orb.name}
                             </span>
-                            <span className="text-[10px] font-mono uppercase text-[#9BAEA2]">
+                            <span className="text-[9px] font-mono uppercase text-[#706C7B]">
                               {orb.category}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#718478] truncate mt-0.5">
+                          <p className="text-[10px] text-[#706C7B] truncate">
                             {orb.description}
                           </p>
                         </div>
                       </div>
-                      <span className="text-[11px] font-mono text-[#9BAEA2] tabular-nums shrink-0">
-                        {orb.memberCount || 1} joined
+                      <span className="text-[10px] font-mono text-[#706C7B] tabular-nums shrink-0">
+                        {orb.memberCount || 1}
                       </span>
                     </button>
                   ))}
@@ -666,28 +666,28 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               )}
             </div>
 
-            {/* Cosmetics & Admin Console Shortcut */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Quick Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
                 onClick={() => onSelectView({ type: 'shop' })}
-                className="p-4 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+                className="p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] text-left transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-[#E9987B] mb-2" />
-                <div className="text-xs font-semibold text-[#F0F5F1]">Cosmetics Shop</div>
-                <p className="text-[11px] text-[#718478] mt-0.5">
-                  Avatar frames, effects & themes
+                <Sparkles className="w-4 h-4 text-[#A47BFF] mb-1.5" />
+                <div className="text-xs font-semibold text-[#F5F3FA]">Cosmetics Shop</div>
+                <p className="text-[10px] text-[#706C7B] mt-0.5">
+                  Decorations & themes
                 </p>
               </button>
 
               {(isOwner || isSecOwner || profile.role === 'admin') && (
                 <button
                   onClick={() => onSelectView({ type: 'admin' })}
-                  className="p-4 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-[#8BE2B8]/25 text-left transition-colors"
+                  className="p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#8957F5]/30 text-left transition-colors"
                 >
-                  <Shield className="w-4 h-4 text-[#8BE2B8] mb-2" />
-                  <div className="text-xs font-semibold text-[#F0F5F1]">Admin Console</div>
-                  <p className="text-[11px] text-[#718478] mt-0.5">
-                    Owners, Gifts, Receipts & Security
+                  <Shield className="w-4 h-4 text-[#8957F5] mb-1.5" />
+                  <div className="text-xs font-semibold text-[#F5F3FA]">Admin Console</div>
+                  <p className="text-[10px] text-[#706C7B] mt-0.5">
+                    Platform Management
                   </p>
                 </button>
               )}

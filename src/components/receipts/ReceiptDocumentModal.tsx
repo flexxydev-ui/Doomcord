@@ -245,15 +245,15 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-4xl my-8 rounded-3xl bg-[oklch(0.14_0.025_162)] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-4xl my-8 rounded-3xl bg-[#0D0D12] border border-[#282631] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Top Action Toolbar (Hidden when printing) */}
-        <div className="px-6 py-3.5 bg-[oklch(0.17_0.028_161)] border-b border-white/10 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="px-6 py-3.5 bg-[#101014] border-b border-[#282631] flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex items-center gap-2.5">
-            <FileText className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
+            <FileText className="w-4 h-4 text-[#8957F5]" />
             <span className="text-xs font-bold text-white font-mono">
               Receipt {receipt.receiptNumber}
             </span>
-            <span className="text-[11px] font-mono text-[oklch(0.7_0.03_155)]">
+            <span className="text-[11px] font-mono text-[#A19DAD]">
               · {receipt.receiptType}
             </span>
           </div>
@@ -262,16 +262,16 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Theme Switcher: Dark Forest vs Print White */}
             <button
               onClick={() => setPrintWhiteMode(!printWhiteMode)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#17171F] hover:bg-white/10 text-xs font-semibold text-white border border-[#282631] transition-colors"
             >
               {printWhiteMode ? (
                 <>
-                  <Moon className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
+                  <Moon className="w-3.5 h-3.5 text-[#8957F5]" />
                   <span>Dark Forest View</span>
                 </>
               ) : (
                 <>
-                  <Sun className="w-3.5 h-3.5 text-[oklch(0.84_0.14_85)]" />
+                  <Sun className="w-3.5 h-3.5 text-[#C4B1FF]" />
                   <span>Print-Friendly White</span>
                 </>
               )}
@@ -282,8 +282,8 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
               onClick={() => setIsDuplicateWatermark(!isDuplicateWatermark)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
                 isDuplicateWatermark
-                  ? 'bg-[oklch(0.84_0.14_85)]/20 border-[oklch(0.84_0.14_85)]/40 text-[oklch(0.84_0.14_85)]'
-                  : 'bg-[oklch(0.235_0.032_158)] border-white/10 text-[oklch(0.7_0.03_155)] hover:text-white'
+                  ? 'bg-[#C4B1FF]/20 border-[#C4B1FF]/40 text-[#C4B1FF]'
+                  : 'bg-[#17171F] border-[#282631] text-[#A19DAD] hover:text-white'
               }`}
             >
               {isDuplicateWatermark ? '✓ Marked DUPLICATE' : 'Mark Duplicate'}
@@ -292,11 +292,11 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Copy Link */}
             <button
               onClick={handleCopyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#17171F] hover:bg-white/10 text-xs font-semibold text-white border border-[#282631]"
             >
               {copiedLink ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
+                  <Check className="w-3.5 h-3.5 text-[#8957F5]" />
                   <span>Copied URL</span>
                 </>
               ) : (
@@ -310,11 +310,11 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Copy Details */}
             <button
               onClick={handleCopyDetails}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#17171F] hover:bg-white/10 text-xs font-semibold text-white border border-[#282631]"
             >
               {copiedSummary ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
+                  <Check className="w-3.5 h-3.5 text-[#8957F5]" />
                   <span>Copied</span>
                 </>
               ) : (
@@ -328,16 +328,16 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Print / Save as PDF */}
             <button
               onClick={handlePrintOrPdf}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-white border border-white/10"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#17171F] hover:bg-white/10 text-xs font-semibold text-white border border-[#282631]"
             >
-              <Printer className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
+              <Printer className="w-3.5 h-3.5 text-[#8957F5]" />
               <span>Print / PDF</span>
             </button>
 
             {/* Download Printable Invoice */}
             <button
               onClick={handleDownloadPrintableHtml}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-xs font-semibold text-white shadow-md"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#8957F5] hover:bg-[#7846E4] text-xs font-semibold text-white shadow-md"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download</span>
@@ -351,7 +351,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                   setEditNotes(receipt.notes);
                   setIsEditingMetadata(!isEditingMetadata);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[oklch(0.235_0.032_158)] hover:bg-white/10 text-xs font-semibold text-[oklch(0.85_0.12_165)] border border-[oklch(0.85_0.12_165)]/30"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#17171F] hover:bg-white/10 text-xs font-semibold text-[#8957F5] border border-[#8957F5]/30"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Correct Metadata</span>
@@ -360,7 +360,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-[oklch(0.7_0.03_155)] hover:text-white rounded-lg"
+              className="p-1.5 text-[#A19DAD] hover:text-white rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
@@ -371,53 +371,53 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
         {isEditingMetadata && canEditReceipt && (
           <form
             onSubmit={handleSaveCorrection}
-            className="p-5 bg-[oklch(0.17_0.028_161)] border-b border-white/10 space-y-3 print:hidden"
+            className="p-5 bg-[#101014] border-b border-[#282631] space-y-3 print:hidden"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[oklch(0.85_0.12_165)] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#8957F5] uppercase tracking-wider">
                 Correct Non-Financial Receipt Metadata (Recorded in Immutable Audit History)
               </span>
-              <span className="text-[11px] font-mono text-[oklch(0.7_0.03_155)]">
+              <span className="text-[11px] font-mono text-[#A19DAD]">
                 Financial amounts (₹{receipt.totalAmountINR} INR) are permanently locked
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-bold text-[oklch(0.7_0.03_155)] uppercase block mb-1">
+                <label className="text-[10px] font-bold text-[#A19DAD] uppercase block mb-1">
                   Receipt Title
                 </label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  className="w-full bg-[#17171F] text-xs text-white px-3 py-2 rounded-xl border border-[#282631] outline-none"
                   required
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-[oklch(0.7_0.03_155)] uppercase block mb-1">
+                <label className="text-[10px] font-bold text-[#A19DAD] uppercase block mb-1">
                   Description
                 </label>
                 <input
                   type="text"
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
-                  className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  className="w-full bg-[#17171F] text-xs text-white px-3 py-2 rounded-xl border border-[#282631] outline-none"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-[oklch(0.7_0.03_155)] uppercase block mb-1">
+                <label className="text-[10px] font-bold text-[#A19DAD] uppercase block mb-1">
                   Additional Notes
                 </label>
                 <input
                   type="text"
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  className="w-full bg-[#17171F] text-xs text-white px-3 py-2 rounded-xl border border-[#282631] outline-none"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-[oklch(0.84_0.14_85)] uppercase block mb-1">
+                <label className="text-[10px] font-bold text-[#C4B1FF] uppercase block mb-1">
                   Mandatory Reason for Correction (Audit Log)
                 </label>
                 <input
@@ -425,7 +425,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                   placeholder="e.g. Updated customer billing note"
                   value={correctionReason}
                   onChange={(e) => setCorrectionReason(e.target.value)}
-                  className="w-full bg-[oklch(0.235_0.032_158)] text-xs text-white px-3 py-2 rounded-xl border border-[oklch(0.84_0.14_85)]/40 outline-none"
+                  className="w-full bg-[#17171F] text-xs text-white px-3 py-2 rounded-xl border border-[#C4B1FF]/40 outline-none"
                   required
                 />
               </div>
@@ -441,7 +441,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
               <button
                 type="submit"
                 disabled={savingCorrection}
-                className="px-4 py-1.5 rounded-xl bg-[oklch(0.85_0.12_165)] text-black text-xs font-bold"
+                className="px-4 py-1.5 rounded-xl bg-[#8957F5] text-white text-xs font-bold"
               >
                 {savingCorrection ? 'Recording Correction...' : 'Save Correction & Append Audit Log'}
               </button>
@@ -455,12 +455,12 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             className={`rounded-3xl p-8 border transition-colors ${
               printWhiteMode
                 ? 'bg-white text-slate-900 border-slate-200 shadow-xl'
-                : 'bg-[oklch(0.17_0.028_161)] text-[oklch(0.95_0.015_150)] border-white/10 shadow-2xl'
+                : 'bg-[#101014] text-[#F5F3FA] border-[#282631] shadow-2xl'
             }`}
           >
             {/* Optional DUPLICATE Watermark Banner */}
             {isDuplicateWatermark && (
-              <div className="mb-6 py-2 px-4 rounded-xl border-2 border-dashed border-[oklch(0.72_0.16_32)] text-center font-mono text-xs font-bold tracking-[0.25em] text-[oklch(0.72_0.16_32)] uppercase">
+              <div className="mb-6 py-2 px-4 rounded-xl border-2 border-dashed border-[#A47BFF] text-center font-mono text-xs font-bold tracking-[0.25em] text-[#A47BFF] uppercase">
                 DUPLICATE RECEIPT COPY — ORIGINAL ISSUED ON{' '}
                 {new Date(receipt.issueDate).toLocaleDateString()}
               </div>
@@ -469,18 +469,18 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Header: Brand Logo + Receipt Number & Status */}
             <div
               className={`flex flex-col md:flex-row md:items-start justify-between gap-4 pb-6 mb-6 border-b ${
-                printWhiteMode ? 'border-slate-200' : 'border-white/10'
+                printWhiteMode ? 'border-slate-200' : 'border-[#282631]'
               }`}
             >
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-white font-black text-lg tracking-tighter shadow-md flex items-center gap-1.5">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-[#8957F5] text-white font-black text-lg tracking-tighter shadow-md flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4" />
                     <span>DOOMCORD APEX</span>
                   </div>
                   <span
                     className={`text-xs font-mono uppercase tracking-widest ${
-                      printWhiteMode ? 'text-emerald-700 font-bold' : 'text-[oklch(0.85_0.12_165)]'
+                      printWhiteMode ? 'text-emerald-700 font-bold' : 'text-[#8957F5]'
                     }`}
                   >
                     RISE ABOVE. STAND APART.
@@ -495,7 +495,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 </h2>
                 <p
                   className={`text-xs ${
-                    printWhiteMode ? 'text-slate-600' : 'text-[oklch(0.7_0.03_155)]'
+                    printWhiteMode ? 'text-slate-600' : 'text-[#A19DAD]'
                   }`}
                 >
                   {receipt.description}
@@ -515,7 +515,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 </div>
                 <div
                   className={`text-xs font-mono mt-0.5 ${
-                    printWhiteMode ? 'text-slate-600' : 'text-[oklch(0.7_0.03_155)]'
+                    printWhiteMode ? 'text-slate-600' : 'text-[#A19DAD]'
                   }`}
                 >
                   Issued: {new Date(receipt.issueDate).toLocaleString()}
@@ -550,7 +550,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 className={`p-4 rounded-2xl border ${
                   printWhiteMode
                     ? 'bg-slate-50 border-slate-200'
-                    : 'bg-[oklch(0.235_0.032_158)]/60 border-white/5'
+                    : 'bg-[#17171F]/60 border-[#282631]'
                 }`}
               >
                 <span className="text-[10px] font-mono uppercase tracking-wider opacity-70 block mb-1.5">
@@ -578,14 +578,14 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 className={`p-4 rounded-2xl border ${
                   printWhiteMode
                     ? 'bg-slate-50 border-slate-200'
-                    : 'bg-[oklch(0.235_0.032_158)]/60 border-white/5'
+                    : 'bg-[#17171F]/60 border-[#282631]'
                 }`}
               >
                 <span className="text-[10px] font-mono uppercase tracking-wider opacity-70 block mb-1.5">
                   Service Duration & Expiration Status
                 </span>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
+                  <Clock className="w-4 h-4 text-[#8957F5]" />
                   <span
                     className={`text-sm font-bold font-mono ${
                       receipt.serviceExpiryDate === null
@@ -618,7 +618,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {/* Itemized Table */}
             <div
               className={`rounded-2xl border overflow-hidden mb-6 ${
-                printWhiteMode ? 'border-slate-200' : 'border-white/10'
+                printWhiteMode ? 'border-slate-200' : 'border-[#282631]'
               }`}
             >
               <table className="w-full text-left border-collapse">
@@ -627,7 +627,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                     className={`text-[10px] font-mono uppercase tracking-wider border-b ${
                       printWhiteMode
                         ? 'bg-slate-100 text-slate-600 border-slate-200'
-                        : 'bg-[oklch(0.14_0.025_162)] text-[oklch(0.7_0.03_155)] border-white/10'
+                        : 'bg-[#0D0D12] text-[#A19DAD] border-[#282631]'
                     }`}
                   >
                     <th className="py-3 px-4">Product / Service</th>
@@ -677,7 +677,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 {receipt.purchaseNature && (
                   <div>
                     <span className="opacity-70">Purchase Classification: </span>
-                    <strong className="font-mono text-[oklch(0.85_0.12_165)]">
+                    <strong className="font-mono text-[#8957F5]">
                       {receipt.purchaseNature === 'self_purchase'
                         ? 'PURCHASED FOR SELF'
                         : receipt.purchaseNature === 'gift_purchase'
@@ -699,7 +699,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                     <span className="opacity-70">Linked Gift ID: </span>
                     <strong className="font-mono">{receipt.linkedGiftId}</strong>
                     {receipt.giftRedemptionStatus && (
-                      <span className="ml-2 font-mono uppercase text-[11px] text-[oklch(0.84_0.14_85)]">
+                      <span className="ml-2 font-mono uppercase text-[11px] text-[#C4B1FF]">
                         [{receipt.giftRedemptionStatus}]
                       </span>
                     )}
@@ -737,7 +737,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 className={`p-5 rounded-2xl border space-y-2 text-xs ${
                   printWhiteMode
                     ? 'bg-slate-50 border-slate-200'
-                    : 'bg-[oklch(0.14_0.025_162)] border-white/10'
+                    : 'bg-[#0D0D12] border-[#282631]'
                 }`}
               >
                 <div className="flex justify-between">
@@ -757,7 +757,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 <div className="h-[1px] bg-white/10 my-2" />
                 <div className="flex justify-between items-center text-sm font-black">
                   <span>Final Total</span>
-                  <span className="font-mono tabular-nums text-[oklch(0.85_0.12_165)]">
+                  <span className="font-mono tabular-nums text-[#8957F5]">
                     {receipt.paymentStatus === 'Complimentary'
                       ? 'COMPLIMENTARY — ₹0 PAID'
                       : `₹${receipt.totalAmountINR} INR`}
@@ -770,7 +770,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {receipt.auditHistory && receipt.auditHistory.length > 0 && (
               <div
                 className={`mt-6 pt-4 border-t text-[11px] ${
-                  printWhiteMode ? 'border-slate-200' : 'border-white/10'
+                  printWhiteMode ? 'border-slate-200' : 'border-[#282631]'
                 }`}
               >
                 <div className="flex items-center gap-1.5 font-mono uppercase tracking-wider opacity-70 mb-2">

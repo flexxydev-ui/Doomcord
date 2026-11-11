@@ -16,6 +16,9 @@ import {
   Compass,
   Megaphone,
   Box,
+  Zap,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   Community,
@@ -28,8 +31,8 @@ import {
 import {
   generateInitialsAvatar,
   isRootOwner,
-  formatRoleLabel,
 } from '../../lib/dataService';
+import { calculateServerBoostState } from '../../lib/chatEnhancements';
 
 interface ContextSidebarProps {
   activeView: ActiveView;
@@ -48,6 +51,8 @@ interface ContextSidebarProps {
   onSelectDm: (dmId: string) => void;
   onSelectChannel: (communityId: string, channelId: string) => void;
   onCreateChannel: (communityId: string) => void;
+  onBoostCommunity?: (communityId: string) => void;
+  onOpenQuickSwitcher?: () => void;
   onSelectOrbView?: (view: ActiveView) => void;
   onOpenSettings: () => void;
   onChangePresence: (presence: UserPresence) => void;
@@ -70,17 +75,27 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
   onSelectDm,
   onSelectChannel,
   onCreateChannel,
+  onBoostCommunity,
+  onOpenQuickSwitcher,
   onSelectOrbView,
   onOpenSettings,
   onChangePresence,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const isCommunityView = activeView.type === 'community';
   const isOrbsView = activeView.type === 'orbs';
 
   const activeCommunity = isCommunityView
     ? communities.find((c) => c.id === activeView.communityId)
+    : null;
+
+  const boostState = activeCommunity
+    ? calculateServerBoostState(activeCommunity.boostCount || 0)
     : null;
 
   const isOwner = isRootOwner(currentUser.uid);
@@ -92,36 +107,35 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
   const getPresenceColor = (presence: UserPresence) => {
     switch (presence) {
       case 'online':
-        return 'bg-[#6DD5A5]';
+        return 'bg-[#3BA55D]';
       case 'idle':
-        return 'bg-[#E4B869]';
+        return 'bg-[#FAA81A]';
       case 'dnd':
-        return 'bg-[#E57373]';
+        return 'bg-[#ED4245]';
       case 'invisible':
       default:
-        return 'bg-[#718478]';
+        return 'bg-[#706C7B]';
     }
   };
 
-  const filteredDms = directMessages.filter((dm) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const name = dm.recipientProfile?.displayName?.toLowerCase() || '';
-    const uname = dm.recipientProfile?.username?.toLowerCase() || '';
-    return name.includes(q) || uname.includes(q);
-  });
-
   return (
-    <aside className="w-64 h-full flex flex-col bg-[#141F1B] border-r border-white/[0.06] select-none shrink-0">
-      {/* Top Contextual Header */}
-      <div className="h-16 px-4 flex items-center justify-between border-b border-white/[0.06] shrink-0">
+    <aside className="w-60 h-full flex flex-col bg-[#0D0D12] border-r border-[#282631] select-none shrink-0 text-[#F5F3FA]">
+      {/* Top Header */}
+      <div className="h-14 px-3.5 flex items-center justify-between border-b border-[#282631] shrink-0">
         {isCommunityView && activeCommunity ? (
           <div className="w-full flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="text-sm font-display font-bold text-[#F0F5F1] truncate">
-                {activeCommunity.name}
-              </h2>
-              <p className="text-[11px] font-mono text-[#718478] tabular-nums">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-xs font-semibold text-[#F5F3FA] truncate">
+                  {activeCommunity.name}
+                </h2>
+                {boostState && boostState.level > 0 && (
+                  <span className="px-1.5 py-0.2 rounded bg-[#8957F5]/20 border border-[#8957F5]/40 text-[9px] font-mono text-[#C4B1FF] tabular-nums shrink-0">
+                    LVL {boostState.level}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] font-mono text-[#706C7B] tabular-nums">
                 {activeCommunity.members?.length || 1} members ·{' '}
                 {activeCommunity.channels?.length || 1} channels
               </p>
@@ -129,59 +143,166 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
             <button
               onClick={() => onCreateChannel(activeCommunity.id)}
               title="Create Channel"
-              className="w-8 h-8 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.07] text-[#8BE2B8] flex items-center justify-center transition-colors shrink-0"
+              className="w-7 h-7 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#8957F5] flex items-center justify-center transition-colors shrink-0"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : isOrbsView ? (
           <div className="w-full flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-display font-bold text-[#F0F5F1]">
-                Orbs Discovery
-              </h2>
-              <p className="text-[11px] text-[#718478]">
-                Interactive community spheres
-              </p>
+            <div className="flex items-center gap-2">
+              <img
+                src="/assets/aistudio/doomcord-icon_378efdf9.png"
+                alt="Doomcord"
+                className="w-5 h-5 object-contain"
+              />
+              <span className="text-xs font-semibold text-[#F5F3FA]">Orbs Spheres</span>
             </div>
-            <Compass className="w-4 h-4 text-[#E9987B]" />
+            <Compass className="w-4 h-4 text-[#A47BFF]" />
           </div>
         ) : (
-          <div className="w-full">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#718478] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter conversations..."
-                className="w-full h-9 pl-8 pr-3 rounded-lg bg-[#101A17] border border-white/[0.07] focus:border-[#8BE2B8]/50 text-xs text-[#F0F5F1] placeholder-[#718478] outline-none transition-colors"
-              />
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={onOpenQuickSwitcher}
+            className="w-full h-8 px-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center justify-between text-xs text-[#706C7B] hover:text-[#F5F3FA] transition-colors"
+          >
+            <span className="flex items-center gap-2 truncate">
+              <Search className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
+              <span className="truncate">Find or jump to...</span>
+            </span>
+            <kbd className="px-1.5 py-0.5 rounded bg-[#101014] border border-[#282631] text-[9px] font-mono text-[#A19DAD] shrink-0">
+              Ctrl K
+            </kbd>
+          </button>
         )}
       </div>
 
-      {/* Middle Contextual Content */}
-      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5">
+      {/* Middle Scrollable Section */}
+      <div className="flex-1 overflow-y-auto px-2 py-2.5 space-y-4">
         {isCommunityView && activeCommunity ? (
           <>
-            {/* Community Description Banner */}
-            {activeCommunity.description && (
-              <div className="px-3 py-2.5 rounded-lg bg-[#192620] border border-white/[0.05] text-xs text-[#9BAEA2] leading-relaxed">
-                {activeCommunity.description}
+            {/* Server Boost Bar */}
+            {boostState && (
+              <div className="p-2.5 rounded-lg bg-[#101014] border border-[#282631] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase text-[#C4B1FF] flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-[#8957F5]" />
+                    <span>Level {boostState.level} Server</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
+                    {boostState.boostCount}/{boostState.nextLevelBoosts} Boosts
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-[#17171F] overflow-hidden">
+                  <div
+                    className="h-full bg-[#8957F5] transition-all duration-300"
+                    style={{ width: `${boostState.progressPercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
+                    {boostState.audioBitrateKbps}kbps · {boostState.uploadLimitMB}MB
+                  </span>
+                  {onBoostCommunity && (
+                    <button
+                      type="button"
+                      onClick={() => onBoostCommunity(activeCommunity.id)}
+                      className="px-2 py-0.5 rounded bg-[#8957F5] hover:bg-[#7846E4] text-[10px] font-semibold text-white transition-colors flex items-center gap-1"
+                    >
+                      <Zap className="w-2.5 h-2.5" />
+                      <span>Boost</span>
+                    </button>
+                  )}
+                </div>
               </div>
+            )}
+
+            {/* Quick Switcher Trigger inside Server */}
+            {onOpenQuickSwitcher && (
+              <button
+                type="button"
+                onClick={onOpenQuickSwitcher}
+                className="w-full px-2.5 py-1.5 rounded-md bg-[#101014] hover:bg-[#17171F] border border-[#282631] flex items-center justify-between text-[11px] text-[#706C7B] hover:text-[#F5F3FA] transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Search className="w-3 h-3 text-[#8957F5]" />
+                  <span>Quick Switcher</span>
+                </span>
+                <span className="font-mono text-[9px] text-[#706C7B]">Ctrl+K</span>
+              </button>
             )}
 
             {/* Announcement Channels */}
             {activeCommunity.channels?.some((c) => c.type === 'announcement') && (
               <div>
-                <div className="px-2 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#718478]">
-                  Announcements
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup('announcements')}
+                  className="w-full flex items-center justify-between px-2 mb-1 text-[10px] font-mono uppercase tracking-wider text-[#706C7B] hover:text-[#F5F3FA]"
+                >
+                  <span className="flex items-center gap-1">
+                    {collapsedGroups['announcements'] ? (
+                      <ChevronRight className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                    <span>Announcements</span>
+                  </span>
+                </button>
+                {!collapsedGroups['announcements'] && (
+                  <div className="space-y-0.5">
+                    {activeCommunity.channels
+                      .filter((c) => c.type === 'announcement')
+                      .map((ch) => {
+                        const isActive =
+                          activeView.type === 'community' && activeView.channelId === ch.id;
+                        return (
+                          <button
+                            key={ch.id}
+                            onClick={() => onSelectChannel(activeCommunity.id, ch.id)}
+                            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors ${
+                              isActive
+                                ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                                : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
+                            }`}
+                          >
+                            <Megaphone className="w-3.5 h-3.5 shrink-0 text-[#A47BFF]" />
+                            <span className="text-xs truncate">{ch.name}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Text Channels */}
+            <div>
+              <div className="flex items-center justify-between px-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup('text')}
+                  className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#706C7B] hover:text-[#F5F3FA]"
+                >
+                  {collapsedGroups['text'] ? (
+                    <ChevronRight className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                  <span>Text Channels</span>
+                </button>
+                <button
+                  onClick={() => onCreateChannel(activeCommunity.id)}
+                  className="text-[#706C7B] hover:text-[#8957F5]"
+                  title="New Channel"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {!collapsedGroups['text'] && (
                 <div className="space-y-0.5">
                   {activeCommunity.channels
-                    .filter((c) => c.type === 'announcement')
+                    ?.filter((c) => c.type === 'text')
                     .map((ch) => {
                       const isActive =
                         activeView.type === 'community' && activeView.channelId === ch.id;
@@ -189,120 +310,95 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                         <button
                           key={ch.id}
                           onClick={() => onSelectChannel(activeCommunity.id, ch.id)}
-                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors ${
                             isActive
-                              ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                              ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                           }`}
                         >
-                          <Megaphone className="w-3.5 h-3.5 shrink-0 text-[#E9987B]" />
+                          <Hash className="w-3.5 h-3.5 shrink-0 text-[#706C7B]" />
                           <span className="text-xs truncate">{ch.name}</span>
                         </button>
                       );
                     })}
                 </div>
-              </div>
-            )}
-
-            {/* Text Channels */}
-            <div>
-              <div className="flex items-center justify-between px-2 mb-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#718478]">
-                  Text Channels
-                </span>
-                <button
-                  onClick={() => onCreateChannel(activeCommunity.id)}
-                  className="text-[#718478] hover:text-[#8BE2B8]"
-                  title="New Channel"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="space-y-0.5">
-                {activeCommunity.channels
-                  ?.filter((c) => c.type === 'text')
-                  .map((ch) => {
-                    const isActive =
-                      activeView.type === 'community' && activeView.channelId === ch.id;
-                    return (
-                      <button
-                        key={ch.id}
-                        onClick={() => onSelectChannel(activeCommunity.id, ch.id)}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
-                          isActive
-                            ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                            : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
-                        }`}
-                      >
-                        <Hash className="w-3.5 h-3.5 shrink-0 text-[#8BE2B8]" />
-                        <span className="text-xs truncate">{ch.name}</span>
-                      </button>
-                    );
-                  })}
-              </div>
+              )}
             </div>
 
             {/* Voice & Stage Channels */}
             <div>
-              <div className="px-2 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#718478]">
-                Voice & Stage Rooms
-              </div>
-              <div className="space-y-0.5">
-                {activeCommunity.channels
-                  ?.filter((c) => c.type === 'voice' || c.type === 'stage')
-                  .map((ch) => {
-                    const isActive =
-                      activeView.type === 'community' && activeView.channelId === ch.id;
-                    const isStage = ch.type === 'stage';
-                    return (
-                      <button
-                        key={ch.id}
-                        onClick={() => onSelectChannel(activeCommunity.id, ch.id)}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
-                          isActive
-                            ? 'bg-[#24362C] text-[#8BE2B8] font-semibold'
-                            : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
-                        }`}
-                      >
-                        {isStage ? (
-                          <Radio className="w-3.5 h-3.5 shrink-0 text-[#D9BB79]" />
-                        ) : (
-                          <Volume2 className="w-3.5 h-3.5 shrink-0 text-[#8BE2B8]" />
-                        )}
-                        <span className="text-xs truncate">{ch.name}</span>
-                      </button>
-                    );
-                  })}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleGroup('voice')}
+                className="w-full flex items-center justify-between px-2 mb-1 text-[10px] font-mono uppercase tracking-wider text-[#706C7B] hover:text-[#F5F3FA]"
+              >
+                <span className="flex items-center gap-1">
+                  {collapsedGroups['voice'] ? (
+                    <ChevronRight className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                  <span>Voice & Stage Rooms</span>
+                </span>
+              </button>
+              {!collapsedGroups['voice'] && (
+                <div className="space-y-0.5">
+                  {activeCommunity.channels
+                    ?.filter((c) => c.type === 'voice' || c.type === 'stage')
+                    .map((ch) => {
+                      const isActive =
+                        activeView.type === 'community' && activeView.channelId === ch.id;
+                      const isStage = ch.type === 'stage';
+                      return (
+                        <button
+                          key={ch.id}
+                          onClick={() => onSelectChannel(activeCommunity.id, ch.id)}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors ${
+                            isActive
+                              ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
+                          }`}
+                        >
+                          {isStage ? (
+                            <Radio className="w-3.5 h-3.5 shrink-0 text-[#C4B1FF]" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5 shrink-0 text-[#8957F5]" />
+                          )}
+                          <span className="text-xs truncate">{ch.name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </>
         ) : isOrbsView ? (
           /* Orbs Contextual Navigation */
-          <div className="space-y-5">
-            <div className="space-y-1">
+          <div className="space-y-4">
+            <div className="space-y-0.5">
               <button
                 onClick={() =>
                   onSelectOrbView?.({ type: 'orbs', viewMode: 'explore' })
                 }
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   activeView.viewMode === 'explore' || !activeView.viewMode
-                    ? 'bg-[#24362C] text-[#F0F5F1]'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <Compass className="w-4 h-4 text-[#8BE2B8]" />
+                <Compass className="w-4 h-4 text-[#8957F5]" />
                 <span>Discover Orbs</span>
               </button>
 
               <button
                 onClick={() => onSelectOrbView?.({ type: 'orbs', viewMode: '3d' })}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   activeView.viewMode === '3d'
-                    ? 'bg-[#24362C] text-[#F0F5F1]'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <Box className="w-4 h-4 text-[#E9987B]" />
+                <Box className="w-4 h-4 text-[#A47BFF]" />
                 <span>3D Spatial Constellation</span>
               </button>
 
@@ -310,10 +406,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 onClick={() =>
                   onSelectOrbView?.({ type: 'orbs', viewMode: 'create' })
                 }
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   activeView.viewMode === 'create'
-                    ? 'bg-[#8BE2B8] text-[#101A17] font-semibold'
-                    : 'text-[#8BE2B8] hover:bg-[#192620]'
+                    ? 'bg-[#8957F5] text-white font-semibold'
+                    : 'text-[#A47BFF] hover:bg-[#17171F]'
                 }`}
               >
                 <Plus className="w-4 h-4" />
@@ -322,15 +418,15 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
             </div>
 
             <div>
-              <div className="px-2 mb-2 text-[10px] font-mono uppercase tracking-wider text-[#718478]">
+              <div className="px-2 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#706C7B]">
                 Active Orbs ({orbs.length})
               </div>
               {orbs.length === 0 ? (
-                <p className="px-2 text-xs text-[#718478]">
+                <p className="px-2 text-xs text-[#706C7B]">
                   No Orbs created yet.
                 </p>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {orbs.map((orb) => {
                     const isSelected =
                       activeView.type === 'orbs' && activeView.orbId === orb.id;
@@ -344,20 +440,20 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                             viewMode: 'detail',
                           })
                         }
-                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left transition-colors ${
+                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors ${
                           isSelected
-                            ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                            : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                            ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                            : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: orb.primaryColor || '#8BE2B8' }}
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: orb.primaryColor || '#8957F5' }}
                           />
                           <span className="text-xs truncate">{orb.name}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[#718478] tabular-nums">
+                        <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
                           {orb.memberCount || 1}
                         </span>
                       </button>
@@ -370,45 +466,45 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
         ) : (
           /* Personal Workspace Navigation + Direct Messages */
           <>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <button
                 onClick={onNavigateDashboard}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'home'
-                    ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <Home className="w-4 h-4 text-[#8BE2B8]" />
-                <span>Home Command</span>
+                <Home className="w-4 h-4 text-[#8957F5]" />
+                <span>Home</span>
               </button>
 
               <button
                 onClick={() => onNavigateFriends('online')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'friends'
-                    ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <Users className="w-4 h-4 text-[#8BE2B8]" />
+                <Users className="w-4 h-4 text-[#A47BFF]" />
                 <span>Friends</span>
               </button>
 
               <button
                 onClick={onNavigateNotifications}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'notifications'
-                    ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Bell className="w-4 h-4 text-[#8BE2B8]" />
+                <div className="flex items-center gap-2.5">
+                  <Bell className="w-4 h-4 text-[#C4B1FF]" />
                   <span>Notifications</span>
                 </div>
                 {notificationCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] font-mono font-bold text-[10px] tabular-nums">
+                  <span className="px-1.5 py-0.5 rounded-full bg-[#8957F5] text-white font-mono font-bold text-[10px] tabular-nums">
                     {notificationCount}
                   </span>
                 )}
@@ -416,38 +512,38 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
 
               <button
                 onClick={onNavigateProfile}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'profile'
-                    ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <User className="w-4 h-4 text-[#8BE2B8]" />
+                <User className="w-4 h-4 text-[#706C7B]" />
                 <span>My Profile</span>
               </button>
 
               <button
                 onClick={onNavigateNitro}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'nitro'
-                    ? 'bg-[#24362C] text-[#D9BB79] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#A47BFF] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <Crown className="w-4 h-4 text-[#D9BB79]" />
-                <span>DOOMCORD APEX</span>
+                <Crown className="w-4 h-4 text-[#8957F5]" />
+                <span>APEX Membership</span>
               </button>
 
               <button
                 onClick={onNavigateShop}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                   activeView.type === 'shop'
-                    ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                    : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                    ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                    : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                 }`}
               >
-                <ShoppingBag className="w-4 h-4 text-[#E9987B]" />
-                <span>APEX Collection</span>
+                <ShoppingBag className="w-4 h-4 text-[#C4B1FF]" />
+                <span>Cosmetics Shop</span>
               </button>
 
               {(currentUser.role === 'root_owner' ||
@@ -456,10 +552,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 currentUser.role === 'admin') && (
                 <button
                   onClick={onNavigateAdmin}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
                     activeView.type === 'admin'
-                      ? 'bg-[#8BE2B8]/20 text-[#8BE2B8] font-semibold'
-                      : 'text-[#8BE2B8] hover:bg-[#192620]'
+                      ? 'bg-[#8957F5]/20 text-[#A47BFF] font-semibold'
+                      : 'text-[#8957F5] hover:bg-[#17171F]'
                   }`}
                 >
                   <Shield className="w-4 h-4" />
@@ -469,35 +565,33 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
             </div>
 
             {/* Direct Messages Section */}
-            <div>
-              <div className="flex items-center justify-between px-2 mb-2 text-[10px] font-mono uppercase tracking-wider text-[#718478]">
-                <span>Direct Messages ({filteredDms.length})</span>
+            <div className="pt-2">
+              <div className="flex items-center justify-between px-2 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#706C7B]">
+                <span>Direct Messages</span>
                 <button
                   onClick={() => onNavigateFriends('add')}
                   title="New Direct Message"
-                  className="text-[#8BE2B8] hover:text-[#F0F5F1]"
+                  className="text-[#706C7B] hover:text-[#8957F5] transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {filteredDms.length === 0 ? (
-                <div className="px-3 py-4 rounded-lg bg-[#101A17] border border-white/[0.05] text-center space-y-1.5">
-                  <p className="text-[11px] text-[#9BAEA2]">
-                    {searchQuery
-                      ? 'No matching conversations'
-                      : 'No active direct messages'}
+              {directMessages.length === 0 ? (
+                <div className="px-3 py-3 rounded-md bg-[#101014] border border-[#282631] text-center space-y-1">
+                  <p className="text-[11px] text-[#706C7B]">
+                    No active direct messages
                   </p>
                   <button
                     onClick={() => onNavigateFriends('add')}
-                    className="text-[11px] font-medium text-[#8BE2B8] hover:underline"
+                    className="text-[11px] font-medium text-[#8957F5] hover:underline"
                   >
-                    + Start a conversation
+                    + Find a friend
                   </button>
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  {filteredDms.map((dm) => {
+                  {directMessages.map((dm) => {
                     const isActive =
                       activeView.type === 'dm' && activeView.dmId === dm.id;
                     const recipient = dm.recipientProfile;
@@ -506,10 +600,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                       <button
                         key={dm.id}
                         onClick={() => onSelectDm(dm.id)}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${
                           isActive
-                            ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
-                            : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+                            ? 'bg-[#17171F] text-[#F5F3FA] font-medium'
+                            : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
                         }`}
                       >
                         <div className="relative shrink-0">
@@ -521,11 +615,11 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                               )
                             }
                             alt={recipient?.displayName || 'User'}
-                            className="w-7 h-7 rounded-lg object-cover bg-[#1D2B24]"
+                            className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
                           />
                           {recipient && (
                             <span
-                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#141F1B] ${getPresenceColor(
+                              className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0D0D12] ${getPresenceColor(
                                 recipient.presence
                               )}`}
                             />
@@ -534,16 +628,16 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-[#F0F5F1] truncate">
+                            <span className="text-xs font-medium text-[#F5F3FA] truncate">
                               {recipient?.displayName || 'Direct Message'}
                             </span>
                             {dm.unreadCount && dm.unreadCount > 0 ? (
-                              <span className="px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] text-[9px] font-mono font-bold tabular-nums">
+                              <span className="px-1.5 py-0.5 rounded-full bg-[#8957F5] text-white text-[9px] font-mono font-bold tabular-nums">
                                 {dm.unreadCount}
                               </span>
                             ) : null}
                           </div>
-                          <span className="text-[11px] text-[#718478] truncate block">
+                          <span className="text-[11px] text-[#706C7B] truncate block">
                             {dm.lastMessageText || 'Open thread'}
                           </span>
                         </div>
@@ -558,10 +652,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
       </div>
 
       {/* Bottom User Identity Dock */}
-      <div className="p-3 bg-[#111B17] border-t border-white/[0.06] flex items-center justify-between gap-2 shrink-0">
+      <div className="p-2.5 bg-[#0D0D12] border-t border-[#282631] flex items-center justify-between gap-1.5 shrink-0">
         <button
           onClick={onNavigateProfile}
-          className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 min-w-0 text-left hover:opacity-90 transition-opacity flex-1"
         >
           <div className="relative shrink-0">
             <img
@@ -570,10 +664,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 generateInitialsAvatar(currentUser.displayName)
               }
               alt={currentUser.displayName}
-              className="w-8 h-8 rounded-lg object-cover bg-[#1D2B24]"
+              className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
             />
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#111B17] ${getPresenceColor(
+              className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0D0D12] ${getPresenceColor(
                 currentUser.presence
               )}`}
             />
@@ -581,15 +675,15 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
 
           <div className="min-w-0">
             <div className="flex items-center gap-1">
-              <span className="text-xs font-semibold text-[#F0F5F1] truncate">
+              <span className="text-xs font-medium text-[#F5F3FA] truncate">
                 {currentUser.displayName}
               </span>
               {hasApex && (
-                <Crown className="w-3 h-3 text-[#D9BB79] shrink-0" />
+                <Crown className="w-3 h-3 text-[#A47BFF] shrink-0" />
               )}
             </div>
-            <span className="text-[10px] font-mono text-[#718478] truncate block">
-              @{currentUser.username} · {formatRoleLabel(currentUser.role, currentUser.uid)}
+            <span className="text-[10px] font-mono text-[#706C7B] truncate block">
+              @{currentUser.username}
             </span>
           </div>
         </button>
@@ -598,7 +692,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
           <select
             value={currentUser.presence}
             onChange={(e) => onChangePresence(e.target.value as UserPresence)}
-            className="text-[10px] bg-[#192620] text-[#F0F5F1] rounded-md px-1.5 py-1 border border-white/[0.07] outline-none cursor-pointer"
+            className="text-[10px] bg-[#17171F] text-[#A19DAD] rounded px-1 py-1 border border-[#282631] outline-none cursor-pointer focus:border-[#8957F5]/50"
             title="Set Presence Status"
           >
             <option value="online">Online</option>
@@ -610,7 +704,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
           <button
             onClick={onOpenSettings}
             title="Account & App Settings"
-            className="p-1.5 rounded-md text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620] transition-colors"
+            className="p-1 rounded text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F] transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>

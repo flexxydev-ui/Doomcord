@@ -103,82 +103,82 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
   const getPresenceColor = (presence: UserPresence) => {
     switch (presence) {
       case 'online':
-        return 'bg-[#6DD5A5]';
+        return 'bg-[#3BA55D]';
       case 'idle':
-        return 'bg-[#E4B869]';
+        return 'bg-[#FAA81A]';
       case 'dnd':
-        return 'bg-[#E57373]';
+        return 'bg-[#ED4245]';
       case 'invisible':
       default:
-        return 'bg-[#718478]';
+        return 'bg-[#706C7B]';
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#101A17] text-[#F0F5F1] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#09090D] text-[#F5F3FA] overflow-hidden">
       {/* Top Navigation Header */}
-      <header className="h-16 px-6 bg-[#101A17] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-4 shrink-0 z-10">
+      <header className="h-14 px-6 bg-[#09090D] border-b border-[#282631] flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-[#F0F5F1] font-display font-bold text-sm">
-            <Users className="w-4 h-4 text-[#8BE2B8]" />
+          <div className="flex items-center gap-2 text-[#F5F3FA] font-semibold text-xs">
+            <Users className="w-4 h-4 text-[#8957F5]" />
             <span>Friends</span>
           </div>
 
-          <span className="h-4 w-[1px] bg-white/[0.08]" />
+          <span className="h-4 w-[1px] bg-[#282631]" />
 
           {/* Primary Tabs */}
-          <div className="flex items-center gap-1 bg-[#141F1B] p-1 rounded-lg border border-white/[0.06]">
+          <div className="flex items-center gap-1 bg-[#101014] p-1 rounded-md border border-[#282631]">
             <button
               onClick={() => onSubTabChange('online')}
-              className={`h-7 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`h-6 px-2.5 text-xs font-medium rounded transition-colors whitespace-nowrap ${
                 subTab === 'online'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              Online <span className="font-mono tabular-nums ml-1">({onlineCount})</span>
+              Online <span className="font-mono tabular-nums ml-0.5">({onlineCount})</span>
             </button>
 
             <button
               onClick={() => onSubTabChange('all')}
-              className={`h-7 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`h-6 px-2.5 text-xs font-medium rounded transition-colors whitespace-nowrap ${
                 subTab === 'all'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              All Friends <span className="font-mono tabular-nums ml-1">({friends.length})</span>
+              All Friends <span className="font-mono tabular-nums ml-0.5">({friends.length})</span>
             </button>
 
             <button
               onClick={() => onSubTabChange('pending')}
-              className={`h-7 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`h-6 px-2.5 text-xs font-medium rounded transition-colors whitespace-nowrap ${
                 subTab === 'pending'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              Requests <span className="font-mono tabular-nums ml-1">({pendingRequests.length})</span>
+              Requests <span className="font-mono tabular-nums ml-0.5">({pendingRequests.length})</span>
             </button>
 
             <button
               onClick={() => onSubTabChange('blocked')}
-              className={`h-7 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`h-6 px-2.5 text-xs font-medium rounded transition-colors whitespace-nowrap ${
                 subTab === 'blocked'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              Blocked <span className="font-mono tabular-nums ml-1">({blockedUsersList.length})</span>
+              Blocked <span className="font-mono tabular-nums ml-0.5">({blockedUsersList.length})</span>
             </button>
           </div>
 
           <button
             onClick={() => onSubTabChange('add')}
-            className={`h-8 px-3.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+            className={`h-7 px-3 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap ${
               subTab === 'add'
-                ? 'bg-[#8BE2B8] text-[#101A17]'
-                : 'bg-[#192620] hover:bg-[#24362C] border border-[#8BE2B8]/30 text-[#8BE2B8]'
+                ? 'bg-[#8957F5] text-white shadow-sm'
+                : 'bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#A47BFF]'
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -188,102 +188,102 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
 
         {/* Filter Input */}
         <div className="relative hidden sm:block">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#718478]" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#706C7B]" />
           <input
             type="text"
             placeholder="Filter friends..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 pl-8 pr-3 text-xs bg-[#141F1B] rounded-lg border border-white/[0.07] focus:border-[#8BE2B8]/50 text-[#F0F5F1] placeholder-[#718478] outline-none w-48"
+            className="h-7 pl-7 pr-2.5 text-xs bg-[#101014] rounded-md border border-[#282631] focus:border-[#8957F5]/50 text-[#F5F3FA] placeholder-[#706C7B] outline-none w-44 transition-colors"
           />
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8 max-w-5xl w-full mx-auto">
+      <div className="flex-1 overflow-y-auto p-6 max-w-5xl w-full mx-auto">
         {subTab === 'add' ? (
-          <div className="space-y-6">
-            <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4">
+          <div className="space-y-5">
+            <div className="p-5 rounded-xl bg-[#101014] border border-[#282631] space-y-3.5">
               <div>
-                <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                <h2 className="text-sm font-semibold text-[#F5F3FA]">
                   Add Friend by Username
                 </h2>
-                <p className="text-xs text-[#9BAEA2] mt-0.5">
-                  Search real registered Doomcord accounts by @username, display name, or email.
+                <p className="text-xs text-[#706C7B] mt-0.5">
+                  Search registered Doomcord accounts by @username, display name, or email.
                 </p>
               </div>
 
-              <div className="flex items-center px-3.5 h-11 rounded-xl bg-[#101A17] border border-white/[0.08] focus-within:border-[#8BE2B8]/60">
-                <Search className="w-4 h-4 text-[#718478] mr-2.5" />
+              <div className="flex items-center px-3 h-9 rounded-lg bg-[#17171F] border border-[#282631] focus-within:border-[#8957F5]/60 transition-colors">
+                <Search className="w-3.5 h-3.5 text-[#706C7B] mr-2" />
                 <input
                   type="text"
-                  placeholder="Enter a Doomcord @username or display name..."
+                  placeholder="Search @username or name..."
                   value={addSearchInput}
                   onChange={(e) => setAddSearchInput(e.target.value)}
-                  className="flex-1 bg-transparent text-xs text-[#F0F5F1] placeholder-[#718478] outline-none"
+                  className="flex-1 bg-transparent text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none"
                 />
               </div>
 
               {addFeedback && (
-                <div className="p-3 rounded-lg bg-[#192620] border border-[#8BE2B8]/30 text-xs text-[#8BE2B8] font-medium">
+                <div className="p-2.5 rounded-md bg-[#8957F5]/10 border border-[#8957F5]/30 text-xs text-[#C4B1FF] font-medium">
                   {addFeedback}
                 </div>
               )}
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-[#718478]">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#706C7B]">
                 <span>Registered Directory ({directoryResults.length})</span>
               </div>
 
               {directoryResults.length === 0 ? (
-                <div className="p-8 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
-                  No registered user accounts match your search query.
+                <div className="p-6 rounded-xl bg-[#101014] border border-[#282631] text-center text-xs text-[#706C7B]">
+                  No registered accounts match your search.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   {directoryResults.map((targetUser) => {
                     const isAlreadyFriend = friends.some((f) => f.uid === targetUser.uid);
                     const isOwner = isRootOwner(targetUser.uid);
                     return (
                       <div
                         key={targetUser.uid}
-                        className="flex items-center justify-between p-4 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] transition-colors gap-3"
+                        className="flex items-center justify-between p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] transition-colors gap-2.5"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <img
                             src={
                               targetUser.photoURL ||
                               generateInitialsAvatar(targetUser.displayName)
                             }
                             alt={targetUser.displayName}
-                            className="w-10 h-10 rounded-lg object-cover bg-[#1D2B24] shrink-0"
+                            className="w-9 h-9 rounded-md object-cover bg-[#17171F] shrink-0"
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-semibold text-[#F0F5F1] truncate">
+                              <span className="text-xs font-semibold text-[#F5F3FA] truncate">
                                 {targetUser.displayName}
                               </span>
                               {isOwner && (
-                                <Shield className="w-3.5 h-3.5 text-[#D9BB79] shrink-0" />
+                                <Shield className="w-3 h-3 text-[#A47BFF] shrink-0" />
                               )}
                               {targetUser.nitroTier !== 'free' && (
-                                <Crown className="w-3.5 h-3.5 text-[#D9BB79] shrink-0" />
+                                <Crown className="w-3 h-3 text-[#C4B1FF] shrink-0" />
                               )}
                             </div>
-                            <span className="text-[11px] font-mono text-[#718478] block truncate">
+                            <span className="text-[10px] font-mono text-[#706C7B] block truncate">
                               @{targetUser.username} ·{' '}
                               {formatRoleLabel(targetUser.role, targetUser.uid)}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {onViewProfile && (
                             <button
                               onClick={() => onViewProfile(targetUser.uid)}
                               title="View Profile"
-                              className="h-8 px-2.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-xs text-[#9BAEA2] hover:text-[#F0F5F1]"
+                              className="h-7 px-2 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs text-[#A19DAD] hover:text-[#F5F3FA]"
                             >
                               <User className="w-3.5 h-3.5" />
                             </button>
@@ -291,7 +291,7 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
 
                           <button
                             onClick={() => onOpenDmWithUser(targetUser)}
-                            className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-xs font-medium text-[#F0F5F1]"
+                            className="h-7 px-2.5 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA]"
                           >
                             Message
                           </button>
@@ -304,9 +304,9 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
                                   `Friend request sent to @${targetUser.username}.`
                                 );
                               }}
-                              className="h-8 px-3 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5"
+                              className="h-7 px-2.5 rounded bg-[#8957F5] hover:bg-[#7a4be6] text-white text-xs font-medium flex items-center gap-1 shadow-sm"
                             >
-                              <UserPlus className="w-3.5 h-3.5" />
+                              <UserPlus className="w-3 h-3" />
                               <span>Add</span>
                             </button>
                           )}
@@ -319,13 +319,13 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
             </div>
           </div>
         ) : subTab === 'pending' ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2] tabular-nums">
+              <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B] tabular-nums">
                 Friend Requests — {displayedRequests.length}
               </h3>
 
-              <div className="flex items-center gap-1 bg-[#141F1B] p-1 rounded-lg border border-white/[0.06]">
+              <div className="flex items-center gap-1 bg-[#101014] p-0.5 rounded-md border border-[#282631]">
                 {(
                   [
                     { id: 'all', label: `All (${pendingRequests.length})` },
@@ -336,10 +336,10 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
                   <button
                     key={t.id}
                     onClick={() => setPendingDirection(t.id)}
-                    className={`h-7 px-2.5 rounded text-xs font-medium transition-colors ${
+                    className={`h-6 px-2 rounded text-xs font-medium transition-colors ${
                       pendingDirection === t.id
-                        ? 'bg-[#24362C] text-[#F0F5F1]'
-                        : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                        ? 'bg-[#17171F] text-[#F5F3FA]'
+                        : 'text-[#A19DAD] hover:text-[#F5F3FA]'
                     }`}
                   >
                     {t.label}
@@ -349,19 +349,19 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
             </div>
 
             {displayedRequests.length === 0 ? (
-              <div className="p-10 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
+              <div className="p-8 rounded-xl bg-[#101014] border border-[#282631] text-center text-xs text-[#706C7B]">
                 No pending friend requests in this category.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {displayedRequests.map((req) => {
                   const isIncoming = req.toUid === currentUser.uid;
                   return (
                     <div
                       key={req.id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-[#141F1B] border border-white/[0.06]"
+                      className="flex items-center justify-between p-3.5 rounded-lg bg-[#101014] border border-[#282631]"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5">
                         <img
                           src={
                             req.fromPhotoURL ||
@@ -370,15 +370,15 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
                             )
                           }
                           alt={req.fromUsername}
-                          className="w-10 h-10 rounded-lg object-cover bg-[#1D2B24]"
+                          className="w-9 h-9 rounded-md object-cover bg-[#17171F]"
                         />
                         <div>
-                          <span className="text-sm font-semibold text-[#F0F5F1] block">
+                          <span className="text-xs font-semibold text-[#F5F3FA] block">
                             {isIncoming
                               ? req.fromDisplayName || req.fromUsername
                               : `@${req.toUsername}`}
                           </span>
-                          <span className="text-xs font-mono text-[#718478]">
+                          <span className="text-[11px] font-mono text-[#706C7B]">
                             {isIncoming
                               ? `Incoming request from @${req.fromUsername}`
                               : `Sent request to @${req.toUsername}`}
@@ -386,21 +386,21 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {isIncoming && (
                           <button
                             onClick={() => onAcceptRequest(req)}
-                            className="h-8 px-3 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5"
+                            className="h-7 px-2.5 rounded bg-[#8957F5] hover:bg-[#7a4be6] text-white text-xs font-medium flex items-center gap-1"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3" />
                             <span>Accept</span>
                           </button>
                         )}
                         <button
                           onClick={() => onRejectRequest(req.id)}
-                          className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-[#9BAEA2] hover:text-[#E57373] text-xs font-medium flex items-center gap-1.5"
+                          className="h-7 px-2.5 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#A19DAD] hover:text-[#ED4245] text-xs font-medium flex items-center gap-1"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                           <span>{isIncoming ? 'Decline' : 'Cancel'}</span>
                         </button>
                       </div>
@@ -411,32 +411,32 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
             )}
           </div>
         ) : subTab === 'blocked' ? (
-          <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2] tabular-nums">
+          <div className="space-y-3.5">
+            <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B] tabular-nums">
               Blocked Users — {blockedUsersList.length}
             </h3>
             {blockedUsersList.length === 0 ? (
-              <div className="p-10 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
-                You haven't blocked any accounts.
+              <div className="p-8 rounded-xl bg-[#101014] border border-[#282631] text-center text-xs text-[#706C7B]">
+                No blocked accounts.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {blockedUsersList.map((u) => (
                   <div
                     key={u.uid}
-                    className="flex items-center justify-between p-4 rounded-xl bg-[#141F1B] border border-white/[0.06]"
+                    className="flex items-center justify-between p-3.5 rounded-lg bg-[#101014] border border-[#282631]"
                   >
                     <div>
-                      <span className="text-sm font-semibold text-[#F0F5F1] block">
+                      <span className="text-xs font-semibold text-[#F5F3FA] block">
                         {u.displayName}
                       </span>
-                      <span className="text-xs font-mono text-[#718478]">
+                      <span className="text-[11px] font-mono text-[#706C7B]">
                         @{u.username}
                       </span>
                     </div>
                     <button
                       onClick={() => onUnblockUser(u.uid)}
-                      className="h-8 px-3.5 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-medium text-[#F0F5F1]"
+                      className="h-7 px-3 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA]"
                     >
                       Unblock
                     </button>
@@ -446,39 +446,39 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2] tabular-nums">
+          <div className="space-y-3.5">
+            <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B] tabular-nums">
               {subTab === 'online'
                 ? `Online Friends — ${filteredFriends.length}`
                 : `All Friends — ${filteredFriends.length}`}
             </h3>
 
             {filteredFriends.length === 0 ? (
-              <div className="p-12 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center space-y-3">
-                <Users className="w-8 h-8 text-[#8BE2B8] mx-auto opacity-80" />
+              <div className="p-10 rounded-xl bg-[#101014] border border-[#282631] text-center space-y-2.5">
+                <Users className="w-7 h-7 text-[#8957F5] mx-auto opacity-80" />
                 <div>
-                  <h4 className="text-sm font-display font-bold text-[#F0F5F1]">
-                    No Friends in This View Yet
+                  <h4 className="text-xs font-semibold text-[#F5F3FA]">
+                    No Friends in This View
                   </h4>
-                  <p className="text-xs text-[#9BAEA2] mt-1 max-w-md mx-auto">
-                    Connect with real registered Doomcord users to start direct conversations and collaborate across communities.
+                  <p className="text-[11px] text-[#706C7B] mt-0.5 max-w-md mx-auto">
+                    Connect with registered Doomcord users to start conversations.
                   </p>
                 </div>
                 <button
                   onClick={() => onSubTabChange('add')}
-                  className="h-9 px-4 rounded-lg text-xs font-semibold text-[#101A17] bg-[#8BE2B8] hover:bg-[#7AD4A8] transition-colors"
+                  className="h-7 px-3 rounded text-xs font-medium text-white bg-[#8957F5] hover:bg-[#7a4be6] transition-colors"
                 >
-                  Find Registered Users
+                  Find Users
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {filteredFriends.map((friend) => (
                   <div
                     key={friend.uid}
-                    className="flex items-center justify-between p-4 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] transition-colors"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative shrink-0">
                         <img
                           src={
@@ -486,64 +486,64 @@ export const FriendsHub: React.FC<FriendsHubProps> = ({
                             generateInitialsAvatar(friend.displayName)
                           }
                           alt={friend.displayName}
-                          className="w-10 h-10 rounded-lg object-cover bg-[#1D2B24]"
+                          className="w-9 h-9 rounded-md object-cover bg-[#17171F]"
                         />
                         <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#141F1B] ${getPresenceColor(
+                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#101014] ${getPresenceColor(
                             friend.presence
                           )}`}
                         />
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-[#F0F5F1] truncate">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-[#F5F3FA] truncate">
                             {friend.displayName}
                           </span>
-                          <span className="text-xs font-mono text-[#718478]">
+                          <span className="text-[10px] font-mono text-[#706C7B]">
                             @{friend.username}
                           </span>
                         </div>
-                        <span className="text-xs text-[#9BAEA2] block truncate max-w-md">
+                        <span className="text-[11px] text-[#706C7B] block truncate max-w-md">
                           {friend.statusMessage || friend.bio || 'Available'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {onViewProfile && (
                         <button
                           onClick={() => onViewProfile(friend.uid)}
-                          className="w-8 h-8 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-[#9BAEA2] hover:text-[#F0F5F1] flex items-center justify-center"
+                          className="w-7 h-7 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#706C7B] hover:text-[#F5F3FA] flex items-center justify-center"
                           title="View Profile"
                         >
-                          <User className="w-4 h-4" />
+                          <User className="w-3.5 h-3.5" />
                         </button>
                       )}
 
                       <button
                         onClick={() => onOpenDmWithUser(friend)}
-                        className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-xs font-medium text-[#F0F5F1] flex items-center gap-1.5"
-                        title="Open Direct Message"
+                        className="h-7 px-2.5 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1"
+                        title="Open Message"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                        <MessageSquare className="w-3 h-3 text-[#8957F5]" />
                         <span>Message</span>
                       </button>
 
                       <button
                         onClick={() => onRemoveFriend(friend.uid)}
-                        className="w-8 h-8 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-[#9BAEA2] hover:text-[#E57373] flex items-center justify-center"
+                        className="w-7 h-7 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#706C7B] hover:text-[#ED4245] flex items-center justify-center"
                         title="Remove Friend"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
 
                       <button
                         onClick={() => onBlockUser(friend.uid)}
-                        className="w-8 h-8 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.07] text-[#9BAEA2] hover:text-[#E57373] flex items-center justify-center"
+                        className="w-7 h-7 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#706C7B] hover:text-[#ED4245] flex items-center justify-center"
                         title="Block User"
                       >
-                        <Ban className="w-4 h-4" />
+                        <Ban className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

@@ -143,13 +143,13 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
   const previewBanner = cosmetics.find((c) => c.id === previewEquipped.banner);
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row h-full bg-[oklch(0.2_0.03_160)] overflow-hidden">
+    <div className="flex-1 flex flex-col lg:flex-row h-full bg-[#09090D] overflow-hidden">
       {/* Left/Center Catalog & Inventory Column */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Top Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[oklch(0.17_0.028_161)] border-b border-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[#101014] border-b border-[#282631]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-white shadow-md">
+            <div className="p-2 rounded-xl bg-[#8957F5] text-white shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
@@ -157,24 +157,24 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                 <h1 className="text-lg font-extrabold text-white tracking-tight">
                   DOOMCORD APEX Collection
                 </h1>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[oklch(0.85_0.12_165)]">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#8957F5]">
                   · RISE ABOVE. STAND APART.
                 </span>
               </div>
-              <p className="text-xs text-[oklch(0.7_0.03_155)]">
+              <p className="text-xs text-[#A19DAD]">
                 APEX Avatar Frames, Profile Effects, Animated Banners, Nameplates, Themes & Exclusive Bundles (INR)
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[oklch(0.14_0.025_162)] border border-white/5">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0D0D12] border border-[#282631]">
               <button
                 onClick={() => setViewMode('catalog')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   viewMode === 'catalog'
-                    ? 'bg-[oklch(0.235_0.032_158)] text-white'
-                    : 'text-[oklch(0.7_0.03_155)] hover:text-white'
+                    ? 'bg-[#17171F] text-white'
+                    : 'text-[#A19DAD] hover:text-white'
                 }`}
               >
                 APEX Catalog ({cosmetics.filter((c) => c.enabled).length})
@@ -183,8 +183,8 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                 onClick={() => setViewMode('inventory')}
                 className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   viewMode === 'inventory'
-                    ? 'bg-[oklch(0.235_0.032_158)] text-white'
-                    : 'text-[oklch(0.7_0.03_155)] hover:text-white'
+                    ? 'bg-[#17171F] text-white'
+                    : 'text-[#A19DAD] hover:text-white'
                 }`}
               >
                 My Inventory (
@@ -197,7 +197,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
 
             <button
               onClick={onOpenNitro}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] rounded-xl shadow"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#8957F5] hover:bg-[#7846E4] rounded-xl shadow"
             >
               <Crown className="w-3.5 h-3.5" />
               <span>
@@ -212,15 +212,15 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
         </div>
 
         {/* 12 Category Tabs Bar */}
-        <div className="px-6 py-2.5 bg-[oklch(0.14_0.025_162)] border-b border-white/5 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="px-6 py-2.5 bg-[#0D0D12] border-b border-[#282631] flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           {SHOP_CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                 selectedCategory === cat
-                  ? 'bg-[oklch(0.235_0.032_158)] text-[oklch(0.85_0.12_165)] font-bold'
-                  : 'text-[oklch(0.7_0.03_155)] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#17171F] text-[#8957F5] font-bold'
+                  : 'text-[#A19DAD] hover:text-white hover:bg-white/5'
               }`}
             >
               {cat}
@@ -231,14 +231,14 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
         {/* Cosmetics Grid */}
         <div className="flex-1 overflow-y-auto p-6">
           {visibleCosmetics.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/5">
-              <Layers className="w-8 h-8 text-[oklch(0.85_0.12_165)] mb-2" />
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#101014] border border-[#282631]">
+              <Layers className="w-8 h-8 text-[#8957F5] mb-2" />
               <h3 className="text-sm font-bold text-white">
                 {viewMode === 'inventory'
                   ? 'No cosmetics in this category in your inventory yet'
                   : 'No cosmetics found in this category'}
               </h3>
-              <p className="text-xs text-[oklch(0.7_0.03_155)] mt-1 max-w-sm">
+              <p className="text-xs text-[#A19DAD] mt-1 max-w-sm">
                 {viewMode === 'inventory'
                   ? 'Switch to the APEX Catalog to preview and unlock original Doomcord decorations.'
                   : 'Select another category from the navigation bar above.'}
@@ -262,16 +262,16 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                 return (
                   <div
                     key={item.id}
-                    className={`flex flex-col justify-between p-5 rounded-3xl bg-[oklch(0.17_0.028_161)] border transition-all shadow-xl ${
+                    className={`flex flex-col justify-between p-5 rounded-3xl bg-[#101014] border transition-all shadow-xl ${
                       isPreviewing
-                        ? 'border-[oklch(0.85_0.12_165)]'
-                        : 'border-white/5 hover:border-white/15'
+                        ? 'border-[#8957F5]'
+                        : 'border-[#282631] hover:border-white/15'
                     }`}
                   >
                     <div>
                       {/* Visual Preview Swatch */}
                       <div
-                        className="h-28 rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden border border-white/10"
+                        className="h-28 rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden border border-[#282631]"
                         style={{
                           background: `radial-gradient(circle at center, ${item.previewColorPrimary}33, ${item.previewColorSecondary}22, #071913)`,
                         }}
@@ -291,27 +291,27 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                         </div>
 
                         {item.nitroEligible !== 'none' && (
-                          <div className="absolute top-2.5 right-3 text-[10px] font-mono text-[oklch(0.85_0.12_165)]">
+                          <div className="absolute top-2.5 right-3 text-[10px] font-mono text-[#8957F5]">
                             {item.nitroEligible === 'basic' ? 'APEX' : 'APEX+'} Privilege
                           </div>
                         )}
                       </div>
 
                       {/* Metadata */}
-                      <div className="text-[11px] text-[oklch(0.7_0.03_155)] mb-1">
+                      <div className="text-[11px] text-[#A19DAD] mb-1">
                         {item.category} · {item.rarity}
                       </div>
                       <h3 className="text-sm font-bold text-white">{item.name}</h3>
-                      <p className="text-xs text-[oklch(0.7_0.03_155)] mt-1 leading-relaxed line-clamp-2">
+                      <p className="text-xs text-[#A19DAD] mt-1 leading-relaxed line-clamp-2">
                         {item.description}
                       </p>
                     </div>
 
                     {/* Price & Actions */}
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                    <div className="mt-4 pt-3 border-t border-[#282631] flex items-center justify-between gap-2">
                       <div>
                         {isOwned ? (
-                          <span className="text-xs font-semibold text-[oklch(0.85_0.12_165)] flex items-center gap-1">
+                          <span className="text-xs font-semibold text-[#8957F5] flex items-center gap-1">
                             <ShieldCheck className="w-3.5 h-3.5" />{' '}
                             {isMainOwner ? 'Owner Permanent' : 'Owned Permanently'}
                           </span>
@@ -321,7 +321,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                               ₹{finalINR}
                             </span>
                             {discountPct > 0 && (
-                              <span className="text-[11px] line-through text-[oklch(0.7_0.03_155)] font-mono tabular-nums">
+                              <span className="text-[11px] line-through text-[#A19DAD] font-mono tabular-nums">
                                 ₹{item.priceINR}
                               </span>
                             )}
@@ -335,8 +335,8 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                           onClick={() => handlePreviewItem(item)}
                           className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1 ${
                             isPreviewing
-                              ? 'bg-[oklch(0.85_0.12_165)]/20 border-[oklch(0.85_0.12_165)] text-[oklch(0.85_0.12_165)]'
-                              : 'bg-white/5 border-white/10 text-[oklch(0.95_0.015_150)] hover:bg-white/10'
+                              ? 'bg-[#8957F5]/20 border-[#8957F5] text-[#8957F5]'
+                              : 'bg-white/5 border-[#282631] text-[#F5F3FA] hover:bg-white/10'
                           }`}
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -352,8 +352,8 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                               }
                               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                                 isEquipped
-                                  ? 'bg-[oklch(0.72_0.16_32)] text-white'
-                                  : 'bg-[oklch(0.85_0.12_165)] text-black'
+                                  ? 'bg-[#8957F5] text-white'
+                                  : 'bg-[#8957F5] text-black'
                               }`}
                             >
                               {isEquipped ? 'Unequip' : 'Equip'}
@@ -371,7 +371,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                                 amountINR: finalINR,
                               })
                             }
-                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] hover:opacity-95 shadow"
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#8957F5] hover:bg-[#7846E4] hover:opacity-95 shadow"
                           >
                             Buy ₹{finalINR}
                           </button>
@@ -387,11 +387,11 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
       </div>
 
       {/* Right Interactive Profile Preview Dock */}
-      <div className="w-full lg:w-80 bg-[oklch(0.14_0.025_162)] border-t lg:border-t-0 lg:border-l border-white/5 p-5 flex flex-col justify-between shrink-0 overflow-y-auto">
+      <div className="w-full lg:w-80 bg-[#0D0D12] border-t lg:border-t-0 lg:border-l border-[#282631] p-5 flex flex-col justify-between shrink-0 overflow-y-auto">
         <div>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[oklch(0.85_0.12_165)]">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5]">
                 Interactive Sandbox
               </span>
               <h3 className="text-sm font-bold text-white">Live APEX Profile Preview</h3>
@@ -399,7 +399,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
             <button
               onClick={() => setPreviewEquipped(currentUser.equippedCosmetics || {})}
               title="Reset preview to currently equipped cosmetics"
-              className="p-1.5 rounded-lg bg-white/5 text-[oklch(0.7_0.03_155)] hover:text-white"
+              className="p-1.5 rounded-lg bg-white/5 text-[#A19DAD] hover:text-white"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -410,7 +410,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
             className={`rounded-3xl p-4 border transition-all relative overflow-hidden shadow-2xl ${
               previewTheme
                 ? previewTheme.cssPreviewClass
-                : 'bg-[oklch(0.17_0.028_161)] border-white/10'
+                : 'bg-[#101014] border-[#282631]'
             }`}
           >
             {/* Profile Effect Overlay */}
@@ -425,7 +425,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
               className={`h-24 rounded-2xl mb-10 relative overflow-hidden ${
                 previewBanner
                   ? previewBanner.cssPreviewClass
-                  : 'bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)]'
+                  : 'bg-[#8957F5] hover:bg-[#7846E4]'
               }`}
             />
 
@@ -438,7 +438,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                 }
                 alt={currentUser.displayName}
                 className={`w-16 h-16 rounded-2xl object-cover bg-black/40 ${
-                  previewFrame ? previewFrame.cssPreviewClass : 'ring-4 ring-[oklch(0.17_0.028_161)]'
+                  previewFrame ? previewFrame.cssPreviewClass : 'ring-4 ring-[#101014]'
                 }`}
               />
             </div>
@@ -454,28 +454,28 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                   {currentUser.displayName}
                 </span>
                 {(currentUser.role === 'root_owner' || currentUser.role === 'owner') && (
-                  <span className="text-[10px] font-mono text-[oklch(0.84_0.14_85)]">
+                  <span className="text-[10px] font-mono text-[#C4B1FF]">
                     ROOT OWNER
                   </span>
                 )}
                 {currentUser.role === 'secondary_owner' && (
-                  <span className="text-[10px] font-mono text-[oklch(0.72_0.16_32)]">
+                  <span className="text-[10px] font-mono text-[#A47BFF]">
                     SECONDARY OWNER
                   </span>
                 )}
               </div>
 
-              <span className="text-xs font-mono text-[oklch(0.7_0.03_155)] block">
+              <span className="text-xs font-mono text-[#A19DAD] block">
                 @{currentUser.username} · {formatApexTierName(currentUser.nitroTier)}
               </span>
 
-              <p className="text-xs text-[oklch(0.95_0.015_150)] pt-2 leading-relaxed">
+              <p className="text-xs text-[#F5F3FA] pt-2 leading-relaxed">
                 {currentUser.bio || 'Customizing my DOOMCORD APEX identity in real time.'}
               </p>
 
               {/* Qualified Badges */}
               {currentUser.badges && currentUser.badges.length > 0 && (
-                <div className="pt-3 flex items-center gap-2 flex-wrap text-[11px] text-[oklch(0.85_0.12_165)] font-mono">
+                <div className="pt-3 flex items-center gap-2 flex-wrap text-[11px] text-[#8957F5] font-mono">
                   {currentUser.badges.map((b) => (
                     <span key={b}>★ {b.toUpperCase()}</span>
                   ))}
@@ -486,28 +486,28 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
 
           {/* Active Preview Breakdown */}
           <div className="mt-5 space-y-2 text-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[oklch(0.7_0.03_155)] block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#A19DAD] block">
               Previewing Combination
             </span>
-            <div className="p-3 rounded-2xl bg-[oklch(0.17_0.028_161)] border border-white/5 space-y-1.5 text-[11px]">
+            <div className="p-3 rounded-2xl bg-[#101014] border border-[#282631] space-y-1.5 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-[oklch(0.7_0.03_155)]">Avatar Frame:</span>
+                <span className="text-[#A19DAD]">Avatar Frame:</span>
                 <span className="text-white font-medium">{previewFrame?.name || 'Default'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[oklch(0.7_0.03_155)]">Profile Effect:</span>
+                <span className="text-[#A19DAD]">Profile Effect:</span>
                 <span className="text-white font-medium">{previewEffect?.name || 'None'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[oklch(0.7_0.03_155)]">Profile Theme:</span>
+                <span className="text-[#A19DAD]">Profile Theme:</span>
                 <span className="text-white font-medium">{previewTheme?.name || 'Default'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[oklch(0.7_0.03_155)]">Nameplate:</span>
+                <span className="text-[#A19DAD]">Nameplate:</span>
                 <span className="text-white font-medium">{previewNameplate?.name || 'Standard'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[oklch(0.7_0.03_155)]">Banner:</span>
+                <span className="text-[#A19DAD]">Banner:</span>
                 <span className="text-white font-medium">{previewBanner?.name || 'Default'}</span>
               </div>
             </div>

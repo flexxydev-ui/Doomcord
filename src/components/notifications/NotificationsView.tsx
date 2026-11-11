@@ -82,37 +82,37 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   );
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-[#101A17] text-[#F0F5F1]">
+    <div className="flex-1 h-full overflow-y-auto bg-[#09090D] text-[#F5F3FA]">
       {/* Header */}
-      <header className="sticky top-0 z-20 h-16 px-8 bg-[#101A17]/95 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bell className="w-4 h-4 text-[#8BE2B8]" />
-          <h1 className="font-display font-bold text-base text-[#F0F5F1]">
-            Notifications Center
+      <header className="sticky top-0 z-20 h-14 px-6 bg-[#09090D]/90 backdrop-blur-md border-b border-[#282631] flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Bell className="w-4 h-4 text-[#8957F5]" />
+          <h1 className="font-semibold text-xs text-[#F5F3FA]">
+            Notifications
           </h1>
-          <span className="text-xs font-mono text-[#718478] border-l border-white/15 pl-3 tabular-nums">
-            {incomingRequests.length} action required
+          <span className="text-[11px] font-mono text-[#706C7B] border-l border-[#282631] pl-2.5 tabular-nums">
+            {incomingRequests.length} pending
           </span>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 bg-[#141F1B] p-1 rounded-lg border border-white/[0.06]">
+        <div className="flex items-center gap-1 bg-[#101014] p-0.5 rounded-md border border-[#282631]">
           {(
             [
-              { id: 'all', label: 'All Activity' },
-              { id: 'friends', label: 'Friend Requests' },
-              { id: 'messages', label: 'Direct Messages' },
+              { id: 'all', label: 'All' },
+              { id: 'friends', label: 'Requests' },
+              { id: 'messages', label: 'Messages' },
               { id: 'apex', label: 'APEX & Billing' },
-              { id: 'spaces', label: 'Communities & Orbs' },
+              { id: 'spaces', label: 'Spaces' },
             ] as const
           ).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`h-7 px-3 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`h-6 px-2.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                 filter === tab.id
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
               {tab.label}
@@ -121,69 +121,68 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-5">
         {/* Friend Requests Section */}
         {(filter === 'all' || filter === 'friends') && (
-          <section className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+          <section className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#8BE2B8]" />
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#F0F5F1]">
-                  Incoming Friend Requests ({incomingRequests.length})
+                <UserPlus className="w-3.5 h-3.5 text-[#8957F5]" />
+                <h2 className="text-xs font-semibold text-[#F5F3FA]">
+                  Friend Requests ({incomingRequests.length})
                 </h2>
               </div>
               <button
                 onClick={() => onSelectView({ type: 'friends', subTab: 'pending' })}
-                className="text-xs text-[#8BE2B8] hover:underline"
+                className="text-xs text-[#8957F5] hover:text-[#A47BFF] transition-colors"
               >
-                Manage Friends
+                Manage
               </button>
             </div>
 
             {incomingRequests.length === 0 ? (
-              <div className="p-6 text-xs text-[#9BAEA2]">
-                No pending friend requests right now.
+              <div className="p-4 text-xs text-[#706C7B]">
+                No pending friend requests.
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.05]">
+              <div className="divide-y divide-[#282631]/60">
                 {incomingRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="px-5 py-4 flex items-center justify-between gap-4"
+                    className="px-4 py-3 flex items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-[#1D2B24] border border-white/10 flex items-center justify-center text-xs font-bold text-[#8BE2B8]">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-md bg-[#17171F] border border-[#282631] flex items-center justify-center text-xs font-bold text-[#8957F5]">
                         {(req.fromDisplayName || req.fromUsername)
                           .slice(0, 2)
                           .toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#F0F5F1] truncate">
+                        <p className="text-xs font-medium text-[#F5F3FA] truncate">
                           {req.fromDisplayName || req.fromUsername}{' '}
-                          <span className="text-xs font-mono text-[#718478]">
+                          <span className="text-[10px] font-mono text-[#706C7B]">
                             @{req.fromUsername}
                           </span>
                         </p>
-                        <p className="text-xs text-[#9BAEA2]">
-                          Sent you a friend request ·{' '}
-                          {new Date(req.createdAt).toLocaleDateString()}
+                        <p className="text-[11px] text-[#706C7B]">
+                          Sent request · {new Date(req.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => onAcceptFriendRequest(req)}
-                        className="h-8 px-3 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                        className="h-7 px-2.5 rounded bg-[#8957F5] hover:bg-[#7a4be6] text-white text-xs font-medium flex items-center gap-1 transition-colors"
                       >
-                        <Check className="w-3.5 h-3.5" />
+                        <Check className="w-3 h-3" />
                         <span>Accept</span>
                       </button>
                       <button
                         onClick={() => onRejectFriendRequest(req.id)}
-                        className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/10 text-[#9BAEA2] hover:text-[#E57373] text-xs font-medium flex items-center gap-1.5 transition-colors"
+                        className="h-7 px-2.5 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#A19DAD] hover:text-[#ED4245] text-xs font-medium flex items-center gap-1 transition-colors"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                         <span>Decline</span>
                       </button>
                     </div>
@@ -196,39 +195,39 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
         {/* APEX Gifts & Billing Notifications */}
         {(filter === 'all' || filter === 'apex') && (
-          <section className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+          <section className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-[#D9BB79]" />
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#F0F5F1]">
-                  DOOMCORD APEX Gifts & Official Receipts ({giftsForMe.length + myReceipts.length})
+                <Gift className="w-3.5 h-3.5 text-[#A47BFF]" />
+                <h2 className="text-xs font-semibold text-[#F5F3FA]">
+                  Gifts & Receipts ({giftsForMe.length + myReceipts.length})
                 </h2>
               </div>
               <button
                 onClick={() => onSelectView({ type: 'nitro' })}
-                className="text-xs text-[#D9BB79] hover:underline"
+                className="text-xs text-[#8957F5] hover:text-[#A47BFF] transition-colors"
               >
-                Open APEX Hub
+                APEX Hub
               </button>
             </div>
 
             {giftsForMe.length === 0 && myReceipts.length === 0 ? (
-              <div className="p-6 text-xs text-[#9BAEA2]">
-                No APEX gifts or billing receipts recorded for your account yet.
+              <div className="p-4 text-xs text-[#706C7B]">
+                No gifts or receipts recorded yet.
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.05]">
+              <div className="divide-y divide-[#282631]/60">
                 {giftsForMe.map((gift) => (
                   <div
                     key={gift.id}
-                    className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#192620] transition-colors"
+                    className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-[#17171F] transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-[#D9BB79]/15 border border-[#D9BB79]/30 flex items-center justify-center text-[#D9BB79] shrink-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-md bg-[#8957F5]/10 border border-[#8957F5]/30 flex items-center justify-center text-[#A47BFF] shrink-0">
                         <Gift className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#F0F5F1] truncate">
+                        <p className="text-xs font-medium text-[#F5F3FA] truncate">
                           {gift.apexTier === 'nitro'
                             ? 'DOOMCORD APEX+ Gift'
                             : gift.apexTier === 'basic'
@@ -236,9 +235,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                             : 'Cosmetic Gift'}{' '}
                           from {gift.creatorName}
                         </p>
-                        <p className="text-xs text-[#9BAEA2] truncate">
+                        <p className="text-[11px] text-[#706C7B] truncate">
                           Status: <span className="font-mono uppercase">{gift.status}</span> ·{' '}
-                          {gift.personalMessage || 'Enjoy your premium Doomcord benefits!'}
+                          {gift.personalMessage || 'Enjoy your gift!'}
                         </p>
                       </div>
                     </div>
@@ -251,9 +250,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                             token: gift.claimToken || gift.tokenPreview,
                           })
                         }
-                        className="h-8 px-3.5 rounded-lg bg-[#D9BB79] text-[#101A17] text-xs font-semibold shrink-0"
+                        className="h-7 px-3 rounded bg-[#8957F5] text-white text-xs font-medium shrink-0 shadow-sm"
                       >
-                        Claim Gift
+                        Claim
                       </button>
                     )}
                   </div>
@@ -262,17 +261,17 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                 {myReceipts.map((rcp) => (
                   <div
                     key={rcp.id}
-                    className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#192620] transition-colors"
+                    className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-[#17171F] transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-[#8BE2B8]/15 border border-[#8BE2B8]/30 flex items-center justify-center text-[#8BE2B8] shrink-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-md bg-[#8957F5]/10 border border-[#8957F5]/30 flex items-center justify-center text-[#8957F5] shrink-0">
                         <Receipt className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#F0F5F1] truncate">
-                          Official Receipt {rcp.receiptNumber} — {rcp.title}
+                        <p className="text-xs font-medium text-[#F5F3FA] truncate">
+                          Receipt {rcp.receiptNumber} — {rcp.title}
                         </p>
-                        <p className="text-xs text-[#9BAEA2] font-mono tabular-nums">
+                        <p className="text-[11px] text-[#706C7B] font-mono tabular-nums">
                           ₹{rcp.totalAmountINR} · {rcp.paymentStatus} ·{' '}
                           {new Date(rcp.issueDate).toLocaleDateString()}
                         </p>
@@ -281,10 +280,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
                     <button
                       onClick={() => onOpenReceipt(rcp)}
-                      className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/10 text-xs font-medium text-[#F0F5F1] flex items-center gap-1.5 shrink-0"
+                      className="h-7 px-2.5 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1 shrink-0"
                     >
-                      <span>View Receipt</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <span>View</span>
+                      <ArrowUpRight className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
@@ -295,22 +294,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
         {/* Recent Direct Message Threads */}
         {(filter === 'all' || filter === 'messages') && (
-          <section className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+          <section className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#8BE2B8]" />
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#F0F5F1]">
-                  Direct Message Activity ({recentDMs.length})
+                <MessageSquare className="w-3.5 h-3.5 text-[#8957F5]" />
+                <h2 className="text-xs font-semibold text-[#F5F3FA]">
+                  Direct Messages ({recentDMs.length})
                 </h2>
               </div>
             </div>
 
             {recentDMs.length === 0 ? (
-              <div className="p-6 text-xs text-[#9BAEA2]">
-                No direct message updates yet.
+              <div className="p-4 text-xs text-[#706C7B]">
+                No direct messages yet.
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.05]">
+              <div className="divide-y divide-[#282631]/60">
                 {recentDMs.map((dm) => {
                   const otherUid =
                     dm.participants.find((id) => id !== profile.uid) || dm.participants[0];
@@ -320,22 +319,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                     <button
                       key={dm.id}
                       onClick={() => onSelectView({ type: 'dm', dmId: dm.id })}
-                      className="w-full px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#192620] text-left transition-colors"
+                      className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-[#17171F] text-left transition-colors"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-lg bg-[#1D2B24] border border-white/10 flex items-center justify-center text-xs font-bold text-[#8BE2B8]">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-md bg-[#17171F] border border-[#282631] flex items-center justify-center text-xs font-bold text-[#8957F5]">
                           {(peer?.displayName || 'DM').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-[#F0F5F1] truncate">
+                          <p className="text-xs font-medium text-[#F5F3FA] truncate">
                             {peer?.displayName || 'Direct Conversation'}
                           </p>
-                          <p className="text-xs text-[#9BAEA2] truncate">
+                          <p className="text-[11px] text-[#706C7B] truncate">
                             {dm.lastMessageText}
                           </p>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-[#718478] shrink-0" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#706C7B] shrink-0" />
                     </button>
                   );
                 })}
@@ -346,22 +345,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
         {/* Communities & Orbs */}
         {(filter === 'all' || filter === 'spaces') && (
-          <section className="rounded-xl bg-[#141F1B] border border-white/[0.06] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+          <section className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#E9987B]" />
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#F0F5F1]">
-                  Subscribed Communities & Orbs ({myCommunities.length + myOrbs.length})
+                <Compass className="w-3.5 h-3.5 text-[#A47BFF]" />
+                <h2 className="text-xs font-semibold text-[#F5F3FA]">
+                  Communities & Orbs ({myCommunities.length + myOrbs.length})
                 </h2>
               </div>
             </div>
 
             {myCommunities.length === 0 && myOrbs.length === 0 ? (
-              <div className="p-6 text-xs text-[#9BAEA2]">
-                Join a community or follow an Orb to receive space activity updates here.
+              <div className="p-4 text-xs text-[#706C7B]">
+                Join communities or follow Orbs to see updates here.
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.05]">
+              <div className="divide-y divide-[#282631]/60">
                 {myCommunities.map((comm) => (
                   <button
                     key={comm.id}
@@ -372,18 +371,18 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                         channelId: comm.channels?.[0]?.id || 'general',
                       })
                     }
-                    className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-[#192620] text-left transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#17171F] text-left transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <Hash className="w-4 h-4 text-[#8BE2B8]" />
+                    <div className="flex items-center gap-2.5">
+                      <Hash className="w-4 h-4 text-[#8957F5]" />
                       <div>
-                        <p className="text-sm font-medium text-[#F0F5F1]">{comm.name}</p>
-                        <p className="text-xs text-[#9BAEA2]">
+                        <p className="text-xs font-medium text-[#F5F3FA]">{comm.name}</p>
+                        <p className="text-[11px] text-[#706C7B]">
                           {comm.members?.length || 1} members · {comm.channels?.length || 1} channels
                         </p>
                       </div>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-[#718478]" />
+                    <ArrowUpRight className="w-3.5 h-3.5 text-[#706C7B]" />
                   </button>
                 ))}
                 {myOrbs.map((orb) => (
@@ -392,18 +391,18 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                     onClick={() =>
                       onSelectView({ type: 'orbs', orbId: orb.id, viewMode: 'detail' })
                     }
-                    className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-[#192620] text-left transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#17171F] text-left transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <Compass className="w-4 h-4 text-[#E9987B]" />
+                    <div className="flex items-center gap-2.5">
+                      <Compass className="w-4 h-4 text-[#A47BFF]" />
                       <div>
-                        <p className="text-sm font-medium text-[#F0F5F1]">{orb.name}</p>
-                        <p className="text-xs text-[#9BAEA2]">
+                        <p className="text-xs font-medium text-[#F5F3FA]">{orb.name}</p>
+                        <p className="text-[11px] text-[#706C7B]">
                           Orb · {orb.category} · {orb.memberCount || 1} members
                         </p>
                       </div>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-[#718478]" />
+                    <ArrowUpRight className="w-3.5 h-3.5 text-[#706C7B]" />
                   </button>
                 ))}
               </div>

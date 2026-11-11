@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, ShieldCheck, Crown, Compass, MessageSquare } from 'lucide-react';
+import { Mail, Lock, User, ShieldCheck, Crown, Compass, MessageSquare, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const AuthView: React.FC = () => {
@@ -53,111 +53,114 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#101A17] text-[#F0F5F1]">
-      {/* Left Architectural Identity Showcase (Desktop) */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#141F1B] border-r border-white/[0.06] p-12 flex-col justify-between relative overflow-hidden">
+    <div className="min-h-screen w-full flex bg-[#09090D] text-[#F5F3FA]">
+      {/* Left Brand Identity Showcase (Desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#101014] border-r border-[#282631] p-12 flex-col justify-between relative overflow-hidden select-none">
         <div>
+          {/* Official Brand Mark & Title */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#8BE2B8] text-[#101A17] flex items-center justify-center font-display font-extrabold text-lg">
-              D
-            </div>
-            <span className="font-display font-bold text-lg tracking-tight text-[#F0F5F1]">
-              DOOMCORD
+            <img
+              src="/assets/aistudio/doomcord-icon_378efdf9.png"
+              alt="Doomcord"
+              className="w-9 h-9 object-contain"
+            />
+            <span className="font-semibold text-lg tracking-tight text-[#F5F3FA]">
+              Doomcord
             </span>
           </div>
 
-          <div className="mt-16 max-w-xl space-y-5">
-            <div className="text-xs font-mono uppercase tracking-widest text-[#8BE2B8]">
-              Next-Generation Social Communication Platform
+          <div className="mt-20 max-w-lg space-y-4">
+            <div className="text-xs font-medium tracking-wide uppercase text-[#8957F5]">
+              Modern Communication Platform
             </div>
-            <h1 className="text-4xl font-display font-bold text-[#F0F5F1] leading-tight">
-              Precision real-time messaging, curated communities, and interactive Orbs.
+            <h1 className="text-3xl xl:text-4xl font-semibold text-[#F5F3FA] leading-tight">
+              Real-time messaging, curated communities, and interactive Orbs.
             </h1>
-            <p className="text-sm text-[#9BAEA2] leading-relaxed">
-              Designed for clarity, speed, and zero noise. Connect across direct messages, structured community channels, 3D interest spheres, and DOOMCORD APEX customization.
+            <p className="text-sm text-[#A19DAD] leading-relaxed">
+              Designed for speed, clarity, and zero clutter. Connect across direct conversations, structured community spaces, and DOOMCORD APEX benefits.
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-3 gap-4 max-w-xl">
-            <div className="p-4 rounded-xl bg-[#192620] border border-white/[0.06]">
-              <MessageSquare className="w-4 h-4 text-[#8BE2B8] mb-2" />
-              <div className="text-xs font-semibold text-[#F0F5F1]">
-                Real-Time Threads
+          <div className="mt-12 grid grid-cols-3 gap-3.5 max-w-lg">
+            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+              <MessageSquare className="w-4 h-4 text-[#8957F5] mb-2.5" />
+              <div className="text-xs font-medium text-[#F5F3FA]">
+                Direct Threads
               </div>
-              <p className="text-[11px] text-[#718478] mt-1">
-                Read receipts, replies, pinning & attachments
+              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+                Encrypted chats, replies & media
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#192620] border border-white/[0.06]">
-              <Compass className="w-4 h-4 text-[#E9987B] mb-2" />
-              <div className="text-xs font-semibold text-[#F0F5F1]">
-                Interactive Orbs
+            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+              <Compass className="w-4 h-4 text-[#A47BFF] mb-2.5" />
+              <div className="text-xs font-medium text-[#F5F3FA]">
+                Spatial Orbs
               </div>
-              <p className="text-[11px] text-[#718478] mt-1">
-                Discovery grid & 3D spatial constellation
+              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+                Curated discovery & 3D space
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#192620] border border-white/[0.06]">
-              <Crown className="w-4 h-4 text-[#D9BB79] mb-2" />
-              <div className="text-xs font-semibold text-[#F0F5F1]">
+            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+              <Crown className="w-4 h-4 text-[#C4B1FF] mb-2.5" />
+              <div className="text-xs font-medium text-[#F5F3FA]">
                 DOOMCORD APEX
               </div>
-              <p className="text-[11px] text-[#718478] mt-1">
-                Profile themes, cosmetics & instant gifting
+              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+                Themes, badges & gifting
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-[#718478] pt-8 border-t border-white/[0.06]">
+        <div className="flex items-center justify-between text-xs text-[#706C7B] pt-8 border-t border-[#282631]">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#8BE2B8]" />
-            <span>Authenticated sessions & live Firestore persistence</span>
+            <ShieldCheck className="w-4 h-4 text-[#8957F5]" />
+            <span>Secure authentication & persistent Firestore state</span>
           </div>
-          <span className="font-mono">DOOMCORD v2.6</span>
+          <span className="font-mono text-[11px]">Doomcord v3.0</span>
         </div>
       </div>
 
       {/* Right Authentication Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-6">
-          {/* Header */}
-          <div>
-            <div className="lg:hidden flex items-center gap-2.5 mb-6">
-              <div className="w-9 h-9 rounded-xl bg-[#8BE2B8] text-[#101A17] flex items-center justify-center font-display font-extrabold text-base">
-                D
-              </div>
-              <span className="font-display font-bold text-base text-[#F0F5F1]">
-                DOOMCORD
-              </span>
-            </div>
+        <div className="w-full max-w-sm space-y-6">
+          {/* Mobile Brand Header */}
+          <div className="lg:hidden flex items-center gap-2.5 mb-2">
+            <img
+              src="/assets/aistudio/doomcord-icon_378efdf9.png"
+              alt="Doomcord"
+              className="w-8 h-8 object-contain"
+            />
+            <span className="font-semibold text-base text-[#F5F3FA]">
+              Doomcord
+            </span>
+          </div>
 
-            <h2 className="text-2xl font-display font-bold text-[#F0F5F1]">
-              {mode === 'signin'
-                ? 'Sign in to Doomcord'
-                : 'Create your Doomcord account'}
+          <div>
+            <h2 className="text-xl font-semibold text-[#F5F3FA]">
+              {mode === 'signin' ? 'Sign in to Doomcord' : 'Create your account'}
             </h2>
-            <p className="text-xs text-[#9BAEA2] mt-1">
+            <p className="text-xs text-[#A19DAD] mt-1">
               {mode === 'signin'
-                ? 'Enter your credentials or continue with Google to access your workspace.'
-                : 'Register a unique @username to join communities, Orbs, and direct conversations.'}
+                ? 'Enter your credentials or continue with Google to access your account.'
+                : 'Choose a unique username to join communities and chat.'}
             </p>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[#141F1B] border border-white/[0.06]">
+          {/* Mode Segmented Switcher */}
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-[#101014] border border-[#282631]">
             <button
               type="button"
               onClick={() => {
                 setMode('signin');
                 setErrorMsg(null);
               }}
-              className={`h-9 text-xs font-semibold rounded-lg transition-colors ${
+              className={`h-8 text-xs font-medium rounded transition-colors ${
                 mode === 'signin'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#22212C] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
               Sign In
@@ -168,10 +171,10 @@ export const AuthView: React.FC = () => {
                 setMode('signup');
                 setErrorMsg(null);
               }}
-              className={`h-9 text-xs font-semibold rounded-lg transition-colors ${
+              className={`h-8 text-xs font-medium rounded transition-colors ${
                 mode === 'signup'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#22212C] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
               Create Account
@@ -182,9 +185,9 @@ export const AuthView: React.FC = () => {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full h-10 flex items-center justify-center gap-3 px-4 rounded-xl bg-[#F0F5F1] hover:bg-white text-[#101A17] font-semibold text-xs transition-colors"
+            className="w-full h-9 flex items-center justify-center gap-2.5 px-4 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] transition-colors"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -206,40 +209,40 @@ export const AuthView: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="h-[1px] bg-white/[0.06] flex-1" />
-            <span className="text-[10px] text-[#718478] uppercase font-mono">
-              or email & password
+            <div className="h-[1px] bg-[#282631] flex-1" />
+            <span className="text-[10px] text-[#706C7B] uppercase tracking-wider font-mono">
+              or credentials
             </span>
-            <div className="h-[1px] bg-white/[0.06] flex-1" />
+            <div className="h-[1px] bg-[#282631] flex-1" />
           </div>
 
           {/* Credentials Form */}
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <form onSubmit={handleEmailSubmit} className="space-y-3.5">
             {mode === 'signup' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                     Display Name
                   </label>
-                  <div className="flex items-center bg-[#141F1B] px-3 h-10 rounded-xl border border-white/[0.08] focus-within:border-[#8BE2B8]">
-                    <User className="w-3.5 h-3.5 text-[#718478] mr-2 shrink-0" />
+                  <div className="flex items-center bg-[#101014] px-3 h-9 rounded-lg border border-[#282631] focus-within:border-[#8957F5] transition-colors">
+                    <User className="w-3.5 h-3.5 text-[#706C7B] mr-2 shrink-0" />
                     <input
                       type="text"
                       placeholder="Alex Mercer"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="bg-transparent text-xs text-[#F0F5F1] placeholder-[#718478] outline-none w-full"
+                      className="bg-transparent text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none w-full"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
-                    Unique Username
+                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
+                    Username
                   </label>
-                  <div className="flex items-center bg-[#141F1B] px-3 h-10 rounded-xl border border-white/[0.08] focus-within:border-[#8BE2B8]">
-                    <span className="text-xs font-mono text-[#718478] mr-1">
+                  <div className="flex items-center bg-[#101014] px-3 h-9 rounded-lg border border-[#282631] focus-within:border-[#8957F5] transition-colors">
+                    <span className="text-xs font-mono text-[#706C7B] mr-1">
                       @
                     </span>
                     <input
@@ -247,7 +250,7 @@ export const AuthView: React.FC = () => {
                       placeholder="alex"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="bg-transparent text-xs text-[#F0F5F1] placeholder-[#718478] outline-none w-full font-mono"
+                      className="bg-transparent text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none w-full font-mono"
                       required
                     />
                   </div>
@@ -256,41 +259,41 @@ export const AuthView: React.FC = () => {
             )}
 
             <div>
-              <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+              <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                 Email Address
               </label>
-              <div className="flex items-center bg-[#141F1B] px-3.5 h-10 rounded-xl border border-white/[0.08] focus-within:border-[#8BE2B8]">
-                <Mail className="w-3.5 h-3.5 text-[#718478] mr-2.5 shrink-0" />
+              <div className="flex items-center bg-[#101014] px-3 h-9 rounded-lg border border-[#282631] focus-within:border-[#8957F5] transition-colors">
+                <Mail className="w-3.5 h-3.5 text-[#706C7B] mr-2 shrink-0" />
                 <input
                   type="email"
                   placeholder="you@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-transparent text-xs text-[#F0F5F1] placeholder-[#718478] outline-none w-full"
+                  className="bg-transparent text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none w-full"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+              <label className="text-xs font-medium text-[#A19DAD] block mb-1">
                 Password
               </label>
-              <div className="flex items-center bg-[#141F1B] px-3.5 h-10 rounded-xl border border-white/[0.08] focus-within:border-[#8BE2B8]">
-                <Lock className="w-3.5 h-3.5 text-[#718478] mr-2.5 shrink-0" />
+              <div className="flex items-center bg-[#101014] px-3 h-9 rounded-lg border border-[#282631] focus-within:border-[#8957F5] transition-colors">
+                <Lock className="w-3.5 h-3.5 text-[#706C7B] mr-2 shrink-0" />
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-transparent text-xs text-[#F0F5F1] placeholder-[#718478] outline-none w-full"
+                  className="bg-transparent text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none w-full"
                   required
                 />
               </div>
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-[#E57373]/15 border border-[#E57373]/30 text-[#E57373] text-xs">
+              <div className="p-2.5 rounded-lg bg-[#ED4245]/10 border border-[#ED4245]/25 text-[#ED4245] text-xs">
                 {errorMsg}
               </div>
             )}
@@ -298,13 +301,16 @@ export const AuthView: React.FC = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-10 px-4 text-xs font-semibold text-[#101A17] bg-[#8BE2B8] hover:bg-[#7AD4A8] rounded-xl transition-colors disabled:opacity-40"
+              className="w-full h-9 px-4 text-xs font-medium text-white bg-[#8957F5] hover:bg-[#7842EB] rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
-              {submitting
-                ? 'Authenticating...'
-                : mode === 'signin'
-                ? 'Sign In to Doomcord'
-                : 'Create Doomcord Account'}
+              <span>
+                {submitting
+                  ? 'Authenticating...'
+                  : mode === 'signin'
+                  ? 'Sign In to Doomcord'
+                  : 'Create Account'}
+              </span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>
         </div>

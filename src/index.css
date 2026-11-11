@@ -6,52 +6,53 @@
   --font-sans: 'Figtree', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Official Doomcord Refined Forest-Green Design Tokens */
-  --color-doom-bg: #101A17;
-  --color-doom-bg-secondary: #141F1B;
-  --color-doom-rail: #111B17;
-  --color-doom-panel: #111B17;
-  --color-doom-elevated: #192620;
-  --color-doom-card: #1D2B24;
-  --color-doom-card-hover: #24362C;
+  /* Official Doomcord Modern Purple & Obsidian Design Tokens */
+  --color-doom-bg: #09090D;
+  --color-doom-bg-secondary: #101014;
+  --color-doom-sidebar: #0D0D12;
+  --color-doom-elevated: #17171F;
+  --color-doom-hover: #22212C;
+  --color-doom-card: #13131A;
+  --color-doom-card-hover: #1C1B24;
 
-  --color-doom-text: #F0F5F1;
-  --color-doom-text-secondary: #9BAEA2;
-  --color-doom-muted: #718478;
+  --color-doom-purple: #8957F5;
+  --color-doom-purple-hover: #7842EB;
+  --color-doom-purple-sec: #A47BFF;
+  --color-doom-lavender: #C4B1FF;
 
-  --color-doom-mint: #8BE2B8;
-  --color-doom-mint-hover: #A3ECC8;
-  --color-doom-coral: #E9987B;
-  --color-doom-coral-hover: #F0AC93;
-  --color-doom-gold: #D9BB79;
-  --color-doom-sky: #78B8D6;
-  --color-doom-rose: #E07A86;
-  --color-doom-moss: #5B8C6E;
+  --color-doom-text: #F5F3FA;
+  --color-doom-text-sec: #A19DAD;
+  --color-doom-muted: #706C7B;
+  --color-doom-border: #282631;
+  --color-doom-border-subtle: rgba(245, 243, 250, 0.06);
+
+  --color-doom-online: #3BA55D;
+  --color-doom-idle: #FAA81A;
+  --color-doom-dnd: #ED4245;
 }
 
 :root {
   color-scheme: dark;
-  --bg-primary: #101A17;
-  --bg-secondary: #141F1B;
-  --bg-sidebar: #111B17;
-  --bg-elevated: #192620;
-  --bg-card: #1D2B24;
-  --bg-hover: #24362C;
-  --text-primary: #F0F5F1;
-  --text-secondary: #9BAEA2;
-  --text-muted: #718478;
-  --accent-mint: #8BE2B8;
-  --accent-coral: #E9987B;
-  --accent-gold: #D9BB79;
-  --border-subtle: rgba(240, 245, 241, 0.07);
-  --border-strong: rgba(139, 226, 184, 0.28);
+  --bg-primary: #09090D;
+  --bg-secondary: #101014;
+  --bg-sidebar: #0D0D12;
+  --bg-elevated: #17171F;
+  --bg-hover: #22212C;
+  --bg-card: #13131A;
+  --text-primary: #F5F3FA;
+  --text-secondary: #A19DAD;
+  --text-muted: #706C7B;
+  --accent-purple: #8957F5;
+  --accent-purple-sec: #A47BFF;
+  --accent-lavender: #C4B1FF;
+  --border-subtle: #282631;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #101A17;
-  color: #F0F5F1;
-  letter-spacing: 0.005em;
+  background-color: #09090D;
+  color: #F5F3FA;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -71,12 +72,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #24362C;
+  background: #282631;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #31493C;
+  background: #363442;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -257,6 +257,19 @@ export interface MessageAttachment {
   size?: number;
 }
 
+export interface PollOption {
+  id: string;
+  text: string;
+  voterIds: string[];
+}
+
+export interface PollData {
+  question: string;
+  options: PollOption[];
+  createdBy: string;
+  closed?: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -275,6 +288,7 @@ export interface ChatMessage {
     senderName: string;
     content: string;
   };
+  poll?: PollData;
   isPinned?: boolean;
   isEdited?: boolean;
   createdAt: string;
@@ -320,6 +334,8 @@ export interface Community {
   members: string[];
   channels?: Channel[];
   memberCount?: number;
+  boostCount?: number;
+  boostedBy?: string[];
   createdAt: string;
 }
 

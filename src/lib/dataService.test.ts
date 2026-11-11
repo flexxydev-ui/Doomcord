@@ -11,6 +11,8 @@ import {
   calculateReceiptDuration,
   INITIAL_NITRO_PLANS,
   INITIAL_COSMETICS_CATALOG,
+  cleanFirestoreData,
+  isRootOwnerEmail,
 } from './dataService';
 
 test('isRootOwner strictly identifies Main Owner by UUID or root_owner role', () => {
@@ -119,3 +121,48 @@ test('calculateReceiptDuration returns accurate start and expiry timestamps', ()
   assert.equal(lifetime.serviceExpiryDate, null);
   assert.equal(lifetime.expiryDate, null);
 });
+
+test('cleanFirestoreData strips all undefined fields recursively and preserves valid values', () => {
+  const dirtyData = {
+    id: 'gift_123',
+    claimToken: 'APEX-123456',
+    restrictedRecipientEmail: undefined,
+    restrictedRecipientUsername: undefined,
+    nested: {
+      valid: 'ok',
+      missing: undefined,
+      deep: {
+        num: 42,
+        bad: undefined,
+      },
+    },
+    items: [1, undefined, 'text', null],
+    zeroValue: 0,
+    falseValue: false,
+    nullValue: null,
+  };
+
+  const cleaned = cleanFirestoreData(dirtyData);
+
+  assert.equal(Object.prototype.hasOwnProperty.call(cleaned, 'restrictedRecipientEmail'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(cleaned, 'restrictedRecipientUsername'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(cleaned.nested, 'missing'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(cleaned.nested.deep, 'bad'), false);
+  assert.equal(cleaned.nested.valid, 'ok');
+  assert.equal(cleaned.nested.deep.num, 42);
+  assert.equal(cleaned.zeroValue, 0);
+  assert.equal(cleaned.falseValue, false);
+  assert.equal(cleaned.nullValue, null);
+  assert.deepEqual(cleaned.items, [1, 'text', null]);
+});
+
+test('isRootOwnerEmail identifies recognized owner emails', () => {
+  assert.equal(isRootOwnerEmail('razorpay@admin.doom'), true);
+  assert.equal(isRootOwnerEmail('kshriyans17@gmail.com'), true);
+  assert.equal(isRootOwnerEmail('adrenoxshriyans@gmail.com'), true);
+  assert.equal(isRootOwnerEmail('KSHRIYANS17@GMAIL.COM'), true);
+  assert.equal(isRootOwnerEmail('random@gmail.com'), false);
+  assert.equal(isRootOwnerEmail(undefined), false);
+  assert.equal(isRootOwnerEmail(null), false);
+});
+

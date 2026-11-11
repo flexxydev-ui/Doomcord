@@ -73,7 +73,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.fog = new THREE.FogExp2(0x101a17, 0.025);
+    scene.fog = new THREE.FogExp2(0x09090d, 0.025);
 
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
     camera.position.set(0, 5, 22);
@@ -103,14 +103,14 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
     ).texture;
     pmremGenerator.dispose();
 
-    const ambientLight = new THREE.AmbientLight(0x192620, 1.3);
+    const ambientLight = new THREE.AmbientLight(0x17171f, 1.4);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0x8be2b8, 2.0);
+    const keyLight = new THREE.DirectionalLight(0x8957f5, 2.2);
     keyLight.position.set(10, 15, 12);
     scene.add(keyLight);
 
-    const fillLight = new THREE.HemisphereLight(0x8be2b8, 0x101a17, 1.0);
+    const fillLight = new THREE.HemisphereLight(0xa47bff, 0x09090d, 1.1);
     scene.add(fillLight);
 
     // Subtle spatial particle grid
@@ -124,10 +124,11 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
       positions[i * 3 + 1] = (Math.random() - 0.5) * 35;
       positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
 
-      const isCoral = Math.random() > 0.75;
-      colors[i * 3] = isCoral ? 0.91 : 0.54;
-      colors[i * 3 + 1] = isCoral ? 0.6 : 0.88;
-      colors[i * 3 + 2] = isCoral ? 0.48 : 0.72;
+      const isSecondary = Math.random() > 0.65;
+      // Primary purple #8957F5 (137, 87, 245) or Light Lavender #C4B1FF (196, 177, 255)
+      colors[i * 3] = isSecondary ? 0.77 : 0.54;
+      colors[i * 3 + 1] = isSecondary ? 0.69 : 0.34;
+      colors[i * 3 + 2] = isSecondary ? 1.0 : 0.96;
     }
 
     particleGeo.setAttribute(
@@ -164,11 +165,11 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
       const sphereGeo = new THREE.SphereGeometry(1.55, 32, 32);
       const sphereMat = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(orb.primaryColor || '#8BE2B8'),
+        color: new THREE.Color(orb.primaryColor || '#8957F5'),
         roughness: 0.18,
         metalness: 0.35,
         clearcoat: 0.85,
-        emissive: new THREE.Color(orb.primaryColor || '#8BE2B8'),
+        emissive: new THREE.Color(orb.primaryColor || '#8957F5'),
         emissiveIntensity: 0.28,
       });
 
@@ -178,7 +179,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
       const ringGeo = new THREE.RingGeometry(2.05, 2.22, 32);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(orb.secondaryColor || '#8BE2B8'),
+        color: new THREE.Color(orb.secondaryColor || '#A47BFF'),
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 0.5,
@@ -331,15 +332,15 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
   });
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#101A17] text-[#F0F5F1]">
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#09090D] text-[#F5F3FA]">
       {/* Top Discovery Header */}
-      <header className="relative z-20 h-16 px-8 border-b border-white/[0.06] bg-[#101A17] flex items-center justify-between gap-4 shrink-0">
+      <header className="relative z-20 h-16 px-8 border-b border-[#282631] bg-[#0D0D12] flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <Compass className="w-4 h-4 text-[#E9987B]" />
-          <h1 className="font-display font-bold text-base text-[#F0F5F1]">
+          <Compass className="w-4 h-4 text-[#8957F5]" />
+          <h1 className="font-semibold text-sm text-[#F5F3FA] tracking-wide">
             Orbs Discovery
           </h1>
-          <span className="text-xs font-mono text-[#718478] border-l border-white/15 pl-3 tabular-nums">
+          <span className="text-xs font-mono text-[#706C7B] border-l border-[#282631] pl-3 tabular-nums">
             {orbs.length} active spheres
           </span>
         </div>
@@ -347,38 +348,38 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
         <div className="flex items-center gap-2.5">
           {/* Search Input */}
           <div className="relative hidden md:block">
-            <Search className="w-3.5 h-3.5 text-[#718478] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#706C7B] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Orbs or #tags..."
-              className="h-8 pl-8 pr-3 rounded-lg bg-[#141F1B] border border-white/[0.07] focus:border-[#8BE2B8]/50 text-xs text-[#F0F5F1] placeholder-[#718478] outline-none w-52"
+              className="h-8 pl-8 pr-3 rounded-md bg-[#101014] border border-[#282631] focus:border-[#8957F5]/60 text-xs text-[#F5F3FA] placeholder-[#706C7B] outline-none w-56 transition-colors"
             />
           </div>
 
           {/* View Mode Switcher: Discovery Grid vs 3D Spatial Viewport */}
-          <div className="flex items-center gap-1 bg-[#141F1B] p-1 rounded-lg border border-white/[0.06]">
+          <div className="flex items-center gap-1 bg-[#101014] p-1 rounded-md border border-[#282631]">
             <button
               onClick={() => setDisplayMode('grid')}
               className={`h-7 px-2.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
                 displayMode === 'grid'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              <LayoutGrid className="w-3.5 h-3.5 text-[#8BE2B8]" />
+              <LayoutGrid className="w-3.5 h-3.5 text-[#8957F5]" />
               <span>Discovery Grid</span>
             </button>
             <button
               onClick={() => setDisplayMode('3d')}
               className={`h-7 px-2.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
                 displayMode === '3d'
-                  ? 'bg-[#24362C] text-[#F0F5F1]'
-                  : 'text-[#9BAEA2] hover:text-[#F0F5F1]'
+                  ? 'bg-[#17171F] text-[#F5F3FA]'
+                  : 'text-[#A19DAD] hover:text-[#F5F3FA]'
               }`}
             >
-              <Box className="w-3.5 h-3.5 text-[#E9987B]" />
+              <Box className="w-3.5 h-3.5 text-[#A47BFF]" />
               <span>3D Constellation</span>
             </button>
           </div>
@@ -387,7 +388,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
             <button
               onClick={resetCamera}
               title="Reset 3D Camera"
-              className="h-8 px-2.5 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/[0.07] text-[#9BAEA2] hover:text-[#F0F5F1]"
+              className="h-8 px-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#A19DAD] hover:text-[#F5F3FA] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -395,7 +396,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
           <button
             onClick={onCreateOrb}
-            className="h-8 px-3.5 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            className="h-8 px-3.5 rounded-md bg-[#8957F5] hover:bg-[#7846E4] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm shadow-[#8957F5]/20"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Create Orb</span>
@@ -404,15 +405,15 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
       </header>
 
       {/* Category Filter Strip */}
-      <div className="px-8 py-3 bg-[#141F1B] border-b border-white/[0.05] flex items-center gap-1.5 overflow-x-auto shrink-0">
+      <div className="px-8 py-2.5 bg-[#101014] border-b border-[#282631] flex items-center gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setFilterCategory(cat)}
-            className={`h-7 px-3 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+            className={`h-7 px-3 rounded text-xs font-medium transition-colors whitespace-nowrap ${
               filterCategory === cat
-                ? 'bg-[#24362C] text-[#8BE2B8]'
-                : 'text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620]'
+                ? 'bg-[#17171F] text-[#8957F5] border border-[#8957F5]/30'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA] hover:bg-[#17171F]/50'
             }`}
           >
             {cat}
@@ -425,19 +426,19 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
         <div className="flex-1 overflow-y-auto px-8 py-8">
           <div className="max-w-6xl mx-auto space-y-8">
             {filteredOrbs.length === 0 ? (
-              <div className="p-12 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center space-y-3">
-                <Compass className="w-8 h-8 text-[#E9987B] mx-auto opacity-80" />
+              <div className="p-12 rounded-xl bg-[#101014] border border-[#282631] text-center space-y-3">
+                <Compass className="w-8 h-8 text-[#8957F5] mx-auto opacity-80" />
                 <div>
-                  <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                  <h2 className="text-base font-semibold text-[#F5F3FA]">
                     No Orbs Found
                   </h2>
-                  <p className="text-xs text-[#9BAEA2] mt-1 max-w-md mx-auto">
-                    Orbs are interactive interest spaces where members gather around shared topics, live discussions, and media.
+                  <p className="text-xs text-[#A19DAD] mt-1 max-w-md mx-auto">
+                    Orbs are interactive interest spaces where members gather around shared topics, live discussions, and spatial media.
                   </p>
                 </div>
                 <button
                   onClick={onCreateOrb}
-                  className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold inline-flex items-center gap-1.5"
+                  className="h-9 px-4 rounded-md bg-[#8957F5] text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-[#7846E4] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create First Orb</span>
@@ -448,31 +449,31 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
                 {filteredOrbs.map((orb) => (
                   <div
                     key={orb.id}
-                    className="rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.07] p-5 flex flex-col justify-between transition-colors"
+                    className="rounded-xl bg-[#101014] hover:bg-[#17171F]/80 border border-[#282631] p-5 flex flex-col justify-between transition-colors shadow-sm"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-xs text-[#101A17] shrink-0"
+                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-inner"
                             style={{
-                              backgroundColor: orb.primaryColor || '#8BE2B8',
+                              backgroundColor: orb.primaryColor || '#8957F5',
                             }}
                           >
                             {orb.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                            <h3 className="text-sm font-semibold text-[#F5F3FA]">
                               {orb.name}
                             </h3>
-                            <span className="text-[11px] font-mono uppercase text-[#8BE2B8]">
+                            <span className="text-[11px] font-mono uppercase text-[#A47BFF]">
                               {orb.category} · {orb.visibility}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <p className="text-xs text-[#9BAEA2] leading-relaxed line-clamp-2 mb-4">
+                      <p className="text-xs text-[#A19DAD] leading-relaxed line-clamp-2 mb-4">
                         {orb.description}
                       </p>
 
@@ -481,7 +482,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
                           {orb.tags.slice(0, 4).map((tag) => (
                             <span
                               key={tag}
-                              className="px-2 py-0.5 rounded bg-[#101A17] border border-white/[0.06] text-[10px] font-mono text-[#718478]"
+                              className="px-2 py-0.5 rounded bg-[#09090D] border border-[#282631] text-[10px] font-mono text-[#706C7B]"
                             >
                               #{tag}
                             </span>
@@ -490,21 +491,21 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
                       )}
                     </div>
 
-                    <div className="pt-3.5 border-t border-white/[0.06] flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-[11px] font-mono text-[#9BAEA2] tabular-nums">
+                    <div className="pt-3.5 border-t border-[#282631] flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-[11px] font-mono text-[#A19DAD] tabular-nums">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                          <Users className="w-3.5 h-3.5 text-[#8957F5]" />
                           {orb.memberCount || 1}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Activity className="w-3.5 h-3.5 text-[#E9987B]" />
+                          <Activity className="w-3.5 h-3.5 text-[#A47BFF]" />
                           {orb.activityScore || 100}%
                         </span>
                       </div>
 
                       <button
                         onClick={() => onEnterOrbRoom(orb)}
-                        className="h-8 px-3 rounded-lg bg-[#1D2B24] hover:bg-[#24362C] border border-white/[0.08] text-xs font-semibold text-[#8BE2B8] flex items-center gap-1.5 transition-colors"
+                        className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-semibold text-[#8957F5] hover:text-[#A47BFF] flex items-center gap-1.5 transition-colors"
                       >
                         <span>Enter Orb</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
@@ -526,17 +527,17 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
           {orbs.length === 0 && (
             <div className="absolute inset-0 z-10 flex items-center justify-center p-6 pointer-events-none">
-              <div className="max-w-md p-6 rounded-xl bg-[#141F1B]/95 border border-white/10 shadow-2xl text-center pointer-events-auto">
-                <Sparkles className="w-6 h-6 text-[#8BE2B8] mx-auto mb-2.5" />
-                <h2 className="text-base font-display font-bold text-[#F0F5F1] mb-1">
+              <div className="max-w-md p-6 rounded-xl bg-[#101014]/95 border border-[#282631] shadow-2xl text-center pointer-events-auto">
+                <Sparkles className="w-6 h-6 text-[#8957F5] mx-auto mb-2.5" />
+                <h2 className="text-base font-semibold text-[#F5F3FA] mb-1">
                   No Orbs in the 3D Constellation Yet
                 </h2>
-                <p className="text-xs text-[#9BAEA2] mb-4">
+                <p className="text-xs text-[#A19DAD] mb-4">
                   Create the first Orb to populate the real-time 3D spatial constellation.
                 </p>
                 <button
                   onClick={onCreateOrb}
-                  className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold inline-flex items-center gap-1.5"
+                  className="h-9 px-4 rounded-md bg-[#8957F5] text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-[#7846E4] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create First Orb</span>
@@ -546,57 +547,57 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
           )}
 
           {hoveredOrb && (
-            <div className="absolute top-6 left-6 z-20 max-w-sm p-4 rounded-xl bg-[#141F1B]/95 border border-white/10 shadow-xl pointer-events-none">
+            <div className="absolute top-6 left-6 z-20 max-w-sm p-4 rounded-xl bg-[#101014]/95 border border-[#282631] shadow-xl pointer-events-none">
               <div className="flex items-center gap-2.5 mb-1.5">
                 <span
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: hoveredOrb.primaryColor }}
+                  style={{ backgroundColor: hoveredOrb.primaryColor || '#8957F5' }}
                 />
-                <span className="text-sm font-display font-bold text-[#F0F5F1]">
+                <span className="text-sm font-semibold text-[#F5F3FA]">
                   {hoveredOrb.name}
                 </span>
-                <span className="text-xs font-mono text-[#8BE2B8]">
+                <span className="text-xs font-mono text-[#8957F5]">
                   · {hoveredOrb.category}
                 </span>
               </div>
-              <p className="text-xs text-[#9BAEA2] line-clamp-2">
+              <p className="text-xs text-[#A19DAD] line-clamp-2">
                 {hoveredOrb.description}
               </p>
             </div>
           )}
 
           {selectedOrb && (
-            <div className="absolute bottom-8 right-8 z-20 w-80 p-5 rounded-xl bg-[#141F1B]/95 border border-white/10 shadow-2xl">
+            <div className="absolute bottom-8 right-8 z-20 w-80 p-5 rounded-xl bg-[#101014]/95 border border-[#282631] shadow-2xl">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <span className="text-[11px] font-mono uppercase text-[#8BE2B8]">
+                  <span className="text-[11px] font-mono uppercase text-[#8957F5]">
                     {selectedOrb.category} Sphere
                   </span>
-                  <h3 className="text-base font-display font-bold text-[#F0F5F1]">
+                  <h3 className="text-base font-semibold text-[#F5F3FA]">
                     {selectedOrb.name}
                   </h3>
                 </div>
                 <span
                   className="w-5 h-5 rounded-full"
-                  style={{ backgroundColor: selectedOrb.primaryColor }}
+                  style={{ backgroundColor: selectedOrb.primaryColor || '#8957F5' }}
                 />
               </div>
 
-              <p className="text-xs text-[#9BAEA2] leading-relaxed mb-4">
+              <p className="text-xs text-[#A19DAD] leading-relaxed mb-4">
                 {selectedOrb.description}
               </p>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => onEnterOrbRoom(selectedOrb)}
-                  className="flex-1 h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold flex items-center justify-center gap-1.5"
+                  className="flex-1 h-9 px-4 rounded-md bg-[#8957F5] hover:bg-[#7846E4] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <span>Enter Orb Lounge</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => onSelectOrb(null as any)}
-                  className="h-9 px-3 rounded-lg bg-[#192620] text-xs text-[#9BAEA2] hover:text-[#F0F5F1] border border-white/10"
+                  className="h-9 px-3 rounded-md bg-[#17171F] text-xs text-[#A19DAD] hover:text-[#F5F3FA] border border-[#282631] transition-colors"
                 >
                   Close
                 </button>
