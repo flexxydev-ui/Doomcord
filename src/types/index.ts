@@ -1,7 +1,15 @@
 export type UserPresence = 'online' | 'idle' | 'dnd' | 'invisible';
-export type PlatformRole = 'owner' | 'admin' | 'moderator' | 'member';
+export type PlatformRole =
+  | 'root_owner'
+  | 'secondary_owner'
+  | 'owner'
+  | 'admin'
+  | 'moderator'
+  | 'member';
+// Internal storage identifiers preserved for backward-compatible DB migration:
+// 'basic' = DOOMCORD APEX (₹49/mo), 'nitro' = DOOMCORD APEX+ (₹99/mo)
 export type NitroTier = 'free' | 'basic' | 'nitro';
-export type BillingCycle = 'none' | 'monthly' | 'yearly';
+export type BillingCycle = 'none' | 'monthly' | 'yearly' | 'lifetime';
 
 export interface EquippedCosmetics {
   avatarDecoration?: string;
@@ -29,8 +37,15 @@ export interface UserProfile {
   secondaryColor?: string;
   nitroTier: NitroTier;
   nitroBillingCycle: BillingCycle;
-  nitroExpiresAt?: string;
+  nitroExpiresAt?: string | null;
   nitroAutoRenew?: boolean;
+  permanentEntitlement?:
+    | 'OWNER_PERMANENT_APEX'
+    | 'OWNER_PERMANENT_NITRO'
+    | 'LIFETIME_APEX_PLUS'
+    | 'LIFETIME_APEX';
+  ownerPermanentApex?: boolean;
+  ownerPermanentNitro?: boolean;
   ownedCosmetics: string[];
   equippedCosmetics: EquippedCosmetics;
   badges: string[];
@@ -39,6 +54,15 @@ export interface UserProfile {
   mustChangePassword?: boolean;
   authSalt?: string;
   authHash?: string;
+  secondaryOwnerPermissions?: {
+    canManageUsers: boolean;
+    canManageCommunities: boolean;
+    canManageApexPlans: boolean;
+    canManageCosmetics: boolean;
+    canCreateGifts: boolean;
+    canManageReceipts: boolean;
+    canProcessRefunds: boolean;
+  };
   createdAt: string;
   updatedAt?: string;
   friends?: string[];
@@ -92,6 +116,78 @@ export interface CosmeticItem {
   isLimitedEdition?: boolean;
   bundleItems?: string[];
   createdAt: string;
+}
+
+export type GiftDuration = '1d' | '7d' | '1m' | '30d' | '90d' | '1y' | 'lifetime';
+
+export interface GiftRecord {
+  id: string;
+  tokenHash: string;
+  tokenPreview: string;
+  claimToken?: string;
+  creatorUid: string;
+  creatorName: string;
+  apexTier: 'none' | 'basic' | 'nitro';
+  billingCycle?: 'monthly' | 'yearly' | 'lifetime';
+  cosmeticIds: string[];
+  duration: GiftDuration;
+  personalMessage: string;
+  restrictedRecipientUid?: string;
+  restrictedRecipientUsername?: string;
+  restrictedRecipientEmail?: string;
+  isPaidGift?: boolean;
+  amountPaidINR?: number;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  status: 'unclaimed' | 'redeemed' | 'revoked' | 'expired';
+  redeemedByUid?: string;
+  redeemedByEmail?: string;
+  redeemedAt?: string;
+  linkExpiresAt?: string | null;
+  createdAt: string;
+}
+
+export interface GiftRedemptionRecord {
+  id: string;
+  giftId: string;
+  recipientUid: string;
+  recipientEmail: string;
+  apexTierGranted: 'none' | 'basic' | 'nitro';
+  cosmeticsGranted: string[];
+  duration: GiftDuration;
+  entitlementExpiresAt: string | null;
+  redeemedAt: string;
+}
+
+export interface UserEntitlementRecord {
+  id: string;
+  userId: string;
+  entitlementCode: string;
+  source: 'owner_permanent' | 'gift' | 'razorpay' | 'admin_grant';
+  sourceId?: string;
+  apexTier: 'none' | 'basic' | 'nitro';
+  cosmeticIds: string[];
+  isLifetime: boolean;
+  expiresAt: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface SecurityAuditItem {
+  id: string;
+  vulnerability: string;
+  category:
+    | 'Authentication'
+    | 'Authorization'
+    | 'Database & RLS'
+    | 'Payment & Gifting'
+    | 'Application & API';
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  affectedComponent: string;
+  fixImplemented: string;
+  testPerformed: string;
+  remainingRisk: string;
+  status: 'Remediated & Verified';
 }
 
 export interface TransactionRecord {
@@ -249,12 +345,140 @@ export interface VoiceParticipant {
   joinedAt: string;
 }
 
+export type ReceiptType =
+  | 'APEX Membership Receipt'
+  | 'APEX+ Membership Receipt'
+  | 'Cosmetic Purchase Receipt'
+  | 'Decoration Purchase Receipt'
+  | 'APEX Gift Receipt'
+  | 'Lifetime Membership Receipt'
+  | 'Lifetime Cosmetic Receipt'
+  | 'Custom Service Receipt'
+  | 'Complimentary Gift Receipt'
+  | 'Refund Receipt';
+
+export type ReceiptPaymentStatus =
+  | 'Paid'
+  | 'Complimentary'
+  | 'Pending'
+  | 'Failed'
+  | 'Refunded';
+
+export type ReceiptDurationPreset =
+  | '1d'
+  | '3d'
+  | '7d'
+  | '15d'
+  | '30d'
+  | '60d'
+  | '90d'
+  | '180d'
+  | '1y'
+  | 'lifetime'
+  | 'custom';
+
+export type CustomDurationUnit =
+  | 'minutes'
+  | 'hours'
+  | 'days'
+  | 'weeks'
+  | 'months'
+  | 'years';
+
+export interface ReceiptLineItem {
+  id: string;
+  productName: string;
+  category: string;
+  quantity: number;
+  unitPriceINR: number;
+  discountINR: number;
+  finalAmountINR: number;
+  durationPreset: ReceiptDurationPreset;
+  customDurationValue?: number;
+  customDurationUnit?: CustomDurationUnit;
+  durationLabel: string;
+  serviceStartDate: string;
+  serviceExpiryDate: string | null; // null = LIFETIME — NO EXPIRATION
+}
+
+export interface ReceiptAuditEvent {
+  id: string;
+  receiptId: string;
+  actorUid: string;
+  actorEmail: string;
+  action: 'ISSUED' | 'METADATA_CORRECTED' | 'REPLACEMENT_ISSUED' | 'STATUS_UPDATED';
+  reason: string;
+  previousNotes?: string;
+  newNotes?: string;
+  timestamp: string;
+}
+
+export interface ReceiptRecord {
+  id: string;
+  receiptNumber: string; // e.g. DC-2026-000001
+  accessToken: string; // Secure token for /receipt/DC-2026-000001?token=...
+  receiptType: ReceiptType;
+  title: string;
+  description: string;
+  customerUid: string;
+  customerUsername: string;
+  customerDisplayName: string;
+  customerEmail: string;
+  items: ReceiptLineItem[];
+  subtotalINR: number;
+  discountTotalINR: number;
+  taxINR: number;
+  totalAmountINR: number;
+  currency: 'INR';
+  paymentMethod: string;
+  paymentStatus: ReceiptPaymentStatus;
+  transactionId: string;
+  linkedGiftId?: string;
+  purchaseNature?: 'self_purchase' | 'gift_purchase' | 'complimentary_owner_gift' | 'redeemed_gift';
+  giftRecipientInfo?: string;
+  giftRedemptionStatus?: 'unclaimed' | 'redeemed' | 'revoked' | 'expired';
+  issueDate: string;
+  serviceStartDate: string;
+  serviceExpiryDate: string | null; // null = LIFETIME — NO EXPIRATION
+  serviceDurationLabel: string;
+  notes: string;
+  issuerUid: string;
+  issuerName: string;
+  issuerEmail: string;
+  issuerRole: PlatformRole;
+  replacedByReceiptNumber?: string;
+  replacesReceiptNumber?: string;
+  auditHistory: ReceiptAuditEvent[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface OwnerInvitationRecord {
+  id: string;
+  email: string;
+  invitedDisplayName?: string;
+  tokenHash: string;
+  tokenPreview: string;
+  inviteToken?: string;
+  createdByUid: string;
+  createdByEmail: string;
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  acceptedByUid?: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
 export type ActiveView =
+  | { type: 'home' }
   | { type: 'friends'; subTab: 'online' | 'all' | 'pending' | 'blocked' | 'add' }
   | { type: 'dm'; dmId: string }
   | { type: 'community'; communityId: string; channelId: string }
-  | { type: 'orbs'; orbId?: string; viewMode?: 'explore' | 'detail' | 'create' }
+  | { type: 'orbs'; orbId?: string; viewMode?: 'explore' | 'detail' | 'create' | '3d' }
   | { type: 'explore_communities' }
+  | { type: 'notifications' }
+  | { type: 'profile'; userId?: string }
   | { type: 'nitro' }
   | { type: 'shop'; initialCategory?: CosmeticCategory }
-  | { type: 'admin' };
+  | { type: 'admin' }
+  | { type: 'gift_redeem'; token?: string }
+  | { type: 'owner_invite_accept'; token?: string };

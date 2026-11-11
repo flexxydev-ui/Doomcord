@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   ShoppingBag,
   Sparkles,
-  Check,
   Eye,
   Crown,
   Layers,
@@ -16,7 +15,7 @@ import {
   EquippedCosmetics,
 } from '../../types';
 import { CheckoutPayload } from '../modals/RazorpayCheckoutModal';
-import { generateInitialsAvatar } from '../../lib/dataService';
+import { generateInitialsAvatar, isRootOwner, formatApexTierName } from '../../lib/dataService';
 
 const SHOP_CATEGORIES: ('All' | CosmeticCategory)[] = [
   'All',
@@ -54,6 +53,9 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'All' | CosmeticCategory>('All');
   const [viewMode, setViewMode] = useState<'catalog' | 'inventory'>('catalog');
 
+  const isMainOwner =
+    isRootOwner(currentUser) || Boolean(currentUser.ownerPermanentNitro);
+
   // Interactive Sandbox Preview State (starts from user's currently equipped items)
   const [previewEquipped, setPreviewEquipped] = useState<EquippedCosmetics>(
     currentUser.equippedCosmetics || {}
@@ -63,17 +65,18 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
     return cosmetics.filter((item) => {
       if (!item.enabled) return false;
       if (viewMode === 'inventory') {
-        const isOwned = currentUser.ownedCosmetics?.includes(item.id);
-        const unlockedViaNitro =
+        const isOwned =
+          isMainOwner || Boolean(currentUser.ownedCosmetics?.includes(item.id));
+        const unlockedViaApex =
           currentUser.nitroTier === 'nitro' && item.nitroEligible !== 'none';
-        if (!isOwned && !unlockedViaNitro) return false;
+        if (!isOwned && !unlockedViaApex) return false;
       }
       if (selectedCategory !== 'All' && item.category !== selectedCategory) {
         return false;
       }
       return true;
     });
-  }, [cosmetics, viewMode, selectedCategory, currentUser]);
+  }, [cosmetics, viewMode, selectedCategory, currentUser, isMainOwner]);
 
   const mapCategoryToEquipKey = (cat: CosmeticCategory): keyof EquippedCosmetics | null => {
     switch (cat) {
@@ -151,11 +154,16 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-white tracking-tight">
-                Doomcord Cosmetics & Decoration Shop
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-extrabold text-white tracking-tight">
+                  DOOMCORD APEX Collection
+                </h1>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[oklch(0.85_0.12_165)]">
+                  · RISE ABOVE. STAND APART.
+                </span>
+              </div>
               <p className="text-xs text-[oklch(0.7_0.03_155)]">
-                Original Doomcord avatar frames, profile effects, nameplates, themes & bundles (INR)
+                APEX Avatar Frames, Profile Effects, Animated Banners, Nameplates, Themes & Exclusive Bundles (INR)
               </p>
             </div>
           </div>
@@ -170,7 +178,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                     : 'text-[oklch(0.7_0.03_155)] hover:text-white'
                 }`}
               >
-                Store Catalog ({cosmetics.filter((c) => c.enabled).length})
+                APEX Catalog ({cosmetics.filter((c) => c.enabled).length})
               </button>
               <button
                 onClick={() => setViewMode('inventory')}
@@ -180,7 +188,11 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                     : 'text-[oklch(0.7_0.03_155)] hover:text-white'
                 }`}
               >
-                My Inventory ({currentUser.ownedCosmetics?.length || 0})
+                My Inventory (
+                {isMainOwner
+                  ? cosmetics.filter((c) => c.enabled).length
+                  : currentUser.ownedCosmetics?.length || 0}
+                )
               </button>
             </div>
 
@@ -190,9 +202,11 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
             >
               <Crown className="w-3.5 h-3.5" />
               <span>
-                {currentUser.nitroTier === 'nitro'
-                  ? '20% Nitro Discount Active'
-                  : 'Get 20% Off with Nitro'}
+                {isMainOwner
+                  ? 'OWNER_PERMANENT_APEX (All Unlocked)'
+                  : currentUser.nitroTier === 'nitro'
+                  ? '20% APEX+ Discount Active'
+                  : 'Get 20% Off with APEX+'}
               </span>
             </button>
           </div>
@@ -227,14 +241,15 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
               </h3>
               <p className="text-xs text-[oklch(0.7_0.03_155)] mt-1 max-w-sm">
                 {viewMode === 'inventory'
-                  ? 'Switch to the Store Catalog to preview and purchase original Doomcord decorations.'
+                  ? 'Switch to the APEX Catalog to preview and unlock original Doomcord decorations.'
                   : 'Select another category from the navigation bar above.'}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {visibleCosmetics.map((item) => {
-                const isOwned = Boolean(currentUser.ownedCosmetics?.includes(item.id));
+                const isOwned =
+                  isMainOwner || Boolean(currentUser.ownedCosmetics?.includes(item.id));
                 const equipKey = mapCategoryToEquipKey(item.category);
                 const isEquipped = Boolean(
                   equipKey && currentUser.equippedCosmetics?.[equipKey] === item.id
@@ -278,7 +293,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
 
                         {item.nitroEligible !== 'none' && (
                           <div className="absolute top-2.5 right-3 text-[10px] font-mono text-[oklch(0.85_0.12_165)]">
-                            Nitro {item.nitroEligible === 'basic' ? 'Basic' : 'Pro'} Perk
+                            {item.nitroEligible === 'basic' ? 'APEX' : 'APEX+'} Privilege
                           </div>
                         )}
                       </div>
@@ -298,7 +313,8 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                       <div>
                         {isOwned ? (
                           <span className="text-xs font-semibold text-[oklch(0.85_0.12_165)] flex items-center gap-1">
-                            <ShieldCheck className="w-3.5 h-3.5" /> Owned Permanently
+                            <ShieldCheck className="w-3.5 h-3.5" />{' '}
+                            {isMainOwner ? 'Owner Permanent' : 'Owned Permanently'}
                           </span>
                         ) : (
                           <div className="flex items-baseline gap-1.5">
@@ -379,7 +395,7 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
               <span className="text-[10px] font-mono uppercase tracking-wider text-[oklch(0.85_0.12_165)]">
                 Interactive Sandbox
               </span>
-              <h3 className="text-sm font-bold text-white">Live Profile Preview</h3>
+              <h3 className="text-sm font-bold text-white">Live APEX Profile Preview</h3>
             </div>
             <button
               onClick={() => setPreviewEquipped(currentUser.equippedCosmetics || {})}
@@ -438,19 +454,24 @@ export const CosmeticsShopView: React.FC<CosmeticsShopViewProps> = ({
                 >
                   {currentUser.displayName}
                 </span>
-                {currentUser.role === 'owner' && (
+                {(currentUser.role === 'root_owner' || currentUser.role === 'owner') && (
                   <span className="text-[10px] font-mono text-[oklch(0.84_0.14_85)]">
-                    OWNER
+                    ROOT OWNER
+                  </span>
+                )}
+                {currentUser.role === 'secondary_owner' && (
+                  <span className="text-[10px] font-mono text-[oklch(0.72_0.16_32)]">
+                    SECONDARY OWNER
                   </span>
                 )}
               </div>
 
               <span className="text-xs font-mono text-[oklch(0.7_0.03_155)] block">
-                @{currentUser.username} · {currentUser.nitroTier.toUpperCase()}
+                @{currentUser.username} · {formatApexTierName(currentUser.nitroTier)}
               </span>
 
               <p className="text-xs text-[oklch(0.95_0.015_150)] pt-2 leading-relaxed">
-                {currentUser.bio || 'Customizing my Doomcord identity in real time.'}
+                {currentUser.bio || 'Customizing my DOOMCORD APEX identity in real time.'}
               </p>
 
               {/* Qualified Badges */}

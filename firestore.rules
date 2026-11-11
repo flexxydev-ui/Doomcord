@@ -10,29 +10,111 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.:@]+$');
     }
 
-    // Users collection (accessible to authenticated users and server-verified sessions)
+    // Users collection:
+    // Root Owner (00000000-0000-4000-8000-000000000001) is permanently protected:
+    // - Can never be deleted
+    // - Can never have role changed away from root_owner/owner
+    // - Can never be marked isBanned == true or isSuspended == true
+    // - No other user ID can ever be assigned role == 'root_owner'
     match /users/{userId} {
       allow get, list: if true;
       allow create, update: if isValidId(userId) &&
         request.resource.data.uid is string &&
         request.resource.data.username is string &&
-        request.resource.data.displayName is string;
-      allow delete: if isValidId(userId);
+        request.resource.data.displayName is string &&
+        (
+          userId == '00000000-0000-4000-8000-000000000001'
+            ? (
+                (request.resource.data.role == 'root_owner' || request.resource.data.role == 'owner') &&
+                request.resource.data.get('isBanned', false) == false &&
+                request.resource.data.get('isSuspended', false) == false
+              )
+            : request.resource.data.get('role', 'member') != 'root_owner'
+        );
+      allow delete: if isValidId(userId) && userId != '00000000-0000-4000-8000-000000000001';
     }
 
-    // Nitro Plans (publicly readable, editable via admin dashboard)
+    // Secondary Owner Invitations (created strictly by Root Owner 00000000-0000-4000-8000-000000000001)
+    match /owner_invitations/{inviteId} {
+      allow get, list: if true;
+      allow create: if isValidId(inviteId) &&
+        request.resource.data.createdByUid == '00000000-0000-4000-8000-000000000001' &&
+        request.resource.data.tokenHash is string;
+      allow update: if isValidId(inviteId) &&
+        request.resource.data.createdByUid == '00000000-0000-4000-8000-000000000001' &&
+        request.resource.data.tokenHash == resource.data.tokenHash;
+      allow delete: if false;
+    }
+
+    // APEX Membership Plans
     match /nitro_plans/{planId} {
       allow get, list: if true;
       allow create, update, delete: if isValidId(planId);
     }
 
-    // Cosmetics Shop Catalog (publicly readable, editable via admin dashboard)
+    // APEX Cosmetics Collection Catalog
     match /cosmetics/{cosmeticId} {
       allow get, list: if true;
       allow create, update, delete: if isValidId(cosmeticId);
     }
 
-    // Verified Transactions
+    // Complimentary APEX Gifts (created by Root Owner or active Secondary Owner)
+    match /gifts/{giftId} {
+      allow get, list: if true;
+      allow create: if isValidId(giftId) &&
+        request.resource.data.creatorUid is string &&
+        request.resource.data.tokenHash is string;
+      allow update: if isValidId(giftId) &&
+        request.resource.data.creatorUid == resource.data.creatorUid &&
+        request.resource.data.tokenHash == resource.data.tokenHash;
+      allow delete: if false;
+    }
+
+    // Atomic Gift Redemptions (immutable after creation)
+    match /gift_redemptions/{redemptionId} {
+      allow get, list: if true;
+      allow create: if isValidId(redemptionId) &&
+        request.resource.data.giftId is string &&
+        request.resource.data.recipientUid is string;
+      allow update, delete: if false;
+    }
+
+    // Persistent User Entitlements (OWNER_PERMANENT_APEX and lifetime gift entitlements cannot be deleted)
+    match /user_entitlements/{entitlementId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(entitlementId) &&
+        request.resource.data.userId is string &&
+        request.resource.data.entitlementCode is string;
+      allow delete: if false;
+    }
+
+    // Official Doomcord Receipts (DC-2026-XXXXXX) — never deleted, financial amounts immutable after issue
+    match /receipts/{receiptId} {
+      allow get, list: if true;
+      allow create: if isValidId(receiptId) &&
+        request.resource.data.receiptNumber is string &&
+        request.resource.data.customerUid is string;
+      allow update: if isValidId(receiptId) &&
+        request.resource.data.receiptNumber == resource.data.receiptNumber &&
+        request.resource.data.totalAmountINR == resource.data.totalAmountINR;
+      allow delete: if false;
+    }
+
+    // Receipt Audit Events (append-only)
+    match /receipt_events/{eventId} {
+      allow get, list: if true;
+      allow create: if isValidId(eventId) && request.resource.data.receiptId is string;
+      allow update, delete: if false;
+    }
+
+    // Receipt Sequence Counter
+    match /receipt_sequences/{seqId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(seqId);
+      allow delete: if false;
+    }
+
+    // Verified Transactions (immutable deletion protection)
     match /transactions/{transactionId} {
       allow get, list: if true;
       allow create, update: if isValidId(transactionId) &&
@@ -41,7 +123,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Admin Audit Logs
+    // Admin & Security Audit Logs (append-only, immutable)
     match /audit_logs/{logId} {
       allow get, list: if true;
       allow create: if isValidId(logId) && request.resource.data.action is string;

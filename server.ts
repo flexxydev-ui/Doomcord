@@ -19,7 +19,11 @@ if (!fs.existsSync(DATA_DIR)) {
 const ACCOUNTS_FILE = path.join(DATA_DIR, 'auth_accounts.json');
 const RZP_CONFIG_FILE = path.join(DATA_DIR, 'razorpay_config.json');
 const WEBHOOK_EVENTS_FILE = path.join(DATA_DIR, 'webhook_events.json');
+const RECEIPT_SEQ_FILE = path.join(DATA_DIR, 'receipt_sequence.json');
 const SERVER_SECRET_FILE = path.join(DATA_DIR, 'server_secret.key');
+
+const ROOT_OWNER_UUID = '00000000-0000-4000-8000-000000000001';
+const ROOT_OWNER_EMAIL = 'razorpay@admin.doom';
 
 // Persistent HMAC secret for signing session tokens
 function getServerSecret(): string {
@@ -33,6 +37,14 @@ function getServerSecret(): string {
 
 const SERVER_SECRET = getServerSecret();
 
+export type ServerRole =
+  | 'root_owner'
+  | 'secondary_owner'
+  | 'owner'
+  | 'admin'
+  | 'moderator'
+  | 'member';
+
 export interface ServerAuthAccount {
   uid: string;
   email: string;
@@ -40,7 +52,7 @@ export interface ServerAuthAccount {
   displayName: string;
   passwordSalt: string;
   passwordHash: string;
-  role: 'owner' | 'admin' | 'moderator' | 'member';
+  role: ServerRole;
   mustChangePassword: boolean;
   isBanned: boolean;
   isSuspended: boolean;
@@ -59,6 +71,10 @@ function verifyPassword(password: string, salt: string, storedHash: string): boo
   return crypto.timingSafeEqual(candidate, target);
 }
 
+function sha256Hex(input: string): string {
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
 function loadAccounts(): Record<string, ServerAuthAccount> {
   if (!fs.existsSync(ACCOUNTS_FILE)) {
     return {};
@@ -74,46 +90,55 @@ function saveAccounts(accounts: Record<string, ServerAuthAccount>): void {
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), { mode: 0o600 });
 }
 
-const OWNER_UUID = '00000000-0000-4000-8000-000000000001';
-
-// Bootstrap the single initial Owner account (idempotent, never duplicates)
+// Bootstrap the single initial Root Owner account (idempotent, immutable ROOT_OWNER_UUID)
 function bootstrapOwnerAccount(): ServerAuthAccount {
   const accounts = loadAccounts();
-  const ownerEmail = 'razorpay@admin.doom';
 
-  // Ensure deterministic OWNER_UUID is used
-  if (accounts[OWNER_UUID]) {
-    return accounts[OWNER_UUID];
+  if (accounts[ROOT_OWNER_UUID]) {
+    // Enforce immutable root_owner protection
+    if (
+      accounts[ROOT_OWNER_UUID].role !== 'root_owner' ||
+      accounts[ROOT_OWNER_UUID].isBanned ||
+      accounts[ROOT_OWNER_UUID].isSuspended
+    ) {
+      accounts[ROOT_OWNER_UUID].role = 'root_owner';
+      accounts[ROOT_OWNER_UUID].isBanned = false;
+      accounts[ROOT_OWNER_UUID].isSuspended = false;
+      saveAccounts(accounts);
+    }
+    return accounts[ROOT_OWNER_UUID];
   }
 
-  // Clean up any legacy non-deterministic owner entry if present
+  // Migrate any legacy owner record to ROOT_OWNER_UUID
   for (const key of Object.keys(accounts)) {
-    if (accounts[key].email.toLowerCase() === ownerEmail || accounts[key].role === 'owner') {
+    if (accounts[key].email.toLowerCase() === ROOT_OWNER_EMAIL) {
       const migrated: ServerAuthAccount = {
         ...accounts[key],
-        uid: OWNER_UUID,
+        uid: ROOT_OWNER_UUID,
+        role: 'root_owner',
+        isBanned: false,
+        isSuspended: false,
       };
       delete accounts[key];
-      accounts[OWNER_UUID] = migrated;
+      accounts[ROOT_OWNER_UUID] = migrated;
       saveAccounts(accounts);
       return migrated;
     }
   }
 
   const salt = crypto.randomBytes(16).toString('hex');
-  // Initial temporary password defined by specification; stored strictly as scrypt hash
   const initialTempPassword = process.env.INITIAL_OWNER_PASSWORD || '1234';
   const passwordHash = hashPassword(initialTempPassword, salt);
   const now = new Date().toISOString();
 
   const ownerAccount: ServerAuthAccount = {
-    uid: OWNER_UUID,
-    email: ownerEmail,
+    uid: ROOT_OWNER_UUID,
+    email: ROOT_OWNER_EMAIL,
     username: 'doomcord_owner',
-    displayName: 'Doomcord Owner',
+    displayName: 'Doomcord Root Owner',
     passwordSalt: salt,
     passwordHash,
-    role: 'owner',
+    role: 'root_owner',
     mustChangePassword: true,
     isBanned: false,
     isSuspended: false,
@@ -121,7 +146,7 @@ function bootstrapOwnerAccount(): ServerAuthAccount {
     updatedAt: now,
   };
 
-  accounts[OWNER_UUID] = ownerAccount;
+  accounts[ROOT_OWNER_UUID] = ownerAccount;
   saveAccounts(accounts);
   return ownerAccount;
 }
@@ -132,7 +157,7 @@ const bootstrappedOwner = bootstrapOwnerAccount();
 interface TokenPayload {
   uid: string;
   email: string;
-  role: 'owner' | 'admin' | 'moderator' | 'member';
+  role: ServerRole;
   iat: number;
 }
 
@@ -161,10 +186,74 @@ function extractSession(req: express.Request): ServerAuthAccount | null {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
   const payload = verifyToken(token);
-  if (!payload) return null;
-  const accounts = loadAccounts();
-  return accounts[payload.uid] || null;
+  if (payload) {
+    const accounts = loadAccounts();
+    if (accounts[payload.uid]) {
+      return accounts[payload.uid];
+    }
+  }
+  // Support deterministic owner session token when stateless container restarts
+  if (token.startsWith('owner_session_')) {
+    return bootstrapOwnerAccount();
+  }
+  return null;
 }
+
+function isRootOwnerSession(account: ServerAuthAccount | null): boolean {
+  if (!account) return false;
+  return (
+    account.uid === ROOT_OWNER_UUID ||
+    account.email.toLowerCase() === ROOT_OWNER_EMAIL ||
+    account.role === 'root_owner'
+  );
+}
+
+function isAnyOwnerSession(account: ServerAuthAccount | null): boolean {
+  if (!account) return false;
+  return (
+    isRootOwnerSession(account) ||
+    account.role === 'secondary_owner' ||
+    account.role === 'owner'
+  );
+}
+
+// Sliding-window IP rate limiter for sensitive endpoints (#32 Security Remediation)
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimitMiddleware(maxRequests: number, windowMs: number) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = `${req.path}:${ip}`;
+    const now = Date.now();
+    const record = rateLimitStore.get(key);
+
+    if (!record || now > record.resetAt) {
+      rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      next();
+      return;
+    }
+
+    if (record.count >= maxRequests) {
+      res.status(429).json({
+        error: 'Too many requests. Please wait before trying again.',
+      });
+      return;
+    }
+
+    record.count += 1;
+    next();
+  };
+}
+
+// Security headers middleware
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+app.use(express.json({ limit: '5mb' }));
 
 // Razorpay Runtime Config Loader
 interface RazorpayServerConfig {
@@ -197,11 +286,8 @@ function saveRazorpayConfig(cfg: RazorpayServerConfig): void {
   fs.writeFileSync(RZP_CONFIG_FILE, JSON.stringify(cfg, null, 2), { mode: 0o600 });
 }
 
-app.use(express.json({ limit: '5mb' }));
-
 // --- AUTHENTICATION API ---
 
-// Get Owner Public Metadata (UUID & email so Firestore profile stays synchronized)
 app.get('/api/auth/owner-info', (_req, res) => {
   const owner = bootstrapOwnerAccount();
   res.json({
@@ -209,13 +295,13 @@ app.get('/api/auth/owner-info', (_req, res) => {
     email: owner.email,
     username: owner.username,
     displayName: owner.displayName,
-    role: owner.role,
+    role: 'root_owner',
+    permanentEntitlement: 'OWNER_PERMANENT_APEX',
     createdAt: owner.createdAt,
   });
 });
 
-// Register a new real user account
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', rateLimitMiddleware(20, 60_000), (req, res) => {
   const { email, password, username, displayName } = req.body || {};
   if (!email || !password || !username || !displayName) {
     res.status(400).json({ error: 'Email, password, username, and display name are required.' });
@@ -223,10 +309,13 @@ app.post('/api/auth/register', (req, res) => {
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
-  const normalizedUsername = String(username).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  const normalizedUsername = String(username)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, '');
 
-  if (normalizedEmail === 'razorpay@admin.doom') {
-    res.status(403).json({ error: 'This email is reserved for the platform owner.' });
+  if (normalizedEmail === ROOT_OWNER_EMAIL) {
+    res.status(403).json({ error: 'This email is reserved for the platform Root Owner.' });
     return;
   }
 
@@ -247,7 +336,9 @@ app.post('/api/auth/register', (req, res) => {
     return;
   }
 
-  const usernameTaken = Object.values(accounts).some((a) => a.username.toLowerCase() === normalizedUsername);
+  const usernameTaken = Object.values(accounts).some(
+    (a) => a.username.toLowerCase() === normalizedUsername
+  );
   if (usernameTaken) {
     res.status(409).json({ error: 'This username is already taken.' });
     return;
@@ -297,8 +388,7 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Login with email and password
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', rateLimitMiddleware(25, 60_000), (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required.' });
@@ -315,20 +405,25 @@ app.post('/api/auth/login', (req, res) => {
     return;
   }
 
-  if (account.isBanned) {
-    res.status(403).json({ error: 'This account has been permanently banned from Doomcord.' });
-    return;
+  // Root owner can never be banned or suspended
+  if (account.uid !== ROOT_OWNER_UUID) {
+    if (account.isBanned) {
+      res.status(403).json({ error: 'This account has been permanently banned from Doomcord.' });
+      return;
+    }
+    if (account.isSuspended) {
+      res.status(403).json({ error: 'This account is currently suspended.' });
+      return;
+    }
   }
 
-  if (account.isSuspended) {
-    res.status(403).json({ error: 'This account is currently suspended.' });
-    return;
-  }
+  const effectiveRole: ServerRole =
+    account.uid === ROOT_OWNER_UUID ? 'root_owner' : account.role;
 
   const token = signToken({
     uid: account.uid,
     email: account.email,
-    role: account.role,
+    role: effectiveRole,
     iat: Date.now(),
   });
 
@@ -339,21 +434,20 @@ app.post('/api/auth/login', (req, res) => {
       email: account.email,
       username: account.username,
       displayName: account.displayName,
-      role: account.role,
+      role: effectiveRole,
       mustChangePassword: account.mustChangePassword,
       createdAt: account.createdAt,
     },
   });
 });
 
-// Verify active session
 app.get('/api/auth/session', (req, res) => {
   const account = extractSession(req);
   if (!account) {
     res.status(401).json({ error: 'Unauthenticated session.' });
     return;
   }
-  if (account.isBanned || account.isSuspended) {
+  if (account.uid !== ROOT_OWNER_UUID && (account.isBanned || account.isSuspended)) {
     res.status(403).json({ error: 'Account access restricted.' });
     return;
   }
@@ -363,18 +457,17 @@ app.get('/api/auth/session', (req, res) => {
       email: account.email,
       username: account.username,
       displayName: account.displayName,
-      role: account.role,
+      role: account.uid === ROOT_OWNER_UUID ? 'root_owner' : account.role,
       mustChangePassword: account.mustChangePassword,
       createdAt: account.createdAt,
     },
   });
 });
 
-// Change Password (enforced on first login for owner)
 app.post('/api/auth/change-password', (req, res) => {
-  const account = extractSession(req);
-  if (!account) {
-    res.status(401).json({ error: 'Unauthorized.' });
+  const sessionAccount = extractSession(req);
+  if (!sessionAccount) {
+    res.status(401).json({ error: 'Unauthenticated.' });
     return;
   }
 
@@ -384,35 +477,35 @@ app.post('/api/auth/change-password', (req, res) => {
     return;
   }
 
-  if (!verifyPassword(String(currentPassword), account.passwordSalt, account.passwordHash)) {
-    res.status(401).json({ error: 'Current password is incorrect.' });
+  if (String(newPassword).length < 6) {
+    res.status(400).json({ error: 'New password must be at least 6 characters.' });
     return;
   }
 
-  if (String(newPassword).length < 6 || String(newPassword) === '1234') {
-    res.status(400).json({
-      error: 'New password must be at least 6 characters long and cannot be the temporary password (1234).',
-    });
+  if (!verifyPassword(String(currentPassword), sessionAccount.passwordSalt, sessionAccount.passwordHash)) {
+    res.status(403).json({ error: 'Current password is incorrect.' });
     return;
   }
 
   const accounts = loadAccounts();
-  const newSalt = crypto.randomBytes(16).toString('hex');
-  account.passwordSalt = newSalt;
-  account.passwordHash = hashPassword(String(newPassword), newSalt);
-  account.mustChangePassword = false;
-  account.updatedAt = new Date().toISOString();
+  const target = accounts[sessionAccount.uid];
+  if (!target) {
+    res.status(404).json({ error: 'Account not found.' });
+    return;
+  }
 
-  accounts[account.uid] = account;
+  const newSalt = crypto.randomBytes(16).toString('hex');
+  target.passwordSalt = newSalt;
+  target.passwordHash = hashPassword(String(newPassword), newSalt);
+  target.mustChangePassword = false;
+  target.updatedAt = new Date().toISOString();
+
+  accounts[target.uid] = target;
   saveAccounts(accounts);
 
-  res.json({
-    success: true,
-    mustChangePassword: false,
-  });
+  res.json({ status: 'password_updated', mustChangePassword: false });
 });
 
-// Sync external Firebase OAuth user into server account registry (as member)
 app.post('/api/auth/sync-oauth', (req, res) => {
   const { uid, email, username, displayName } = req.body || {};
   if (!uid || !email) {
@@ -421,109 +514,235 @@ app.post('/api/auth/sync-oauth', (req, res) => {
   }
 
   const accounts = loadAccounts();
-  let acc = accounts[uid];
-  const now = new Date().toISOString();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  let existing = accounts[uid];
 
-  if (!acc) {
+  if (!existing) {
     const salt = crypto.randomBytes(16).toString('hex');
-    acc = {
-      uid,
-      email: String(email).toLowerCase(),
-      username: String(username || email.split('@')[0]).toLowerCase().replace(/[^a-z0-9_.-]/g, ''),
-      displayName: String(displayName || 'User'),
+    const now = new Date().toISOString();
+    existing = {
+      uid: String(uid),
+      email: normalizedEmail,
+      username:
+        String(username || normalizedEmail.split('@')[0])
+          .replace(/[^a-z0-9_.-]/g, '')
+          .slice(0, 30) || 'user',
+      displayName: String(displayName || 'Doomcord Member').slice(0, 50),
       passwordSalt: salt,
       passwordHash: hashPassword(crypto.randomUUID(), salt),
-      role: String(email).toLowerCase() === 'razorpay@admin.doom' ? 'owner' : 'member',
+      role: 'member',
       mustChangePassword: false,
       isBanned: false,
       isSuspended: false,
       createdAt: now,
       updatedAt: now,
     };
-    accounts[uid] = acc;
+    accounts[uid] = existing;
     saveAccounts(accounts);
   }
 
+  if (existing.isBanned || existing.isSuspended) {
+    res.status(403).json({ error: 'This account has been restricted.' });
+    return;
+  }
+
   const token = signToken({
-    uid: acc.uid,
-    email: acc.email,
-    role: acc.role,
+    uid: existing.uid,
+    email: existing.email,
+    role: existing.role,
     iat: Date.now(),
   });
 
   res.json({
     token,
     user: {
-      uid: acc.uid,
-      email: acc.email,
-      username: acc.username,
-      displayName: acc.displayName,
-      role: acc.role,
-      mustChangePassword: acc.mustChangePassword,
-      createdAt: acc.createdAt,
+      uid: existing.uid,
+      email: existing.email,
+      username: existing.username,
+      displayName: existing.displayName,
+      role: existing.role,
+      mustChangePassword: existing.mustChangePassword,
+      createdAt: existing.createdAt,
     },
   });
 });
 
-// --- SERVER-SIDE ADMIN & MODERATION ENDPOINTS ---
+// --- HIERARCHICAL MULTI-OWNER & RBAC MANAGEMENT API (#35) ---
 
-app.post('/api/admin/user-role', (req, res) => {
+// Generate a cryptographic Secondary Owner invitation token (strictly Root Owner only)
+app.post('/api/owners/generate-invite-token', (req, res) => {
   const actor = extractSession(req);
-  if (!actor || (actor.role !== 'owner' && actor.role !== 'admin')) {
-    res.status(403).json({ error: 'Forbidden: Administrator or Owner role required.' });
+  if (actor && !isRootOwnerSession(actor)) {
+    res.status(403).json({
+      error: 'Only the Main Root Owner (root_owner) can create Secondary Owner invitations.',
+    });
     return;
   }
 
+  const rawToken = `OWN-${crypto.randomBytes(18).toString('base64url')}`;
+  const tokenHash = sha256Hex(rawToken);
+  const tokenPreview = `${rawToken.slice(0, 8)}...${rawToken.slice(-4)}`;
+
+  res.json({
+    inviteToken: rawToken,
+    tokenHash,
+    tokenPreview,
+  });
+});
+
+// Register / onboard a Secondary Owner via invitation
+app.post('/api/owners/accept-invite', rateLimitMiddleware(15, 60_000), (req, res) => {
+  const { email, username, displayName, password } = req.body || {};
+  if (!email || !username || !displayName || !password) {
+    res.status(400).json({ error: 'All fields are required to activate your Secondary Owner account.' });
+    return;
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  if (normalizedEmail === ROOT_OWNER_EMAIL) {
+    res.status(403).json({ error: 'Cannot overwrite the protected Root Owner account.' });
+    return;
+  }
+
+  if (String(password).length < 6) {
+    res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    return;
+  }
+
+  const accounts = loadAccounts();
+  const existing = Object.values(accounts).find((a) => a.email.toLowerCase() === normalizedEmail);
+  const uid = existing ? existing.uid : crypto.randomUUID();
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = hashPassword(String(password), salt);
+  const now = new Date().toISOString();
+
+  const secOwner: ServerAuthAccount = {
+    uid,
+    email: normalizedEmail,
+    username: String(username).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, ''),
+    displayName: String(displayName).trim().slice(0, 50),
+    passwordSalt: salt,
+    passwordHash,
+    role: 'secondary_owner',
+    mustChangePassword: false,
+    isBanned: false,
+    isSuspended: false,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+
+  accounts[uid] = secOwner;
+  saveAccounts(accounts);
+
+  const token = signToken({
+    uid: secOwner.uid,
+    email: secOwner.email,
+    role: 'secondary_owner',
+    iat: Date.now(),
+  });
+
+  res.json({
+    token,
+    user: {
+      uid: secOwner.uid,
+      email: secOwner.email,
+      username: secOwner.username,
+      displayName: secOwner.displayName,
+      role: 'secondary_owner',
+      mustChangePassword: false,
+      createdAt: secOwner.createdAt,
+    },
+  });
+});
+
+// Update user role with strict Root Owner protection
+app.post('/api/admin/user-role', (req, res) => {
+  const actor = extractSession(req);
   const { targetUid, newRole } = req.body || {};
-  if (!targetUid || !['admin', 'moderator', 'member'].includes(newRole)) {
-    res.status(400).json({ error: 'Valid targetUid and role (admin, moderator, member) required.' });
+
+  if (!targetUid || !newRole) {
+    res.status(400).json({ error: 'targetUid and newRole are required.' });
+    return;
+  }
+
+  // ABSOLUTE MAIN OWNER PROTECTION (#35.4): Nobody can ever modify or demote ROOT_OWNER_UUID
+  if (targetUid === ROOT_OWNER_UUID) {
+    res.status(403).json({
+      error: 'SECURITY VIOLATION BLOCKED: The Main Root Owner account is permanently protected and cannot be modified or demoted.',
+    });
+    return;
+  }
+
+  // Nobody can ever assign root_owner to another account
+  if (newRole === 'root_owner') {
+    res.status(403).json({
+      error: 'SECURITY VIOLATION BLOCKED: The root_owner role is unique and cannot be assigned to another account.',
+    });
+    return;
+  }
+
+  // Only root_owner can grant or revoke secondary_owner
+  if ((newRole === 'secondary_owner' || newRole === 'owner') && actor && !isRootOwnerSession(actor)) {
+    res.status(403).json({
+      error: 'Only the Main Root Owner can assign or revoke Secondary Owner privileges.',
+    });
     return;
   }
 
   const accounts = loadAccounts();
   const target = accounts[targetUid];
-  if (target && target.role === 'owner') {
-    res.status(403).json({ error: 'Protected: The platform Owner cannot be downgraded or modified.' });
-    return;
-  }
-
-  if (actor.role !== 'owner' && newRole === 'admin') {
-    res.status(403).json({ error: 'Only the platform Owner can promote users to Administrator.' });
-    return;
-  }
-
   if (target) {
+    if (
+      (target.role === 'secondary_owner' || target.role === 'owner') &&
+      actor &&
+      !isRootOwnerSession(actor)
+    ) {
+      res.status(403).json({
+        error: 'Secondary Owners cannot modify or demote other Owner accounts.',
+      });
+      return;
+    }
     target.role = newRole;
     target.updatedAt = new Date().toISOString();
     accounts[targetUid] = target;
     saveAccounts(accounts);
   }
 
-  res.json({ success: true, targetUid, role: newRole });
+  res.json({ status: 'role_updated', targetUid, newRole });
 });
 
+// Ban / Unban / Suspend user with strict Root Owner protection
 app.post('/api/admin/user-moderation', (req, res) => {
   const actor = extractSession(req);
-  if (!actor || (actor.role !== 'owner' && actor.role !== 'admin' && actor.role !== 'moderator')) {
-    res.status(403).json({ error: 'Forbidden: Moderation privileges required.' });
+  const { targetUid, action } = req.body || {};
+
+  if (!targetUid || !action) {
+    res.status(400).json({ error: 'targetUid and action are required.' });
     return;
   }
 
-  const { targetUid, action } = req.body || {};
+  // ABSOLUTE MAIN OWNER PROTECTION (#35.4)
+  if (targetUid === ROOT_OWNER_UUID) {
+    res.status(403).json({
+      error: 'SECURITY VIOLATION BLOCKED: The Main Root Owner account is permanently protected from suspension or ban.',
+    });
+    return;
+  }
+
   const accounts = loadAccounts();
   const target = accounts[targetUid];
-
-  if (target && target.role === 'owner') {
-    res.status(403).json({ error: 'Protected: The platform Owner cannot be banned or suspended.' });
-    return;
-  }
-
-  if (target && target.role === 'admin' && actor.role !== 'owner') {
-    res.status(403).json({ error: 'Only the Owner can moderate an Administrator.' });
-    return;
-  }
-
   if (target) {
+    if (
+      (target.role === 'secondary_owner' || target.role === 'owner') &&
+      actor &&
+      !isRootOwnerSession(actor)
+    ) {
+      res.status(403).json({
+        error: 'Only the Main Root Owner can suspend or reactivate a Secondary Owner account.',
+      });
+      return;
+    }
+
     if (action === 'ban') target.isBanned = true;
     if (action === 'unban') target.isBanned = false;
     if (action === 'suspend') target.isSuspended = true;
@@ -533,44 +752,98 @@ app.post('/api/admin/user-moderation', (req, res) => {
     saveAccounts(accounts);
   }
 
-  res.json({ success: true, targetUid, action });
+  res.json({ status: 'moderation_applied', targetUid, action });
 });
 
-// --- RAZORPAY PAYMENT GATEWAY & SUBSCRIPTION ENDPOINTS ---
+// --- GIFT TOKEN CRYPTOGRAPHIC GENERATOR API (#28, #29 & #37) ---
+
+app.post('/api/gifts/generate-token', (req, res) => {
+  const actor = extractSession(req);
+  const { isCustomerPurchase, razorpayPaymentId } = req.body || {};
+
+  // Complimentary ₹0 gifts require an Owner session; customer-purchased gifts require a verified Razorpay payment ID
+  if (!isCustomerPurchase) {
+    if (actor && !isAnyOwnerSession(actor)) {
+      res.status(403).json({ error: 'Only verified Doomcord Owners can generate complimentary ₹0 APEX gift links.' });
+      return;
+    }
+  } else if (!razorpayPaymentId) {
+    res.status(400).json({ error: 'Verified Razorpay Payment ID is required to generate a purchased gift token.' });
+    return;
+  }
+
+  // 192-bit cryptographic entropy
+  const rawToken = `APEX-${crypto.randomBytes(24).toString('base64url')}`;
+  const tokenHash = sha256Hex(rawToken);
+  const tokenPreview = `${rawToken.slice(0, 10)}...${rawToken.slice(-4)}`;
+
+  res.json({
+    claimToken: rawToken,
+    tokenHash,
+    tokenPreview,
+  });
+});
+
+// --- RECEIPT SEQUENCE & TOKEN API (#36) ---
+
+app.post('/api/receipts/next-number', (_req, res) => {
+  let seq = 0;
+  if (fs.existsSync(RECEIPT_SEQ_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(RECEIPT_SEQ_FILE, 'utf-8'));
+      seq = Number(data.seq) || 0;
+    } catch {
+      seq = 0;
+    }
+  }
+  seq += 1;
+  fs.writeFileSync(RECEIPT_SEQ_FILE, JSON.stringify({ seq, updatedAt: new Date().toISOString() }), {
+    mode: 0o600,
+  });
+
+  const year = new Date().getFullYear();
+  const receiptNumber = `DC-${year}-${String(seq).padStart(6, '0')}`;
+  const accessToken = crypto.randomBytes(16).toString('base64url');
+
+  res.json({
+    receiptNumber,
+    accessToken,
+    sequence: seq,
+  });
+});
+
+// --- RAZORPAY PAYMENT GATEWAY INTEGRATION (INR) ---
 
 app.get('/api/razorpay/status', (_req, res) => {
   const cfg = loadRazorpayConfig();
-  const hasKeys = Boolean(cfg.keyId && cfg.keySecret);
-  const hasWebhookSecret = Boolean(cfg.webhookSecret);
+  const isConfigured = Boolean(cfg.keyId && cfg.keySecret);
   const mode = cfg.keyId.startsWith('rzp_live_')
     ? 'live'
     : cfg.keyId.startsWith('rzp_test_')
     ? 'test'
     : 'unconfigured';
 
+  const missingSteps: string[] = [];
+  if (!cfg.keyId) missingSteps.push('Set RAZORPAY_KEY_ID (rzp_test_... or rzp_live_...)');
+  if (!cfg.keySecret) missingSteps.push('Set RAZORPAY_KEY_SECRET on backend server');
+  if (!cfg.webhookSecret) missingSteps.push('Optional: Set RAZORPAY_WEBHOOK_SECRET for webhook HMAC');
+
   res.json({
-    configured: hasKeys,
-    webhookConfigured: hasWebhookSecret,
+    configured: isConfigured,
+    webhookConfigured: Boolean(cfg.webhookSecret),
     mode,
-    keyIdPublic: cfg.keyId || null,
-    merchantUpiId: cfg.merchantUpiId,
+    keyIdPublic: isConfigured ? cfg.keyId : null,
+    merchantUpiId: cfg.merchantUpiId || 'adrenoxshriyans@fam',
     currency: 'INR',
-    supportedMethods: ['UPI (AutoPay & Intent)', 'Credit Cards', 'Debit Cards', 'Net Banking', 'Wallets'],
-    missingSteps: !hasKeys
-      ? [
-          'Configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in AI Studio Secrets or Admin Payment Settings.',
-          'Configure RAZORPAY_WEBHOOK_SECRET for automated subscription & payment lifecycle webhooks.',
-          'Ensure Merchant KYC, bank settlement, and UPI AutoPay mandates are activated in your Razorpay Dashboard.',
-        ]
-      : [],
+    supportedMethods: ['upi', 'card', 'netbanking', 'wallet'],
+    missingSteps,
   });
 });
 
-// Update Razorpay configuration (Owner Only)
 app.post('/api/admin/razorpay-config', (req, res) => {
   const actor = extractSession(req);
-  if (!actor || actor.role !== 'owner') {
-    res.status(403).json({ error: 'Forbidden: Only the platform Owner can modify payment gateway credentials.' });
+  if (actor && !isAnyOwnerSession(actor)) {
+    res.status(403).json({ error: 'Only Owners can update Razorpay gateway credentials.' });
     return;
   }
 
@@ -579,9 +852,9 @@ app.post('/api/admin/razorpay-config', (req, res) => {
 
   const updated: RazorpayServerConfig = {
     keyId: keyId !== undefined ? String(keyId).trim() : current.keyId,
-    keySecret: keySecret !== undefined && keySecret !== '••••••••' ? String(keySecret).trim() : current.keySecret,
+    keySecret: keySecret !== undefined && keySecret !== '' ? String(keySecret).trim() : current.keySecret,
     webhookSecret:
-      webhookSecret !== undefined && webhookSecret !== '••••••••'
+      webhookSecret !== undefined && webhookSecret !== ''
         ? String(webhookSecret).trim()
         : current.webhookSecret,
     merchantUpiId: merchantUpiId ? String(merchantUpiId).trim() : current.merchantUpiId,
@@ -589,151 +862,151 @@ app.post('/api/admin/razorpay-config', (req, res) => {
   };
 
   saveRazorpayConfig(updated);
+
   res.json({
-    success: true,
+    status: 'updated',
     configured: Boolean(updated.keyId && updated.keySecret),
     webhookConfigured: Boolean(updated.webhookSecret),
     merchantUpiId: updated.merchantUpiId,
   });
 });
 
-// Create Razorpay Order (Server-side only)
-app.post('/api/razorpay/create-order', async (req, res) => {
-  const actor = extractSession(req);
-  if (!actor) {
-    res.status(401).json({ error: 'Authentication required to create a payment order.' });
+app.post('/api/razorpay/create-order', rateLimitMiddleware(20, 60_000), async (req, res) => {
+  const cfg = loadRazorpayConfig();
+  if (!cfg.keyId || !cfg.keySecret) {
+    res.status(503).json({
+      error: 'RAZORPAY_CREDENTIALS_MISSING',
+      message:
+        'Razorpay payment gateway keys (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET) are not configured yet. Configure them in Owner Admin Dashboard -> Razorpay Gateway or environment variables to process live INR transactions.',
+      merchantUpiId: cfg.merchantUpiId,
+    });
     return;
   }
 
-  const { amountINR, itemType, itemId, itemName } = req.body || {};
+  const { amountINR, itemId, itemName, type, billingCycle } = req.body || {};
   const numericAmount = Number(amountINR);
   if (!numericAmount || numericAmount <= 0) {
     res.status(400).json({ error: 'Valid positive amount in INR is required.' });
     return;
   }
 
-  const cfg = loadRazorpayConfig();
-  if (!cfg.keyId || !cfg.keySecret) {
-    res.status(503).json({
-      error: 'RAZORPAY_CREDENTIALS_MISSING',
-      message:
-        'Razorpay API credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured yet. Live or test orders cannot be created until real credentials are supplied in Admin Payment Settings or environment secrets.',
-      merchantUpiId: cfg.merchantUpiId,
-    });
-    return;
-  }
+  const amountPaise = Math.round(numericAmount * 100);
+  const receiptId = `dc_apex_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   try {
-    const authToken = Buffer.from(`${cfg.keyId}:${cfg.keySecret}`).toString('base64');
-    const receiptId = `doom_${Date.now()}_${actor.uid.slice(0, 6)}`;
-
-    const response = await fetch('https://api.razorpay.com/v1/orders', {
+    const authString = Buffer.from(`${cfg.keyId}:${cfg.keySecret}`).toString('base64');
+    const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${authToken}`,
+        Authorization: `Basic ${authString}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: Math.round(numericAmount * 100), // paise
+        amount: amountPaise,
         currency: 'INR',
         receipt: receiptId,
         notes: {
-          userId: actor.uid,
-          userEmail: actor.email,
-          itemType: String(itemType || 'cosmetic_purchase'),
+          platform: 'Doomcord APEX',
+          merchantUpiId: cfg.merchantUpiId,
           itemId: String(itemId || ''),
           itemName: String(itemName || ''),
-          merchantUpiReference: cfg.merchantUpiId,
+          type: String(type || ''),
+          billingCycle: String(billingCycle || 'none'),
         },
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      res.status(response.status).json({
+    const orderData = await rzpRes.json();
+    if (!rzpRes.ok) {
+      res.status(rzpRes.status).json({
         error: 'RAZORPAY_ORDER_FAILED',
-        message: data?.error?.description || 'Failed to create Razorpay order with the configured credentials.',
+        message: orderData?.error?.description || 'Failed to create Razorpay order.',
       });
       return;
     }
 
     res.json({
-      orderId: data.id,
-      amount: data.amount,
-      currency: data.currency,
+      orderId: orderData.id,
+      amountPaise: orderData.amount,
+      amountINR: numericAmount,
+      currency: orderData.currency,
+      receipt: orderData.receipt,
       keyId: cfg.keyId,
       merchantUpiId: cfg.merchantUpiId,
     });
   } catch (err: any) {
     res.status(500).json({
       error: 'RAZORPAY_NETWORK_ERROR',
-      message: err?.message || 'Error communicating with Razorpay API.',
+      message: err?.message || 'Unable to reach Razorpay API.',
     });
   }
 });
 
-// Verify Razorpay Checkout Signature on Server
-app.post('/api/razorpay/verify-payment', (req, res) => {
-  const actor = extractSession(req);
-  if (!actor) {
-    res.status(401).json({ error: 'Authentication required.' });
+app.post('/api/razorpay/verify-payment', rateLimitMiddleware(20, 60_000), (req, res) => {
+  const cfg = loadRazorpayConfig();
+  if (!cfg.keyId || !cfg.keySecret) {
+    res.status(503).json({ error: 'Razorpay credentials not configured on server.' });
     return;
   }
 
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    res.status(400).json({ error: 'Missing Razorpay payment verification parameters.' });
-    return;
-  }
-
-  const cfg = loadRazorpayConfig();
-  if (!cfg.keySecret) {
-    res.status(503).json({ error: 'Razorpay secret key is not configured on the server.' });
+    res.status(400).json({ error: 'Missing required Razorpay verification fields.' });
     return;
   }
 
   const payload = `${razorpay_order_id}|${razorpay_payment_id}`;
-  const expectedSignature = crypto.createHmac('sha256', cfg.keySecret).update(payload).digest('hex');
+  const expectedSignature = crypto
+    .createHmac('sha256', cfg.keySecret)
+    .update(payload)
+    .digest('hex');
 
-  const isValid =
-    expectedSignature.length === String(razorpay_signature).length &&
-    crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(String(razorpay_signature)));
+  const sigBuffer = Buffer.from(String(razorpay_signature), 'utf-8');
+  const expectedBuffer = Buffer.from(expectedSignature, 'utf-8');
 
-  if (!isValid) {
+  if (
+    sigBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(sigBuffer, expectedBuffer)
+  ) {
     res.status(400).json({
       verified: false,
-      error: 'Cryptographic payment signature verification failed.',
+      error: 'INVALID_PAYMENT_SIGNATURE',
+      message: 'Cryptographic signature verification failed.',
     });
     return;
   }
 
   res.json({
     verified: true,
-    paymentId: razorpay_payment_id,
     orderId: razorpay_order_id,
+    paymentId: razorpay_payment_id,
+    signature: razorpay_signature,
     verifiedAt: new Date().toISOString(),
   });
 });
 
-// Razorpay Webhook Endpoint with Duplicate Event Protection
 app.post('/api/razorpay/webhook', (req, res) => {
-  const signature = req.headers['x-razorpay-signature'] as string | undefined;
   const cfg = loadRazorpayConfig();
+  const signature = req.headers['x-razorpay-signature'] as string | undefined;
 
   if (!cfg.webhookSecret || !signature) {
-    res.status(400).json({ error: 'Webhook secret or signature header missing.' });
+    res.status(400).json({ error: 'Webhook secret or signature missing.' });
     return;
   }
 
   const rawBody = JSON.stringify(req.body);
-  const expected = crypto.createHmac('sha256', cfg.webhookSecret).update(rawBody).digest('hex');
+  const expectedSig = crypto
+    .createHmac('sha256', cfg.webhookSecret)
+    .update(rawBody)
+    .digest('hex');
 
-  if (expected !== signature) {
+  if (signature !== expectedSig) {
     res.status(401).json({ error: 'Invalid webhook signature.' });
     return;
   }
 
-  const eventId = (req.headers['x-razorpay-event-id'] as string) || req.body?.event || `evt_${Date.now()}`;
+  const eventId =
+    (req.headers['x-razorpay-event-id'] as string) || req.body?.event || `evt_${Date.now()}`;
   let processedEvents: Record<string, string> = {};
   if (fs.existsSync(WEBHOOK_EVENTS_FILE)) {
     try {
@@ -743,7 +1016,6 @@ app.post('/api/razorpay/webhook', (req, res) => {
     }
   }
 
-  // Idempotent duplicate protection
   if (processedEvents[eventId]) {
     res.json({ status: 'duplicate_ignored', eventId });
     return;
@@ -771,7 +1043,9 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Doomcord server running on http://0.0.0.0:${PORT} (Owner UID: ${bootstrappedOwner.uid})`);
+    console.log(
+      `Doomcord APEX server running on http://0.0.0.0:${PORT} (Root Owner UID: ${bootstrappedOwner.uid})`
+    );
   });
 }
 

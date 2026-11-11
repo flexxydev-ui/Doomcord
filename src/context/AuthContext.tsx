@@ -11,12 +11,14 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
-import { UserProfile, UserPresence } from '../types';
+import { UserProfile, UserPresence, UserEntitlementRecord } from '../types';
 import {
   generateInitialsAvatar,
   INITIAL_NITRO_PLANS,
   INITIAL_COSMETICS_CATALOG,
   INITIAL_SYSTEM_CONFIG,
+  ROOT_OWNER_UUID,
+  ROOT_OWNER_EMAIL,
 } from '../lib/dataService';
 
 interface AuthContextType {
@@ -30,6 +32,13 @@ interface AuthContextType {
   signInGoogle: () => Promise<void>;
   signInEmail: (email: string, pass: string) => Promise<void>;
   signUpEmail: (email: string, pass: string, username: string, displayName: string) => Promise<void>;
+  acceptOwnerInviteOnboard: (
+    inviteId: string,
+    email: string,
+    username: string,
+    displayName: string,
+    password: string
+  ) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -38,15 +47,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_STORAGE_KEY = 'doomcord_auth_token';
 const UID_STORAGE_KEY = 'doomcord_auth_uid';
-const OWNER_UUID = '00000000-0000-4000-8000-000000000001';
-const OWNER_EMAIL = 'razorpay@admin.doom';
 const OWNER_INITIAL_SALT = 'doomcord_owner_salt_v1';
-// Precomputed SHA-256 hex digest of `${OWNER_INITIAL_SALT}:1234` (no plaintext password in code)
-const OWNER_INITIAL_HASH = 'f452d36f28397a07d342c6b0ef12a6c7b59a32f55e95eb9915d2360c27f84267';
 
-async function computeSaltedHash(salt: string, password: string): Promise<string> {
+export async function computeSaltedHash(salt: string, password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(`${salt}:${password}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function sha256HexBrowser(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -60,37 +73,51 @@ function generateRandomSalt(): string {
     .join('');
 }
 
-function buildDefaultOwnerProfile(existing?: Partial<UserProfile>): UserProfile {
+function buildDefaultRootOwnerProfile(
+  existing?: Partial<UserProfile>,
+  allCosmeticIds?: string[]
+): UserProfile {
+  const catalogIds =
+    allCosmeticIds && allCosmeticIds.length > 0
+      ? allCosmeticIds
+      : INITIAL_COSMETICS_CATALOG.map((c) => c.id);
+  const mergedCosmetics = Array.from(
+    new Set([...(existing?.ownedCosmetics || []), ...catalogIds])
+  );
+
   return {
-    uid: OWNER_UUID,
-    email: OWNER_EMAIL,
+    uid: ROOT_OWNER_UUID,
+    email: ROOT_OWNER_EMAIL,
     username: existing?.username || 'doomcord_owner',
-    displayName: existing?.displayName || 'Doomcord Owner',
-    role: 'owner',
+    displayName: existing?.displayName || 'Doomcord Root Owner',
+    role: 'root_owner',
     photoURL: existing?.photoURL || generateInitialsAvatar('Doomcord Owner', '#b45309'),
-    bio: existing?.bio ?? 'Platform Owner & Super Administrator.',
-    statusMessage: existing?.statusMessage ?? 'Managing Doomcord Infrastructure',
+    bio: existing?.bio ?? 'Root Owner & Sovereign Architect of Doomcord APEX.',
+    statusMessage: existing?.statusMessage ?? 'DOOMCORD APEX · RISE ABOVE. STAND APART.',
     presence: existing?.presence || 'online',
     accentColor: existing?.accentColor || 'oklch(0.84 0.14 85)',
-    nitroTier: existing?.nitroTier || 'nitro',
-    nitroBillingCycle: existing?.nitroBillingCycle || 'yearly',
-    nitroAutoRenew: existing?.nitroAutoRenew ?? true,
-    ownedCosmetics:
-      existing?.ownedCosmetics && existing.ownedCosmetics.length > 0
-        ? existing.ownedCosmetics
-        : INITIAL_COSMETICS_CATALOG.map((c) => c.id),
+    // PERMANENT OWNER APEX+ PRIVILEGES (#27 & #7):
+    // Free, unlimited, permanent APEX+ with null expiry, independent of Razorpay
+    nitroTier: 'nitro',
+    nitroBillingCycle: 'lifetime',
+    nitroExpiresAt: null,
+    nitroAutoRenew: true,
+    permanentEntitlement: 'OWNER_PERMANENT_APEX',
+    ownedCosmetics: mergedCosmetics,
     equippedCosmetics: existing?.equippedCosmetics || {
       avatarDecoration: 'cosm_frame_emerald_crystal',
       nameplate: 'cosm_nameplate_coral_flare',
       profileEffect: 'cosm_effect_aurora_canopy',
     },
-    badges:
-      existing?.badges && existing.badges.length > 0
-        ? existing.badges
-        : ['owner', 'founder', 'verified', 'nitro'],
+    badges: ['root_owner', 'owner', 'founder', 'verified', 'apex_plus'],
+    isBanned: false,
+    isSuspended: false,
     mustChangePassword: existing?.mustChangePassword ?? true,
     authSalt: existing?.authSalt || OWNER_INITIAL_SALT,
     authHash: existing?.authHash || '',
+    friends: existing?.friends || [],
+    joinedCommunities: existing?.joinedCommunities || [],
+    blockedUsers: existing?.blockedUsers || [],
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 }
@@ -103,62 +130,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [presence, setPresenceState] = useState<UserPresence>('online');
 
-  // Bootstrap Owner record in Firestore & initialize store catalogs (clean of any fake users/communities)
+  // Bootstrap Root Owner record, OWNER_PERMANENT_APEX entitlement, and store catalogs in Firestore
   useEffect(() => {
     async function initializePlatformCatalogs() {
       try {
-        // 1. Purge any legacy demo_* users or duplicate random-UUID owner docs if they existed
+        // 1. Purge any legacy demo_* users or duplicate random-UUID owner docs
         const usersSnap = await getDocs(collection(db, 'users'));
         for (const d of usersSnap.docs) {
           const data = d.data() as UserProfile;
           if (
             d.id.startsWith('demo_') ||
-            (data.email?.toLowerCase() === OWNER_EMAIL && d.id !== OWNER_UUID)
+            (data.email?.toLowerCase() === ROOT_OWNER_EMAIL && d.id !== ROOT_OWNER_UUID)
           ) {
             await deleteDoc(doc(db, 'users', d.id));
           }
         }
 
-        // 2. Ensure deterministic Owner account exists in Firestore /users/{OWNER_UUID}
-        const ownerRef = doc(db, 'users', OWNER_UUID);
-        const ownerSnap = await getDoc(ownerRef);
-        // Compute exact SHA-256 hash of initial password if not yet set
-        const initialComputedHash = await computeSaltedHash(OWNER_INITIAL_SALT, '1234');
-        if (!ownerSnap.exists()) {
-          const ownerProfile = buildDefaultOwnerProfile({
-            authSalt: OWNER_INITIAL_SALT,
-            authHash: initialComputedHash,
-            mustChangePassword: true,
-          });
-          await setDoc(ownerRef, ownerProfile);
-        } else {
-          const existing = ownerSnap.data() as UserProfile;
-          if (!existing.authHash || existing.role !== 'owner') {
-            await updateDoc(ownerRef, {
-              role: 'owner',
-              authSalt: existing.authSalt || OWNER_INITIAL_SALT,
-              authHash: existing.authHash || initialComputedHash,
-            });
+        // 2. Initialize or rebrand APEX Plans in Firestore
+        for (const plan of INITIAL_NITRO_PLANS) {
+          const planRef = doc(db, 'nitro_plans', plan.id);
+          const planSnap = await getDoc(planRef);
+          if (!planSnap.exists()) {
+            await setDoc(planRef, plan);
+          } else {
+            const existingPlan = planSnap.data();
+            // Migrate legacy Nitro naming to DOOMCORD APEX while preserving custom INR prices
+            if (existingPlan.name?.includes('Nitro')) {
+              await updateDoc(planRef, {
+                name: plan.name,
+                tagline: plan.tagline,
+                benefits: plan.benefits,
+              });
+            }
           }
         }
 
-        // 3. Initialize Nitro Plans in Firestore if empty
-        const plansSnap = await getDocs(collection(db, 'nitro_plans'));
-        if (plansSnap.empty) {
-          for (const plan of INITIAL_NITRO_PLANS) {
-            await setDoc(doc(db, 'nitro_plans', plan.id), plan);
-          }
-        }
-
-        // 4. Initialize Cosmetics Catalog in Firestore if empty
+        // 3. Initialize or rebrand APEX Collection Cosmetics in Firestore
         const cosmSnap = await getDocs(collection(db, 'cosmetics'));
+        const allCatalogIds = INITIAL_COSMETICS_CATALOG.map((c) => c.id);
         if (cosmSnap.empty) {
           for (const item of INITIAL_COSMETICS_CATALOG) {
             await setDoc(doc(db, 'cosmetics', item.id), item);
           }
+        } else {
+          for (const item of INITIAL_COSMETICS_CATALOG) {
+            await setDoc(doc(db, 'cosmetics', item.id), item, { merge: true });
+          }
         }
 
-        // 5. Initialize System Config in Firestore if empty
+        // 4. Ensure Root Owner account exists in Firestore /users/{ROOT_OWNER_UUID} with OWNER_PERMANENT_APEX
+        const ownerRef = doc(db, 'users', ROOT_OWNER_UUID);
+        const ownerSnap = await getDoc(ownerRef);
+        const initialComputedHash = await computeSaltedHash(OWNER_INITIAL_SALT, '1234');
+        const existingOwner = ownerSnap.exists() ? (ownerSnap.data() as UserProfile) : undefined;
+        const enforcedOwner = buildDefaultRootOwnerProfile(
+          {
+            ...existingOwner,
+            authSalt: existingOwner?.authSalt || OWNER_INITIAL_SALT,
+            authHash: existingOwner?.authHash || initialComputedHash,
+          },
+          allCatalogIds
+        );
+        await setDoc(ownerRef, enforcedOwner, { merge: true });
+
+        // 5. Ensure persistent OWNER_PERMANENT_APEX entitlement record exists in /user_entitlements
+        const entId = 'ent_owner_permanent_apex';
+        const entRef = doc(db, 'user_entitlements', entId);
+        const entRecord: UserEntitlementRecord = {
+          id: entId,
+          userId: ROOT_OWNER_UUID,
+          entitlementCode: 'OWNER_PERMANENT_APEX',
+          source: 'owner_permanent',
+          apexTier: 'nitro',
+          cosmeticIds: allCatalogIds,
+          isLifetime: true,
+          expiresAt: null,
+          active: true,
+          createdAt: enforcedOwner.createdAt,
+        };
+        await setDoc(entRef, entRecord, { merge: true });
+
+        // 6. Initialize System Config in Firestore if empty
         const sysRef = doc(db, 'system_config', 'global');
         const sysSnap = await getDoc(sysRef);
         if (!sysSnap.exists()) {
@@ -186,7 +238,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (snap) => {
         if (snap.exists()) {
           const data = snap.data() as UserProfile;
-          if (data.isBanned || data.isSuspended) {
+          const isRoot =
+            data.uid === ROOT_OWNER_UUID || data.email?.toLowerCase() === ROOT_OWNER_EMAIL;
+
+          if (!isRoot && (data.isBanned || data.isSuspended)) {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             localStorage.removeItem(UID_STORAGE_KEY);
             setToken(null);
@@ -195,23 +250,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
             return;
           }
-          const isOwnerAccount =
-            data.uid === OWNER_UUID || data.email?.toLowerCase() === OWNER_EMAIL;
-          const merged: UserProfile = {
-            ...data,
-            role: isOwnerAccount ? 'owner' : data.role || 'member',
-            ownedCosmetics: data.ownedCosmetics || [],
-            equippedCosmetics: data.equippedCosmetics || {},
-            badges:
-              data.badges ||
-              (isOwnerAccount ? ['owner', 'founder', 'verified', 'nitro'] : ['verified']),
-          };
-          setProfile(merged);
-          setMustChangePassword(Boolean(merged.mustChangePassword));
-          setPresenceState(merged.presence || 'online');
-        } else if (activeUid === OWNER_UUID) {
+
+          if (isRoot) {
+            const enforced = buildDefaultRootOwnerProfile(data);
+            setProfile(enforced);
+            setMustChangePassword(Boolean(enforced.mustChangePassword));
+            setPresenceState(enforced.presence || 'online');
+          } else {
+            const merged: UserProfile = {
+              ...data,
+              role: data.role || 'member',
+              ownedCosmetics: data.ownedCosmetics || [],
+              equippedCosmetics: data.equippedCosmetics || {},
+              badges: data.badges || ['verified'],
+            };
+            setProfile(merged);
+            setMustChangePassword(Boolean(merged.mustChangePassword));
+            setPresenceState(merged.presence || 'online');
+          }
+        } else if (activeUid === ROOT_OWNER_UUID) {
           const initialComputedHash = await computeSaltedHash(OWNER_INITIAL_SALT, '1234');
-          const ownerProfile = buildDefaultOwnerProfile({
+          const ownerProfile = buildDefaultRootOwnerProfile({
             authSalt: OWNER_INITIAL_SALT,
             authHash: initialComputedHash,
             mustChangePassword: true,
@@ -241,10 +300,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
       if (!profile) return;
-      const updated = { ...profile, ...updates, updatedAt: new Date().toISOString() };
+      const safeUpdates = { ...updates };
+
+      // Enforce Root Owner immutable protection (#27, #35)
+      if (profile.uid === ROOT_OWNER_UUID) {
+        safeUpdates.role = 'root_owner';
+        safeUpdates.nitroTier = 'nitro';
+        safeUpdates.nitroBillingCycle = 'lifetime';
+        safeUpdates.nitroExpiresAt = null;
+        safeUpdates.permanentEntitlement = 'OWNER_PERMANENT_APEX';
+        safeUpdates.isBanned = false;
+        safeUpdates.isSuspended = false;
+      }
+
+      const updated = { ...profile, ...safeUpdates, updatedAt: new Date().toISOString() };
       setProfile(updated);
       await updateDoc(doc(db, 'users', profile.uid), {
-        ...updates,
+        ...safeUpdates,
         updatedAt: new Date().toISOString(),
       });
     },
@@ -259,7 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [updateProfile]
   );
 
-  // Sign in with Email & Password (supports both Express /api/auth/login and direct Firestore verification)
+  // Sign in with Email & Password
   const signInEmail = useCallback(async (email: string, pass: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !pass) {
@@ -269,7 +341,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let serverToken: string | null = null;
     let verifiedViaServer = false;
 
-    // 1. Try Express backend authentication first
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -285,12 +356,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch {
-      // Fallback to Firestore verification below if server route is unreachable
+      // Fallback to Firestore verification below
     }
 
-    // 2. Verify / synchronize with Firestore /users collection
-    if (normalizedEmail === OWNER_EMAIL) {
-      const ownerRef = doc(db, 'users', OWNER_UUID);
+    if (normalizedEmail === ROOT_OWNER_EMAIL) {
+      const ownerRef = doc(db, 'users', ROOT_OWNER_UUID);
       const ownerSnap = await getDoc(ownerRef);
       const existingOwner = ownerSnap.exists() ? (ownerSnap.data() as UserProfile) : null;
 
@@ -303,7 +373,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid email or password.');
       }
 
-      const finalOwnerProfile = buildDefaultOwnerProfile({
+      const finalOwnerProfile = buildDefaultRootOwnerProfile({
         ...(existingOwner || {}),
         authSalt: salt,
         authHash: expectedHash,
@@ -313,15 +383,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const sessionToken = serverToken || `owner_session_${Date.now()}`;
       localStorage.setItem(TOKEN_STORAGE_KEY, sessionToken);
-      localStorage.setItem(UID_STORAGE_KEY, OWNER_UUID);
+      localStorage.setItem(UID_STORAGE_KEY, ROOT_OWNER_UUID);
       setToken(sessionToken);
       setMustChangePassword(Boolean(finalOwnerProfile.mustChangePassword));
       setProfile(finalOwnerProfile);
-      setActiveUid(OWNER_UUID);
+      setActiveUid(ROOT_OWNER_UUID);
       return;
     }
 
-    // Non-owner user lookup in Firestore /users
     const usersSnap = await getDocs(collection(db, 'users'));
     let matchedUser: UserProfile | null = null;
     usersSnap.forEach((d) => {
@@ -362,7 +431,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveUid(userObj.uid);
   }, []);
 
-  // Register a new account (persisted in both Express backend and Firestore)
+  // Register a new user account
   const signUpEmail = useCallback(
     async (email: string, pass: string, username: string, displayName: string) => {
       const normalizedEmail = email.trim().toLowerCase();
@@ -371,8 +440,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .toLowerCase()
         .replace(/[^a-z0-9_.-]/g, '');
 
-      if (normalizedEmail === OWNER_EMAIL) {
-        throw new Error('This email is reserved for the platform owner. Please use Sign In.');
+      if (normalizedEmail === ROOT_OWNER_EMAIL) {
+        throw new Error('This email is reserved for the platform Root Owner. Please use Sign In.');
       }
       if (normalizedUsername.length < 2) {
         throw new Error('Username must be at least 2 characters.');
@@ -381,7 +450,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Password must be at least 6 characters.');
       }
 
-      // Check Firestore for existing email or username
       const usersSnap = await getDocs(collection(db, 'users'));
       usersSnap.forEach((d) => {
         const u = d.data() as UserProfile;
@@ -416,7 +484,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch {
-        // Proceed with Firestore persistence if server endpoint is unavailable
+        // Proceed with Firestore persistence
       }
 
       const authSalt = generateRandomSalt();
@@ -452,6 +520,115 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(sessionToken);
       setMustChangePassword(false);
       setProfile(newProfile);
+      setActiveUid(uid);
+    },
+    []
+  );
+
+  // Accept Secondary Owner Invitation & Create Real Secondary Owner Account (#35.2)
+  const acceptOwnerInviteOnboard = useCallback(
+    async (
+      inviteId: string,
+      email: string,
+      username: string,
+      displayName: string,
+      password: string
+    ) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedUsername = username
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_.-]/g, '');
+
+      if (normalizedEmail === ROOT_OWNER_EMAIL) {
+        throw new Error('Cannot overwrite the protected Root Owner account.');
+      }
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters.');
+      }
+
+      let uid = crypto.randomUUID();
+      let serverToken: string | null = null;
+
+      try {
+        const res = await fetch('/api/owners/accept-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            username: normalizedUsername,
+            displayName: displayName.trim(),
+            password,
+          }),
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          if (res.ok && data.user?.uid) {
+            uid = data.user.uid;
+            serverToken = data.token;
+          }
+        }
+      } catch {
+        // Proceed with Firestore persistence
+      }
+
+      const authSalt = generateRandomSalt();
+      const authHash = await computeSaltedHash(authSalt, password);
+      const now = new Date().toISOString();
+
+      const secOwnerProfile: UserProfile = {
+        uid,
+        email: normalizedEmail,
+        username: normalizedUsername,
+        displayName: displayName.trim(),
+        role: 'secondary_owner',
+        photoURL: generateInitialsAvatar(displayName.trim(), '#065f46'),
+        bio: 'Secondary Owner & Platform Administrator.',
+        statusMessage: 'DOOMCORD APEX Administration',
+        presence: 'online',
+        accentColor: 'oklch(0.85 0.12 165)',
+        nitroTier: 'nitro',
+        nitroBillingCycle: 'lifetime',
+        nitroExpiresAt: null,
+        nitroAutoRenew: true,
+        permanentEntitlement: 'LIFETIME_APEX_PLUS',
+        ownedCosmetics: INITIAL_COSMETICS_CATALOG.map((c) => c.id),
+        equippedCosmetics: {
+          avatarDecoration: 'cosm_frame_emerald_crystal',
+          nameplate: 'cosm_nameplate_mint_velocity',
+        },
+        badges: ['secondary_owner', 'verified', 'apex_plus'],
+        secondaryOwnerPermissions: {
+          canManageUsers: true,
+          canManageCommunities: true,
+          canManageApexPlans: true,
+          canManageCosmetics: true,
+          canCreateGifts: true,
+          canManageReceipts: true,
+          canProcessRefunds: true,
+        },
+        isBanned: false,
+        isSuspended: false,
+        mustChangePassword: false,
+        authSalt,
+        authHash,
+        createdAt: now,
+      };
+
+      await setDoc(doc(db, 'users', uid), secOwnerProfile, { merge: true });
+      await updateDoc(doc(db, 'owner_invitations', inviteId), {
+        status: 'accepted',
+        acceptedByUid: uid,
+        acceptedAt: now,
+      });
+
+      const sessionToken = serverToken || `sec_owner_${uid}_${Date.now()}`;
+      localStorage.setItem(TOKEN_STORAGE_KEY, sessionToken);
+      localStorage.setItem(UID_STORAGE_KEY, uid);
+      setToken(sessionToken);
+      setMustChangePassword(false);
+      setProfile(secOwnerProfile);
       setActiveUid(uid);
     },
     []
@@ -530,7 +707,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (currentPassword: string, newPassword: string) => {
       if (!profile) throw new Error('Not authenticated.');
 
-      // Verify current password against stored hash
       if (profile.authSalt && profile.authHash) {
         const currentCandidate = await computeSaltedHash(profile.authSalt, currentPassword);
         if (currentCandidate !== profile.authHash) {
@@ -538,7 +714,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Sync with Express backend if available
       if (token) {
         try {
           await fetch('/api/auth/change-password', {
@@ -550,7 +725,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             body: JSON.stringify({ currentPassword, newPassword }),
           });
         } catch {
-          // ignore if server endpoint is offline
+          // ignore
         }
       }
 
@@ -613,6 +788,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInGoogle,
         signInEmail,
         signUpEmail,
+        acceptOwnerInviteOnboard,
         changePassword,
         logout,
       }}

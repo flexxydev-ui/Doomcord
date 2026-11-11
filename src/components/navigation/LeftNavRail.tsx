@@ -1,13 +1,17 @@
 import React from 'react';
 import {
-  Compass,
+  Home,
+  Users,
   MessageSquare,
-  Plus,
-  Settings,
-  Sparkles,
+  Compass,
+  Bell,
   Crown,
   ShoppingBag,
   Shield,
+  Plus,
+  Settings,
+  User,
+  Globe,
 } from 'lucide-react';
 import { Community, ActiveView, UserProfile } from '../../types';
 
@@ -16,8 +20,12 @@ interface LeftNavRailProps {
   activeView: ActiveView;
   currentUser: UserProfile;
   unreadDmCount: number;
+  notificationCount?: number;
+  onNavigateDashboard: () => void;
   onNavigateHome: () => void;
   onNavigateOrbs: () => void;
+  onNavigateNotifications: () => void;
+  onNavigateProfile: () => void;
   onNavigateNitro: () => void;
   onNavigateShop: () => void;
   onNavigateAdmin: () => void;
@@ -32,8 +40,12 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
   activeView,
   currentUser,
   unreadDmCount,
+  notificationCount = 0,
+  onNavigateDashboard,
   onNavigateHome,
   onNavigateOrbs,
+  onNavigateNotifications,
+  onNavigateProfile,
   onNavigateNitro,
   onNavigateShop,
   onNavigateAdmin,
@@ -42,125 +54,175 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
   onCreateCommunity,
   onOpenSettings,
 }) => {
-  const isHomeActive = activeView.type === 'friends' || activeView.type === 'dm';
+  const isDashboardActive = activeView.type === 'home';
+  const isFriendsOrDmActive = activeView.type === 'friends' || activeView.type === 'dm';
   const isOrbsActive = activeView.type === 'orbs';
+  const isNotificationsActive = activeView.type === 'notifications';
+  const isProfileActive =
+    activeView.type === 'profile' &&
+    (!activeView.userId || activeView.userId === currentUser.uid);
   const isNitroActive = activeView.type === 'nitro';
   const isShopActive = activeView.type === 'shop';
   const isAdminActive = activeView.type === 'admin';
   const isExploreActive = activeView.type === 'explore_communities';
-  const isAdminOrOwner = currentUser.role === 'owner' || currentUser.role === 'admin';
+
+  const isAdminOrOwner =
+    currentUser.role === 'root_owner' ||
+    currentUser.role === 'secondary_owner' ||
+    currentUser.role === 'owner' ||
+    currentUser.role === 'admin';
 
   return (
-    <div className="w-[72px] h-full flex flex-col items-center py-3 bg-[oklch(0.14_0.025_162)] border-r border-white/5 select-none shrink-0 z-30">
-      {/* Doomcord Brand Icon */}
+    <aside className="w-[68px] h-full flex flex-col items-center py-3.5 bg-[#111B17] border-r border-white/[0.06] select-none shrink-0 z-30">
+      {/* Doomcord Architectural Brand Mark -> Home Dashboard */}
       <button
-        onClick={onNavigateHome}
-        title="Doomcord Home"
-        className="relative group p-2.5 mb-3 rounded-2xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] shadow-lg shadow-black/30 hover:rounded-xl transition-all"
+        onClick={onNavigateDashboard}
+        title="Doomcord Home Dashboard"
+        className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-all mb-3 border ${
+          isDashboardActive
+            ? 'bg-[#8BE2B8] text-[#101A17] border-[#8BE2B8] shadow-md'
+            : 'bg-[#192620] text-[#8BE2B8] border-white/[0.08] hover:bg-[#24362C]'
+        }`}
       >
-        <span className="font-heading font-black text-xl text-white tracking-tighter block leading-none">
+        <span className="font-display font-extrabold text-lg tracking-tight leading-none">
           D
         </span>
-        {isHomeActive && (
-          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[oklch(0.85_0.12_165)] rounded-r-full" />
+        {isDashboardActive && (
+          <span className="absolute -left-[13px] top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8BE2B8] rounded-r" />
         )}
       </button>
 
-      <div className="w-8 h-[1px] bg-white/10 mb-3" />
+      <div className="w-7 h-[1px] bg-white/[0.07] mb-3" />
 
-      {/* Primary Feature Rail Icons */}
-      <div className="flex flex-col items-center gap-2 mb-3">
-        {/* Direct Messages / Friends */}
+      {/* Primary Platform Navigation Rail */}
+      <nav className="flex flex-col items-center gap-1.5 mb-3">
+        {/* Home Command */}
+        <button
+          onClick={onNavigateDashboard}
+          title="Home Dashboard"
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            isDashboardActive
+              ? 'bg-[#24362C] text-[#8BE2B8]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+          }`}
+        >
+          <Home className="w-4 h-4" />
+        </button>
+
+        {/* Friends & Direct Messages */}
         <button
           onClick={onNavigateHome}
           title="Friends & Direct Messages"
-          className={`relative p-3 rounded-2xl transition-all ${
-            isHomeActive
-              ? 'bg-[oklch(0.235_0.032_158)] text-[oklch(0.85_0.12_165)] rounded-xl'
-              : 'text-[oklch(0.7_0.03_155)] hover:bg-[oklch(0.235_0.032_158)] hover:text-white hover:rounded-xl'
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            isFriendsOrDmActive
+              ? 'bg-[#24362C] text-[#8BE2B8]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
           }`}
         >
-          <MessageSquare className="w-5 h-5" />
+          {activeView.type === 'dm' ? (
+            <MessageSquare className="w-4 h-4" />
+          ) : (
+            <Users className="w-4 h-4" />
+          )}
           {unreadDmCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[oklch(0.72_0.16_32)] text-white shadow-sm font-mono">
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] text-[10px] font-mono font-bold tabular-nums">
               {unreadDmCount}
             </span>
           )}
         </button>
 
-        {/* 3D Spatial Orbs Discovery */}
+        {/* Orbs Discovery & 3D Space */}
         <button
           onClick={onNavigateOrbs}
-          title="Spatial Orbs Nexus"
-          className={`relative p-3 rounded-2xl transition-all ${
+          title="Orbs — Interest Spaces"
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
             isOrbsActive
-              ? 'bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] text-white rounded-xl shadow-md'
-              : 'text-[oklch(0.7_0.03_155)] hover:bg-[oklch(0.235_0.032_158)] hover:text-white hover:rounded-xl'
+              ? 'bg-[#24362C] text-[#E9987B]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
           }`}
         >
-          <Sparkles className="w-5 h-5" />
+          <Compass className="w-4 h-4" />
         </button>
 
-        {/* Doomcord Nitro */}
+        {/* Notifications Center */}
+        <button
+          onClick={onNavigateNotifications}
+          title="Notifications Inbox"
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            isNotificationsActive
+              ? 'bg-[#24362C] text-[#8BE2B8]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+          }`}
+        >
+          <Bell className="w-4 h-4" />
+          {notificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded bg-[#E9987B] text-[#101A17] text-[10px] font-mono font-bold tabular-nums">
+              {notificationCount}
+            </span>
+          )}
+        </button>
+
+        {/* DOOMCORD APEX */}
         <button
           onClick={onNavigateNitro}
-          title="Doomcord Nitro Memberships"
-          className={`relative p-3 rounded-2xl transition-all ${
+          title="DOOMCORD APEX Membership"
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
             isNitroActive
-              ? 'bg-gradient-to-tr from-[oklch(0.84_0.14_85)] to-[oklch(0.72_0.16_32)] text-black rounded-xl shadow-md'
-              : 'text-[oklch(0.84_0.14_85)] hover:bg-[oklch(0.235_0.032_158)] hover:rounded-xl'
+              ? 'bg-[#D9BB79] text-[#101A17]'
+              : 'text-[#D9BB79] hover:bg-[#192620]'
           }`}
         >
-          <Crown className="w-5 h-5" />
+          <Crown className="w-4 h-4" />
         </button>
 
-        {/* Doomcord Cosmetics & Decoration Shop */}
+        {/* Cosmetics Shop */}
         <button
           onClick={onNavigateShop}
-          title="Cosmetics & Decoration Shop"
-          className={`relative p-3 rounded-2xl transition-all ${
+          title="Cosmetics & Customization Shop"
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
             isShopActive
-              ? 'bg-[oklch(0.235_0.032_158)] text-[oklch(0.85_0.12_165)] rounded-xl shadow-md'
-              : 'text-[oklch(0.7_0.03_155)] hover:bg-[oklch(0.235_0.032_158)] hover:text-white hover:rounded-xl'
+              ? 'bg-[#24362C] text-[#8BE2B8]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
           }`}
         >
-          <ShoppingBag className="w-5 h-5" />
+          <ShoppingBag className="w-4 h-4" />
         </button>
 
-        {/* Admin & Owner Monetization Dashboard (Restricted to Owner/Admin) */}
+        {/* Admin Console */}
         {isAdminOrOwner && (
           <button
             onClick={onNavigateAdmin}
-            title="Owner & Admin Dashboard"
-            className={`relative p-3 rounded-2xl transition-all ${
+            title="Platform Administration Console"
+            className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
               isAdminActive
-                ? 'bg-[oklch(0.84_0.14_85)] text-black rounded-xl shadow-md'
-                : 'text-[oklch(0.84_0.14_85)] bg-[oklch(0.84_0.14_85)]/10 hover:bg-[oklch(0.84_0.14_85)]/20 hover:rounded-xl'
+                ? 'bg-[#8BE2B8] text-[#101A17]'
+                : 'text-[#8BE2B8] bg-[#8BE2B8]/10 hover:bg-[#8BE2B8]/20'
             }`}
           >
-            <Shield className="w-5 h-5" />
+            <Shield className="w-4 h-4" />
           </button>
         )}
-      </div>
+      </nav>
 
-      <div className="w-8 h-[1px] bg-white/10 mb-3" />
+      <div className="w-7 h-[1px] bg-white/[0.07] mb-3" />
 
-      {/* Real User-Created Communities List */}
-      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2 scrollbar-none px-2">
+      {/* Communities Switcher Rail */}
+      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2 px-2">
         {communities.map((comm) => {
-          const isActive = activeView.type === 'community' && activeView.communityId === comm.id;
+          const isActive =
+            activeView.type === 'community' && activeView.communityId === comm.id;
           return (
-            <div key={comm.id} className="relative group flex items-center justify-center w-full">
+            <div key={comm.id} className="relative flex items-center justify-center w-full">
               {isActive && (
-                <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-r-full" />
+                <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8BE2B8] rounded-r" />
               )}
               <button
                 onClick={() => onSelectCommunity(comm.id)}
                 title={comm.name}
-                className={`relative w-12 h-12 rounded-2xl overflow-hidden transition-all duration-200 border ${
+                className={`w-10 h-10 rounded-xl overflow-hidden transition-all border flex items-center justify-center ${
                   isActive
-                    ? 'rounded-xl border-[oklch(0.85_0.12_165)] shadow-md'
-                    : 'border-white/5 hover:rounded-xl hover:border-white/20'
+                    ? 'border-[#8BE2B8] shadow-sm'
+                    : 'border-white/[0.07] hover:border-white/25'
                 }`}
               >
                 {comm.iconUrl ? (
@@ -171,8 +233,8 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
                   />
                 ) : (
                   <div
-                    className="w-full h-full flex items-center justify-center font-bold text-white text-sm"
-                    style={{ backgroundColor: comm.themeColor || 'oklch(0.235 0.032 158)' }}
+                    className="w-full h-full flex items-center justify-center font-display font-bold text-xs text-[#101A17]"
+                    style={{ backgroundColor: comm.themeColor || '#8BE2B8' }}
                   >
                     {comm.name.slice(0, 2).toUpperCase()}
                   </div>
@@ -182,39 +244,51 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
           );
         })}
 
-        {/* Create Community Button */}
+        {/* Create Community */}
         <button
           onClick={onCreateCommunity}
-          title="Create a Community"
-          className="w-12 h-12 rounded-2xl bg-[oklch(0.17_0.028_161)] border border-dashed border-white/20 hover:border-[oklch(0.85_0.12_165)] text-[oklch(0.85_0.12_165)] hover:rounded-xl flex items-center justify-center transition-all group"
+          title="Create Community"
+          className="w-10 h-10 rounded-xl bg-[#192620] hover:bg-[#24362C] border border-dashed border-white/15 hover:border-[#8BE2B8] text-[#8BE2B8] flex items-center justify-center transition-colors shrink-0"
         >
-          <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <Plus className="w-4 h-4" />
         </button>
 
-        {/* Explore Communities */}
+        {/* Public Communities Directory */}
         <button
           onClick={onNavigateExplore}
-          title="Explore Public Communities"
-          className={`w-12 h-12 rounded-2xl bg-[oklch(0.17_0.028_161)] border border-white/5 hover:rounded-xl flex items-center justify-center transition-all ${
+          title="Explore Communities Directory"
+          className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
             isExploreActive
-              ? 'rounded-xl border-[oklch(0.85_0.12_165)] text-[oklch(0.85_0.12_165)]'
-              : 'text-[oklch(0.7_0.03_155)] hover:text-white'
+              ? 'bg-[#24362C] border-[#8BE2B8] text-[#8BE2B8]'
+              : 'bg-[#192620] border-white/[0.07] text-[#9BAEA2] hover:text-[#F0F5F1]'
           }`}
         >
-          <Compass className="w-5 h-5" />
+          <Globe className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Bottom Settings Trigger */}
-      <div className="flex flex-col items-center gap-2 mt-auto pt-3 border-t border-white/5 w-full">
+      {/* Bottom Profile & Settings */}
+      <div className="flex flex-col items-center gap-1.5 pt-3 border-t border-white/[0.06] w-full">
+        <button
+          onClick={onNavigateProfile}
+          title="My User Profile"
+          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+            isProfileActive
+              ? 'bg-[#24362C] text-[#8BE2B8]'
+              : 'text-[#9BAEA2] hover:bg-[#192620] hover:text-[#F0F5F1]'
+          }`}
+        >
+          <User className="w-4 h-4" />
+        </button>
+
         <button
           onClick={onOpenSettings}
-          title="Account & Application Settings"
-          className="p-2.5 rounded-xl text-[oklch(0.7_0.03_155)] hover:text-white hover:bg-[oklch(0.235_0.032_158)] transition-colors"
+          title="Settings"
+          className="w-9 h-9 rounded-lg text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620] flex items-center justify-center transition-colors"
         >
           <Settings className="w-4 h-4" />
         </button>
       </div>
-    </div>
+    </aside>
   );
 };

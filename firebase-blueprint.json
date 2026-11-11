@@ -2,14 +2,14 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Real registered user account with role, Nitro status, and equipped cosmetics",
+      "description": "Real registered user account with role, APEX membership status, permanent entitlements, and equipped cosmetics",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128 },
         "email": { "type": "string", "maxLength": 128 },
         "username": { "type": "string", "maxLength": 32, "pattern": "^[a-z0-9_.-]+$" },
         "displayName": { "type": "string", "maxLength": 50 },
-        "role": { "type": "string", "enum": ["owner", "admin", "moderator", "member"] },
+        "role": { "type": "string", "enum": ["root_owner", "secondary_owner", "owner", "admin", "moderator", "member"] },
         "photoURL": { "type": "string", "maxLength": 2048 },
         "bannerURL": { "type": "string", "maxLength": 2048 },
         "bio": { "type": "string", "maxLength": 300 },
@@ -18,9 +18,10 @@
         "accentColor": { "type": "string", "maxLength": 40 },
         "secondaryColor": { "type": "string", "maxLength": 40 },
         "nitroTier": { "type": "string", "enum": ["free", "basic", "nitro"] },
-        "nitroBillingCycle": { "type": "string", "enum": ["none", "monthly", "yearly"] },
+        "nitroBillingCycle": { "type": "string", "enum": ["none", "monthly", "yearly", "lifetime"] },
         "nitroExpiresAt": { "type": "string" },
         "nitroAutoRenew": { "type": "boolean" },
+        "permanentEntitlement": { "type": "string", "maxLength": 64 },
         "ownedCosmetics": { "type": "array" },
         "equippedCosmetics": { "type": "object" },
         "badges": { "type": "array" },
@@ -33,8 +34,8 @@
       "required": ["uid", "username", "displayName"]
     },
     "NitroPlan": {
-      "title": "NitroPlan",
-      "description": "Configurable Doomcord Nitro subscription tier in INR",
+      "title": "ApexPlan",
+      "description": "Configurable Doomcord APEX membership tier in INR",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 64 },
@@ -53,7 +54,7 @@
     },
     "CosmeticItem": {
       "title": "CosmeticItem",
-      "description": "Original Doomcord Shop cosmetic item or bundle",
+      "description": "Original Doomcord APEX Collection cosmetic item or bundle",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 64 },
@@ -71,6 +72,67 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "category", "priceINR", "rarity"]
+    },
+    "Gift": {
+      "title": "Gift",
+      "description": "Owner-generated complimentary APEX membership or cosmetic gift with hashed redemption token",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tokenHash": { "type": "string", "maxLength": 128 },
+        "tokenPreview": { "type": "string", "maxLength": 64 },
+        "creatorUid": { "type": "string", "maxLength": 128 },
+        "creatorName": { "type": "string", "maxLength": 80 },
+        "apexTier": { "type": "string", "enum": ["none", "basic", "nitro"] },
+        "cosmeticIds": { "type": "array" },
+        "duration": { "type": "string", "enum": ["1d", "7d", "30d", "90d", "1y", "lifetime"] },
+        "personalMessage": { "type": "string", "maxLength": 500 },
+        "restrictedRecipientUid": { "type": "string", "maxLength": 128 },
+        "restrictedRecipientEmail": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["unclaimed", "redeemed", "revoked", "expired"] },
+        "redeemedByUid": { "type": "string", "maxLength": 128 },
+        "redeemedByEmail": { "type": "string", "maxLength": 128 },
+        "redeemedAt": { "type": "string", "format": "date-time" },
+        "linkExpiresAt": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tokenHash", "creatorUid", "duration", "status", "createdAt"]
+    },
+    "GiftRedemption": {
+      "title": "GiftRedemption",
+      "description": "Immutable record of an atomic gift redemption event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "giftId": { "type": "string", "maxLength": 128 },
+        "recipientUid": { "type": "string", "maxLength": 128 },
+        "recipientEmail": { "type": "string", "maxLength": 128 },
+        "apexTierGranted": { "type": "string", "maxLength": 32 },
+        "cosmeticsGranted": { "type": "array" },
+        "duration": { "type": "string", "maxLength": 32 },
+        "entitlementExpiresAt": { "type": "string" },
+        "redeemedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "giftId", "recipientUid", "redeemedAt"]
+    },
+    "UserEntitlement": {
+      "title": "UserEntitlement",
+      "description": "Persistent user entitlement for OWNER_PERMANENT_APEX, gifted APEX memberships, or permanent cosmetics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "entitlementCode": { "type": "string", "maxLength": 64 },
+        "source": { "type": "string", "enum": ["owner_permanent", "gift", "razorpay", "admin_grant"] },
+        "sourceId": { "type": "string", "maxLength": 128 },
+        "apexTier": { "type": "string", "enum": ["none", "basic", "nitro"] },
+        "cosmeticIds": { "type": "array" },
+        "isLifetime": { "type": "boolean" },
+        "expiresAt": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "entitlementCode", "source", "isLifetime", "active", "createdAt"]
     },
     "Transaction": {
       "title": "Transaction",
@@ -95,7 +157,7 @@
     },
     "AuditLog": {
       "title": "AuditLog",
-      "description": "Immutable administrative audit trail record",
+      "description": "Immutable administrative and security audit trail record",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -240,15 +302,27 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profile, role, Nitro subscription, and cosmetics"
+      "description": "User profile, role, APEX membership, and cosmetics"
     },
     "/nitro_plans/{planId}": {
       "schema": "NitroPlan",
-      "description": "Doomcord Nitro plans and INR pricing"
+      "description": "Doomcord APEX membership plans and INR pricing"
     },
     "/cosmetics/{cosmeticId}": {
       "schema": "CosmeticItem",
-      "description": "Doomcord Cosmetics Shop catalog"
+      "description": "Doomcord APEX Collection catalog"
+    },
+    "/gifts/{giftId}": {
+      "schema": "Gift",
+      "description": "Owner-generated complimentary APEX gifts with hashed tokens"
+    },
+    "/gift_redemptions/{redemptionId}": {
+      "schema": "GiftRedemption",
+      "description": "Atomic gift redemption records"
+    },
+    "/user_entitlements/{entitlementId}": {
+      "schema": "UserEntitlement",
+      "description": "Persistent user entitlements (OWNER_PERMANENT_APEX, lifetime gifts, cosmetics)"
     },
     "/transactions/{transactionId}": {
       "schema": "Transaction",

@@ -7,15 +7,18 @@ import {
   CreditCard,
   Activity,
   FileText,
-  Settings,
   Ban,
-  CheckCircle2,
   AlertTriangle,
   Plus,
-  RotateCcw,
   Trash2,
-  Database,
-  Megaphone,
+  Gift,
+  Receipt,
+  UserCheck,
+  Copy,
+  Check,
+  Lock,
+  ExternalLink,
+  Search,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -29,7 +32,27 @@ import {
   Community,
   OrbData,
   PlatformRole,
+  GiftRecord,
+  GiftDuration,
+  OwnerInvitationRecord,
+  ReceiptRecord,
+  ReceiptType,
+  ReceiptPaymentStatus,
+  ReceiptDurationPreset,
+  CustomDurationUnit,
+  ReceiptLineItem,
 } from '../../types';
+import {
+  ROOT_OWNER_UUID,
+  isRootOwner,
+  isSecondaryOwner,
+  isAnyOwner,
+  isAdminOrAbove,
+  formatRoleLabel,
+  calculateReceiptDuration,
+  getReceiptExpirationInfo,
+  SECURITY_AUDIT_REPORT_DATA,
+} from '../../lib/dataService';
 
 interface AdminDashboardViewProps {
   currentUser: UserProfile;
@@ -40,6 +63,9 @@ interface AdminDashboardViewProps {
   nitroPlans: NitroPlanConfig[];
   cosmetics: CosmeticItem[];
   transactions: TransactionRecord[];
+  gifts: GiftRecord[];
+  ownerInvitations: OwnerInvitationRecord[];
+  receipts: ReceiptRecord[];
   auditLogs: AuditLogEntry[];
   systemConfig: SystemConfigData;
   onUpdateNitroPlan: (plan: NitroPlanConfig) => Promise<void>;
@@ -47,16 +73,49 @@ interface AdminDashboardViewProps {
   onDeleteCommunity: (communityId: string) => Promise<void>;
   onDeleteOrb: (orbId: string) => Promise<void>;
   onUpdateUserRole: (targetUid: string, newRole: PlatformRole) => Promise<void>;
+  onUpdateSecondaryOwnerPermissions: (
+    targetUid: string,
+    perms: NonNullable<UserProfile['secondaryOwnerPermissions']>
+  ) => Promise<void>;
   onModerateUser: (
     targetUid: string,
     action: 'ban' | 'unban' | 'suspend' | 'unsuspend'
   ) => Promise<void>;
-  onGrantOrRevokeNitro: (targetUid: string, tier: 'free' | 'basic' | 'nitro') => Promise<void>;
+  onGrantOrRevokeNitro: (
+    targetUid: string,
+    tier: 'free' | 'basic' | 'nitro'
+  ) => Promise<void>;
   onGrantOrRevokeCosmetic: (
     targetUid: string,
     cosmeticId: string,
     mode: 'grant' | 'revoke'
   ) => Promise<void>;
+  onCreateOwnerGift: (params: {
+    apexTier: 'none' | 'basic' | 'nitro';
+    cosmeticIds: string[];
+    duration: GiftDuration;
+    personalMessage: string;
+    restrictedRecipientUsername?: string;
+    restrictedRecipientEmail?: string;
+  }) => Promise<GiftRecord>;
+  onRevokeGift: (giftId: string) => Promise<void>;
+  onCreateOwnerInvite: (
+    email: string,
+    invitedDisplayName?: string
+  ) => Promise<OwnerInvitationRecord>;
+  onRevokeOwnerInvite: (inviteId: string) => Promise<void>;
+  onCreateManualReceipt: (
+    receiptData: Omit<
+      ReceiptRecord,
+      'id' | 'receiptNumber' | 'accessToken' | 'auditHistory' | 'createdAt'
+    >
+  ) => Promise<ReceiptRecord>;
+  onCorrectReceiptMetadata: (
+    receiptId: string,
+    newNotes: string,
+    reason: string
+  ) => Promise<void>;
+  onOpenReceiptModal: (receipt: ReceiptRecord) => void;
   onRefundTransaction: (tx: TransactionRecord) => Promise<void>;
   onUpdateSystemConfig: (cfg: Partial<SystemConfigData>) => Promise<void>;
 }
@@ -64,10 +123,14 @@ interface AdminDashboardViewProps {
 type AdminTab =
   | 'overview'
   | 'users'
+  | 'owners'
+  | 'gifts'
+  | 'receipts'
   | 'nitro_plans'
   | 'cosmetics'
   | 'razorpay'
   | 'moderation'
+  | 'security_audit'
   | 'system_audit';
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
@@ -79,6 +142,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   nitroPlans,
   cosmetics,
   transactions,
+  gifts,
+  ownerInvitations,
+  receipts,
   auditLogs,
   systemConfig,
   onUpdateNitroPlan,
@@ -86,16 +152,86 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   onDeleteCommunity,
   onDeleteOrb,
   onUpdateUserRole,
+  onUpdateSecondaryOwnerPermissions,
   onModerateUser,
   onGrantOrRevokeNitro,
   onGrantOrRevokeCosmetic,
+  onCreateOwnerGift,
+  onRevokeGift,
+  onCreateOwnerInvite,
+  onRevokeOwnerInvite,
+  onCreateManualReceipt,
+  onCorrectReceiptMetadata,
+  onOpenReceiptModal,
   onRefundTransaction,
   onUpdateSystemConfig,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Razorpay config state
+  // User filter
+  const [userSearch, setUserSearch] = useState('');
+
+  // Owner Management (#35) state
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [createdInviteLink, setCreatedInviteLink] = useState<string | null>(null);
+
+  // Owner Gifting Studio (#28-#31) state
+  const [giftApexTier, setGiftApexTier] = useState<'none' | 'basic' | 'nitro'>(
+    'nitro'
+  );
+  const [giftSelectedCosmetics, setGiftSelectedCosmetics] = useState<string[]>(
+    []
+  );
+  const [giftDuration, setGiftDuration] = useState<GiftDuration>('lifetime');
+  const [giftMessage, setGiftMessage] = useState(
+    'Complimentary DOOMCORD APEX+ gift from the Doomcord Owner!'
+  );
+  const [giftRecipientUsername, setGiftRecipientUsername] = useState('');
+  const [giftRecipientEmail, setGiftRecipientEmail] = useState('');
+  const [generatedGiftUrl, setGeneratedGiftUrl] = useState<string | null>(null);
+
+  // Receipt Generator (#36) state
+  const [showReceiptForm, setShowReceiptForm] = useState(false);
+  const [rcpType, setRcpType] = useState<ReceiptType>(
+    'APEX+ Membership Receipt'
+  );
+  const [rcpTitle, setRcpTitle] = useState('DOOMCORD APEX+ Membership');
+  const [rcpDesc, setRcpDesc] = useState(
+    'Official Doomcord billing & entitlement receipt'
+  );
+  const [rcpCustomerUid, setRcpCustomerUid] = useState('');
+  const [rcpCustomerUsername, setRcpCustomerUsername] = useState('');
+  const [rcpCustomerDisplayName, setRcpCustomerDisplayName] = useState('');
+  const [rcpCustomerEmail, setRcpCustomerEmail] = useState('');
+  const [rcpPaymentMethod, setRcpPaymentMethod] = useState('Razorpay / UPI');
+  const [rcpPaymentStatus, setRcpPaymentStatus] =
+    useState<ReceiptPaymentStatus>('Paid');
+  const [rcpTxId, setRcpTxId] = useState(`TXN-${Date.now()}`);
+  const [rcpNotes, setRcpNotes] = useState(
+    'Verified and issued by Doomcord Platform Administration.'
+  );
+  const [rcpItemName, setRcpItemName] = useState('DOOMCORD APEX+ Membership');
+  const [rcpItemCategory, setRcpItemCategory] = useState('Membership');
+  const [rcpItemQty, setRcpItemQty] = useState(1);
+  const [rcpItemPrice, setRcpItemPrice] = useState(99);
+  const [rcpItemDiscount, setRcpItemDiscount] = useState(0);
+  const [rcpDurationPreset, setRcpDurationPreset] =
+    useState<ReceiptDurationPreset>('30d');
+  const [rcpCustomVal, setRcpCustomVal] = useState(30);
+  const [rcpCustomUnit, setRcpCustomUnit] =
+    useState<CustomDurationUnit>('days');
+  const [rcpExtraItems, setRcpExtraItems] = useState<ReceiptLineItem[]>([]);
+  const [receiptSearch, setReceiptSearch] = useState('');
+
+  // Metadata correction state
+  const [editingReceiptId, setEditingReceiptId] = useState<string | null>(null);
+  const [editReceiptNotes, setEditReceiptNotes] = useState('');
+  const [editReceiptReason, setEditReceiptReason] = useState('');
+
+  // Razorpay state
   const [rzpStatus, setRzpStatus] = useState<any>(null);
   const [rzpKeyId, setRzpKeyId] = useState('');
   const [rzpKeySecret, setRzpKeySecret] = useState('');
@@ -104,23 +240,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     systemConfig.merchantUpiId || 'adrenoxshriyans@fam'
   );
 
-  // New Cosmetic Form State
+  // New Cosmetic state
   const [newCosmName, setNewCosmName] = useState('');
   const [newCosmDesc, setNewCosmDesc] = useState('');
   const [newCosmCategory, setNewCosmCategory] =
     useState<CosmeticCategory>('Avatar Decorations');
   const [newCosmPrice, setNewCosmPrice] = useState(39);
   const [newCosmRarity, setNewCosmRarity] = useState<CosmeticRarity>('Rare');
-  const [newCosmColor1, setNewCosmColor1] = useState('#10b981');
-  const [newCosmColor2, setNewCosmColor2] = useState('#f97316');
-
-  // System Announcement State
-  const [announcementInput, setAnnouncementInput] = useState(
-    systemConfig.globalAnnouncement || ''
-  );
-  const [discountInput, setDiscountInput] = useState(
-    systemConfig.globalDiscountPercent || 0
-  );
+  const [newCosmColor1, setNewCosmColor1] = useState('#8BE2B8');
+  const [newCosmColor2, setNewCosmColor2] = useState('#E9987B');
 
   useEffect(() => {
     fetch('/api/razorpay/status')
@@ -133,31 +261,176 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       .catch(() => {});
   }, []);
 
-  if (currentUser.role !== 'owner' && currentUser.role !== 'admin') {
+  if (!isAdminOrAbove(currentUser)) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-[oklch(0.2_0.03_160)]">
-        <div className="max-w-md p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-[oklch(0.72_0.15_355)]/40 text-center space-y-2">
-          <AlertTriangle className="w-8 h-8 text-[oklch(0.72_0.15_355)] mx-auto" />
-          <h2 className="text-base font-bold text-white">Access Denied</h2>
-          <p className="text-xs text-[oklch(0.7_0.03_155)]">
-            This area is restricted to authorized Doomcord Administrators and the Platform Owner.
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#101A17]">
+        <div className="max-w-md p-6 rounded-xl bg-[#141F1B] border border-[#E57373]/40 text-center space-y-2">
+          <AlertTriangle className="w-8 h-8 text-[#E57373] mx-auto" />
+          <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+            Access Restricted
+          </h2>
+          <p className="text-xs text-[#9BAEA2]">
+            This console is restricted to authorized Doomcord Owners and Administrators.
           </p>
         </div>
       </div>
     );
   }
 
+  const isRoot = isRootOwner(currentUser.uid);
+  const isOwner = isAnyOwner(currentUser);
+  const canCreateGifts =
+    isRoot ||
+    (isSecondaryOwner(currentUser) &&
+      currentUser.secondaryOwnerPermissions?.canCreateGifts !== false);
+  const canManageReceipts =
+    isRoot ||
+    (isSecondaryOwner(currentUser) &&
+      currentUser.secondaryOwnerPermissions?.canManageReceipts !== false);
+
   const showFlash = (msg: string) => {
     setStatusMessage(msg);
-    setTimeout(() => setStatusMessage(null), 4000);
+    setTimeout(() => setStatusMessage(null), 4500);
   };
 
-  // Real Aggregated Metrics from Firestore
+  const copyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
   const verifiedTransactions = transactions.filter(
     (t) => t.status === 'verified' || t.status === 'captured'
   );
-  const totalRevenueINR = verifiedTransactions.reduce((sum, t) => sum + (t.amountINR || 0), 0);
-  const activeNitroUsersCount = users.filter((u) => u.nitroTier !== 'free').length;
+  const totalRevenueINR = verifiedTransactions.reduce(
+    (sum, t) => sum + (t.amountINR || 0),
+    0
+  );
+  const activeNitroUsersCount = users.filter(
+    (u) => u.nitroTier !== 'free' || isRootOwner(u.uid)
+  ).length;
+
+  const ownerAccounts = users.filter(
+    (u) =>
+      isRootOwner(u.uid) ||
+      u.role === 'root_owner' ||
+      u.role === 'secondary_owner' ||
+      u.role === 'owner'
+  );
+
+  const handleSelectReceiptCustomer = (uid: string) => {
+    const found = users.find((u) => u.uid === uid);
+    if (found) {
+      setRcpCustomerUid(found.uid);
+      setRcpCustomerUsername(found.username);
+      setRcpCustomerDisplayName(found.displayName);
+      setRcpCustomerEmail(found.email);
+    }
+  };
+
+  const handleAddReceiptLineItem = () => {
+    const dur = calculateReceiptDuration(
+      rcpDurationPreset,
+      new Date().toISOString(),
+      rcpCustomVal,
+      rcpCustomUnit
+    );
+    const finalAmt = Math.max(
+      0,
+      rcpItemQty * rcpItemPrice - rcpItemDiscount
+    );
+    const item: ReceiptLineItem = {
+      id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      productName: rcpItemName,
+      category: rcpItemCategory,
+      quantity: rcpItemQty,
+      unitPriceINR: rcpItemPrice,
+      discountINR: rcpItemDiscount,
+      finalAmountINR: finalAmt,
+      durationPreset: rcpDurationPreset,
+      customDurationValue:
+        rcpDurationPreset === 'custom' ? rcpCustomVal : undefined,
+      customDurationUnit:
+        rcpDurationPreset === 'custom' ? rcpCustomUnit : undefined,
+      durationLabel: dur.durationLabel,
+      serviceStartDate: dur.serviceStartDate,
+      serviceExpiryDate: dur.serviceExpiryDate,
+    };
+    setRcpExtraItems((prev) => [...prev, item]);
+  };
+
+  const handleIssueReceiptSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const dur = calculateReceiptDuration(
+      rcpDurationPreset,
+      new Date().toISOString(),
+      rcpCustomVal,
+      rcpCustomUnit
+    );
+    const primaryItemFinal = Math.max(
+      0,
+      rcpItemQty * rcpItemPrice - rcpItemDiscount
+    );
+    const primaryItem: ReceiptLineItem = {
+      id: `item_${Date.now()}`,
+      productName: rcpItemName,
+      category: rcpItemCategory,
+      quantity: rcpItemQty,
+      unitPriceINR: rcpItemPrice,
+      discountINR: rcpItemDiscount,
+      finalAmountINR: primaryItemFinal,
+      durationPreset: rcpDurationPreset,
+      customDurationValue:
+        rcpDurationPreset === 'custom' ? rcpCustomVal : undefined,
+      customDurationUnit:
+        rcpDurationPreset === 'custom' ? rcpCustomUnit : undefined,
+      durationLabel: dur.durationLabel,
+      serviceStartDate: dur.serviceStartDate,
+      serviceExpiryDate: dur.serviceExpiryDate,
+    };
+
+    const allItems =
+      rcpExtraItems.length > 0 ? [primaryItem, ...rcpExtraItems] : [primaryItem];
+    const subtotalINR = allItems.reduce(
+      (s, i) => s + i.quantity * i.unitPriceINR,
+      0
+    );
+    const discountTotalINR = allItems.reduce((s, i) => s + i.discountINR, 0);
+    const totalAmountINR = allItems.reduce((s, i) => s + i.finalAmountINR, 0);
+
+    const created = await onCreateManualReceipt({
+      receiptType: rcpType,
+      title: rcpTitle,
+      description: rcpDesc,
+      customerUid: rcpCustomerUid || currentUser.uid,
+      customerUsername: rcpCustomerUsername || currentUser.username,
+      customerDisplayName: rcpCustomerDisplayName || currentUser.displayName,
+      customerEmail: rcpCustomerEmail || currentUser.email,
+      items: allItems,
+      subtotalINR,
+      discountTotalINR,
+      taxINR: 0,
+      totalAmountINR,
+      currency: 'INR',
+      paymentMethod: rcpPaymentMethod,
+      paymentStatus: rcpPaymentStatus,
+      transactionId: rcpTxId,
+      issueDate: new Date().toISOString(),
+      serviceStartDate: dur.serviceStartDate,
+      serviceExpiryDate: dur.serviceExpiryDate,
+      serviceDurationLabel: dur.durationLabel,
+      notes: rcpNotes,
+      issuerUid: currentUser.uid,
+      issuerName: currentUser.displayName,
+      issuerEmail: currentUser.email,
+      issuerRole: isRoot ? 'root_owner' : currentUser.role,
+    });
+
+    setRcpExtraItems([]);
+    setShowReceiptForm(false);
+    showFlash(`Issued Official Receipt ${created.receiptNumber}.`);
+    onOpenReceiptModal(created);
+  };
 
   const handleSaveRazorpayConfig = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,7 +454,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         return;
       }
       await onUpdateSystemConfig({ merchantUpiId: merchantUpi });
-      const statusRes = await fetch('/api/razorpay/status').then((r) => r.json());
+      const statusRes = await fetch('/api/razorpay/status').then((r) =>
+        r.json()
+      );
       setRzpStatus(statusRes);
       setRzpKeySecret('');
       setRzpWebhookSecret('');
@@ -197,12 +472,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     const newItem: CosmeticItem = {
       id: `cosm_${Date.now()}`,
       name: newCosmName.trim(),
-      description: newCosmDesc.trim() || `Original Doomcord ${newCosmCategory} cosmetic.`,
+      description:
+        newCosmDesc.trim() || `Original Doomcord ${newCosmCategory} cosmetic.`,
       category: newCosmCategory,
       priceINR: Number(newCosmPrice) || 39,
       rarity: newCosmRarity,
       nitroEligible: 'basic',
-      cssPreviewClass: 'ring-4 ring-[oklch(0.85_0.12_165)]',
+      cssPreviewClass: 'ring-2 ring-[#8BE2B8]',
       previewColorPrimary: newCosmColor1,
       previewColorSecondary: newCosmColor2,
       enabled: true,
@@ -214,288 +490,1396 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     showFlash(`Created cosmetic "${newItem.name}" (₹${newItem.priceINR} INR).`);
   };
 
+  const TABS: {
+    id: AdminTab;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+  }[] = [
+    { id: 'overview', label: 'Overview & Revenue', icon: Activity },
+    { id: 'users', label: `Users (${users.length})`, icon: Users },
+    { id: 'owners', label: `Owners (${ownerAccounts.length})`, icon: UserCheck },
+    { id: 'gifts', label: `Gifting Studio (${gifts.length})`, icon: Gift },
+    { id: 'receipts', label: `Receipts (${receipts.length})`, icon: Receipt },
+    { id: 'nitro_plans', label: 'APEX Plans', icon: Crown },
+    { id: 'cosmetics', label: `Cosmetics (${cosmetics.length})`, icon: ShoppingBag },
+    { id: 'razorpay', label: 'Razorpay & Payments', icon: CreditCard },
+    { id: 'moderation', label: 'Communities & Orbs', icon: Shield },
+    { id: 'security_audit', label: 'Security Audit (#32)', icon: Lock },
+    { id: 'system_audit', label: 'Audit Logs', icon: FileText },
+  ];
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-[oklch(0.2_0.03_160)] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#101A17] text-[#F0F5F1] overflow-hidden">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-8 py-4 bg-[oklch(0.17_0.028_161)] border-b border-white/5">
+      <header className="px-8 py-4 bg-[#101A17] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-tr from-[oklch(0.84_0.14_85)] to-[oklch(0.72_0.16_32)] text-black shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-[#192620] border border-[#8BE2B8]/30 flex items-center justify-center text-[#8BE2B8]">
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold text-white tracking-tight">
-              Owner & Monetization Administration
-            </h1>
-            <p className="text-xs text-[oklch(0.7_0.03_155)] font-mono">
-              Authenticated as {currentUser.email} · Role: {currentUser.role.toUpperCase()} · UUID:{' '}
-              {currentUser.uid}
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-base font-display font-bold text-[#F0F5F1]">
+                Doomcord Platform Administration Console
+              </h1>
+              <span className="px-2 py-0.5 rounded bg-[#192620] border border-[#D9BB79]/30 text-[10px] font-mono uppercase text-[#D9BB79]">
+                {formatRoleLabel(currentUser.role, currentUser.uid)}
+              </span>
+            </div>
+            <p className="text-xs font-mono text-[#718478]">
+              {currentUser.email} · UUID: {currentUser.uid}
             </p>
           </div>
         </div>
 
         {statusMessage && (
-          <div className="px-4 py-2 rounded-xl bg-[oklch(0.85_0.12_165)]/20 border border-[oklch(0.85_0.12_165)]/40 text-xs font-semibold text-[oklch(0.85_0.12_165)]">
+          <div className="px-4 py-2 rounded-lg bg-[#192620] border border-[#8BE2B8]/40 text-xs font-medium text-[#8BE2B8]">
             {statusMessage}
           </div>
         )}
-      </div>
+      </header>
 
       {/* Navigation Tabs */}
-      <div className="px-8 py-2.5 bg-[oklch(0.14_0.025_162)] border-b border-white/5 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        {[
-          { id: 'overview', label: 'Analytics & Revenue', icon: Activity },
-          { id: 'users', label: `Users & Roles (${users.length})`, icon: Users },
-          { id: 'nitro_plans', label: 'Nitro Plans & INR Pricing', icon: Crown },
-          { id: 'cosmetics', label: `Cosmetics Shop (${cosmetics.length})`, icon: ShoppingBag },
-          { id: 'razorpay', label: 'Razorpay & Transactions', icon: CreditCard },
-          { id: 'moderation', label: 'Communities & Orbs Moderation', icon: Shield },
-          { id: 'system_audit', label: `System & Audit Logs (${auditLogs.length})`, icon: Database },
-        ].map((t) => {
+      <div className="px-8 py-2.5 bg-[#141F1B] border-b border-white/[0.06] flex items-center gap-1.5 overflow-x-auto shrink-0">
+        {TABS.map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.id;
           return (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id as AdminTab)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
+              onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-2 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 active
-                  ? 'bg-[oklch(0.235_0.032_158)] text-[oklch(0.85_0.12_165)]'
-                  : 'text-[oklch(0.7_0.03_155)] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#24362C] text-[#F0F5F1] font-semibold'
+                  : 'text-[#9BAEA2] hover:text-[#F0F5F1] hover:bg-[#192620]'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5 text-[#8BE2B8]" />
               <span>{t.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-8 max-w-6xl mx-auto w-full space-y-8">
-        {/* 1. OVERVIEW & REAL REVENUE ANALYTICS */}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-8 space-y-6 max-w-6xl w-full mx-auto">
+        {/* 1. OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10">
-                <span className="text-xs text-[oklch(0.7_0.03_155)]">Verified Revenue (INR)</span>
-                <div className="text-2xl font-black text-white font-mono tabular-nums mt-1">
-                  ₹{totalRevenueINR}
+              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
+                <span className="text-[11px] font-mono uppercase text-[#718478]">
+                  Verified Revenue (INR)
+                </span>
+                <div className="text-2xl font-display font-bold text-[#8BE2B8] mt-1 tabular-nums">
+                  ₹{totalRevenueINR.toLocaleString('en-IN')}
                 </div>
-                <span className="text-[11px] text-[oklch(0.85_0.12_165)] font-mono">
-                  {verifiedTransactions.length} verified payment(s)
+                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                  {verifiedTransactions.length} verified transactions
                 </span>
               </div>
 
-              <div className="p-5 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10">
-                <span className="text-xs text-[oklch(0.7_0.03_155)]">Registered Users</span>
-                <div className="text-2xl font-black text-white font-mono tabular-nums mt-1">
+              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
+                <span className="text-[11px] font-mono uppercase text-[#718478]">
+                  Active APEX Members
+                </span>
+                <div className="text-2xl font-display font-bold text-[#D9BB79] mt-1 tabular-nums">
+                  {activeNitroUsersCount}
+                </div>
+                <span className="text-[11px] text-[#9BAEA2] mt-1 block">
+                  Includes Root Owner permanent APEX+
+                </span>
+              </div>
+
+              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
+                <span className="text-[11px] font-mono uppercase text-[#718478]">
+                  Issued Official Receipts
+                </span>
+                <div className="text-2xl font-display font-bold text-[#F0F5F1] mt-1 tabular-nums">
+                  {receipts.length}
+                </div>
+                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                  {gifts.length} total gifts generated
+                </span>
+              </div>
+
+              <div className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06]">
+                <span className="text-[11px] font-mono uppercase text-[#718478]">
+                  Registered Accounts
+                </span>
+                <div className="text-2xl font-display font-bold text-[#F0F5F1] mt-1 tabular-nums">
                   {users.length}
                 </div>
-                <span className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                  {activeNitroUsersCount} with active Nitro
-                </span>
-              </div>
-
-              <div className="p-5 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10">
-                <span className="text-xs text-[oklch(0.7_0.03_155)]">Real Communities & Orbs</span>
-                <div className="text-2xl font-black text-white font-mono tabular-nums mt-1">
-                  {communities.length} / {orbs.length}
-                </div>
-                <span className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                  Communities / 3D Orbs
-                </span>
-              </div>
-
-              <div className="p-5 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10">
-                <span className="text-xs text-[oklch(0.7_0.03_155)]">Merchant UPI Reference</span>
-                <div className="text-base font-bold text-[oklch(0.85_0.12_165)] font-mono mt-1 truncate">
-                  {merchantUpi}
-                </div>
-                <span className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                  Gateway: {rzpStatus?.configured ? rzpStatus.mode.toUpperCase() : 'Awaiting API Keys'}
+                <span className="text-[11px] text-[#9BAEA2] mt-1 block tabular-nums">
+                  {communities.length} communities · {orbs.length} Orbs
                 </span>
               </div>
             </div>
 
-            <div className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-3">
-              <h3 className="text-sm font-bold text-white">Real-Data Verification Summary</h3>
-              <p className="text-xs text-[oklch(0.7_0.03_155)] leading-relaxed">
-                All metrics above are computed directly from live Firestore database queries. No fictional users, communities, Orbs, or fabricated revenue statistics exist.
-              </p>
+            {/* Quick Launch Modules */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => setActiveTab('owners')}
+                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+              >
+                <UserCheck className="w-5 h-5 text-[#D9BB79] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  Owner Hierarchy (#35)
+                </h3>
+                <p className="text-xs text-[#9BAEA2] mt-1">
+                  Invite Secondary Owners and configure granular permissions while Root Owner remains protected.
+                </p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('gifts')}
+                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+              >
+                <Gift className="w-5 h-5 text-[#8BE2B8] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  Unlimited Gifting Studio (#28)
+                </h3>
+                <p className="text-xs text-[#9BAEA2] mt-1">
+                  Generate ₹0 complimentary APEX, Lifetime APEX+, and cosmetic gift links for any user.
+                </p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('receipts')}
+                className="p-5 rounded-xl bg-[#141F1B] hover:bg-[#192620] border border-white/[0.06] text-left transition-colors"
+              >
+                <Receipt className="w-5 h-5 text-[#E9987B] mb-2" />
+                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  Finance → Receipts (#36)
+                </h3>
+                <p className="text-xs text-[#9BAEA2] mt-1">
+                  Create, customize, print, and manage official DC-2026-XXXXXX receipts with duration tracking.
+                </p>
+              </button>
             </div>
           </div>
         )}
 
-        {/* 2. USER MANAGEMENT, ROLES, MODERATION & PROMOTIONAL GRANTS */}
+        {/* 2. USERS & ROLES */}
         {activeTab === 'users' && (
-          <div className="rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 overflow-hidden shadow-xl">
-            <div className="px-6 py-4 bg-[oklch(0.14_0.025_162)] border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">
-                Registered Platform Accounts ({users.length})
-              </h3>
-              <span className="text-xs text-[oklch(0.7_0.03_155)]">
-                Owner account is strictly protected from downgrade or moderation
-              </span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-sm font-display font-bold text-[#F0F5F1]">
+                Registered Users ({users.length})
+              </h2>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-[#718478] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Search @username or email..."
+                  className="h-8 pl-8 pr-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none w-60"
+                />
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[oklch(0.7_0.03_155)]">
-                    <th className="py-3.5 px-6">User / UUID</th>
-                    <th className="py-3.5 px-6">System Role</th>
-                    <th className="py-3.5 px-6">Nitro Tier</th>
-                    <th className="py-3.5 px-6">Promotional Cosmetics</th>
-                    <th className="py-3.5 px-6 text-right">Moderation</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {users.map((u) => {
-                    const isTargetOwner = u.role === 'owner' || u.email === 'razorpay@admin.doom';
-                    return (
-                      <tr key={u.uid} className="hover:bg-white/5">
-                        <td className="py-3.5 px-6">
-                          <div className="font-bold text-white">{u.displayName}</div>
-                          <div className="text-[11px] font-mono text-[oklch(0.7_0.03_155)]">
-                            @{u.username} · {u.email}
-                          </div>
-                          <div className="text-[10px] font-mono text-[oklch(0.7_0.03_155)]/70">
-                            UUID: {u.uid}
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-6">
-                          {isTargetOwner ? (
-                            <span className="font-mono font-bold text-[oklch(0.84_0.14_85)] uppercase">
-                              OWNER (ROOT)
+            <div className="space-y-2.5">
+              {users
+                .filter((u) => {
+                  if (!userSearch.trim()) return true;
+                  const q = userSearch.toLowerCase();
+                  return (
+                    u.username.toLowerCase().includes(q) ||
+                    u.displayName.toLowerCase().includes(q) ||
+                    u.email.toLowerCase().includes(q)
+                  );
+                })
+                .map((u) => {
+                  const isTargetRoot = isRootOwner(u.uid);
+                  return (
+                    <div
+                      key={u.uid}
+                      className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex flex-wrap items-center justify-between gap-4"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-[#F0F5F1]">
+                            {u.displayName}
+                          </span>
+                          <span className="text-xs font-mono text-[#718478]">
+                            @{u.username}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-[#192620] border border-white/10 text-[10px] font-mono uppercase text-[#8BE2B8]">
+                            {formatRoleLabel(u.role, u.uid)}
+                          </span>
+                          {isTargetRoot && (
+                            <span className="px-2 py-0.5 rounded bg-[#D9BB79]/15 border border-[#D9BB79]/40 text-[10px] font-mono text-[#D9BB79]">
+                              PROTECTED ROOT OWNER · OWNER_PERMANENT_APEX
                             </span>
-                          ) : (
+                          )}
+                        </div>
+                        <p className="text-xs font-mono text-[#9BAEA2] mt-0.5">
+                          {u.email} · UUID: {u.uid}
+                        </p>
+                      </div>
+
+                      {!isTargetRoot && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {isRoot && (
                             <select
-                              value={u.role || 'member'}
+                              value={u.role}
                               onChange={async (e) => {
-                                await onUpdateUserRole(u.uid, e.target.value as PlatformRole);
-                                showFlash(`Updated @${u.username} role to ${e.target.value}.`);
+                                await onUpdateUserRole(
+                                  u.uid,
+                                  e.target.value as PlatformRole
+                                );
+                                showFlash(
+                                  `Updated @${u.username} role to ${e.target.value}.`
+                                );
                               }}
-                              className="bg-[oklch(0.235_0.032_158)] text-white px-2.5 py-1.5 rounded-lg border border-white/10 outline-none"
+                              className="h-8 px-2.5 rounded-lg bg-[#192620] border border-white/10 text-xs text-[#F0F5F1]"
                             >
-                              <option value="member">member</option>
-                              <option value="moderator">moderator</option>
-                              <option value="admin">admin</option>
+                              <option value="member">Member</option>
+                              <option value="moderator">Moderator</option>
+                              <option value="admin">Admin</option>
+                              <option value="secondary_owner">
+                                Secondary Owner
+                              </option>
                             </select>
                           )}
-                        </td>
 
-                        <td className="py-3.5 px-6">
                           <select
-                            value={u.nitroTier || 'free'}
+                            value={u.nitroTier}
                             onChange={async (e) => {
                               await onGrantOrRevokeNitro(
                                 u.uid,
                                 e.target.value as 'free' | 'basic' | 'nitro'
                               );
                               showFlash(
-                                `Updated @${u.username} Nitro entitlement to ${e.target.value}.`
+                                `Updated @${u.username} APEX tier to ${e.target.value}.`
                               );
                             }}
-                            className="bg-[oklch(0.235_0.032_158)] text-white px-2.5 py-1.5 rounded-lg border border-white/10 outline-none"
+                            className="h-8 px-2.5 rounded-lg bg-[#192620] border border-[#D9BB79]/30 text-xs text-[#D9BB79]"
                           >
-                            <option value="free">Free (₹0)</option>
-                            <option value="basic">Nitro Basic (Grant)</option>
-                            <option value="nitro">Nitro Pro (Grant)</option>
+                            <option value="free">DOOMCORD FREE</option>
+                            <option value="basic">DOOMCORD APEX</option>
+                            <option value="nitro">DOOMCORD APEX+</option>
                           </select>
-                        </td>
 
-                        <td className="py-3.5 px-6">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={async () => {
-                                if (cosmetics[0]) {
-                                  await onGrantOrRevokeCosmetic(u.uid, cosmetics[0].id, 'grant');
-                                  showFlash(`Granted ${cosmetics[0].name} to @${u.username}.`);
-                                }
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-[oklch(0.85_0.12_165)]/20 text-[oklch(0.85_0.12_165)] hover:bg-[oklch(0.85_0.12_165)]/30"
-                            >
-                              + Grant Pack
-                            </button>
-                            {u.ownedCosmetics && u.ownedCosmetics.length > 0 && (
-                              <button
-                                onClick={async () => {
-                                  const lastId = u.ownedCosmetics[u.ownedCosmetics.length - 1];
-                                  await onGrantOrRevokeCosmetic(u.uid, lastId, 'revoke');
-                                  showFlash(`Revoked cosmetic ${lastId} from @${u.username}.`);
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-white/5 text-[oklch(0.7_0.03_155)] hover:text-white"
-                              >
-                                Revoke Last ({u.ownedCosmetics.length})
-                              </button>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-6 text-right">
-                          {isTargetOwner ? (
-                            <span className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                              Protected
-                            </span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={async () => {
-                                  const action = u.isSuspended ? 'unsuspend' : 'suspend';
-                                  await onModerateUser(u.uid, action);
-                                  showFlash(
-                                    `${action === 'suspend' ? 'Suspended' : 'Unsuspended'} @${u.username}.`
-                                  );
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-[oklch(0.84_0.14_85)]/20 text-[oklch(0.84_0.14_85)]"
-                              >
-                                {u.isSuspended ? 'Unsuspend' : 'Suspend'}
-                              </button>
-
-                              <button
-                                onClick={async () => {
-                                  const action = u.isBanned ? 'unban' : 'ban';
-                                  await onModerateUser(u.uid, action);
-                                  showFlash(
-                                    `${action === 'ban' ? 'Banned' : 'Unbanned'} @${u.username}.`
-                                  );
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-[oklch(0.72_0.15_355)]/20 text-[oklch(0.72_0.15_355)]"
-                              >
-                                {u.isBanned ? 'Unban' : 'Ban'}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <button
+                            onClick={async () => {
+                              await onModerateUser(
+                                u.uid,
+                                u.isBanned ? 'unban' : 'ban'
+                              );
+                              showFlash(
+                                `${u.isBanned ? 'Unbanned' : 'Banned'} @${u.username}.`
+                              );
+                            }}
+                            className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#E57373]"
+                          >
+                            {u.isBanned ? 'Unban' : 'Ban'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
 
-        {/* 3. NITRO PLANS & PRICING EDITOR (INR) */}
+        {/* 3. MULTIPLE OWNERS SYSTEM (#35) */}
+        {activeTab === 'owners' && (
+          <div className="space-y-6">
+            {/* Root Owner Protected Card */}
+            <div className="p-6 rounded-xl bg-[#141F1B] border border-[#D9BB79]/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#D9BB79]">
+                  <Shield className="w-4 h-4" />
+                  <span>Main Owner — Root Authority (root_owner)</span>
+                </div>
+                <h2 className="text-lg font-display font-bold text-[#F0F5F1] mt-1">
+                  Permanent Root Owner Protection Active
+                </h2>
+                <p className="text-xs text-[#9BAEA2] mt-1">
+                  Account UUID <span className="font-mono text-[#F0F5F1]">{ROOT_OWNER_UUID}</span> (razorpay@admin.doom) is permanently protected by Firestore security rules and server guards. Secondary owners can never demote, suspend, or modify the Main Owner.
+                </p>
+              </div>
+              <span className="px-3 py-1.5 rounded-lg bg-[#192620] border border-[#D9BB79]/40 text-xs font-mono text-[#D9BB79] shrink-0">
+                ROOT OWNER IMMUTABLE
+              </span>
+            </div>
+
+            {/* Create New Secondary Owner Invitation (Main Owner Only) */}
+            {isRoot && (
+              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4">
+                <div>
+                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                    Owner Management → Create New Owner
+                  </h3>
+                  <p className="text-xs text-[#9BAEA2] mt-0.5">
+                    Invite a trusted team member to become a Secondary Owner (`secondary_owner`). They will set their own password securely upon accepting the invitation link.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!inviteEmail.trim()) return;
+                    try {
+                      const inv = await onCreateOwnerInvite(
+                        inviteEmail.trim(),
+                        inviteName.trim() || undefined
+                      );
+                      const link = `${window.location.origin}/?owner_invite=${inv.inviteToken}`;
+                      setCreatedInviteLink(link);
+                      setInviteEmail('');
+                      setInviteName('');
+                      showFlash(`Created Secondary Owner invitation for ${inv.email}.`);
+                    } catch (err: any) {
+                      showFlash(err.message || 'Failed to create owner invite.');
+                    }
+                  }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-3"
+                >
+                  <input
+                    type="email"
+                    placeholder="New owner email address..."
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Optional display name..."
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    className="h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="h-10 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create Owner Invitation</span>
+                  </button>
+                </form>
+
+                {createdInviteLink && (
+                  <div className="p-4 rounded-xl bg-[#192620] border border-[#8BE2B8]/30 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-mono uppercase text-[#8BE2B8]">
+                        Single-Use Secondary Owner Onboarding Link
+                      </div>
+                      <div className="text-xs font-mono text-[#F0F5F1] truncate mt-1">
+                        {createdInviteLink}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => copyText(createdInviteLink, 'owner_inv')}
+                      className="h-8 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                    >
+                      {copiedId === 'owner_inv' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Registered Owners & Secondary Owner Permission Controls */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                Registered Platform Owners ({ownerAccounts.length})
+              </h3>
+              {ownerAccounts.map((ownerAcc) => {
+                const isAccRoot = isRootOwner(ownerAcc.uid);
+                const perms = ownerAcc.secondaryOwnerPermissions || {
+                  canManageUsers: true,
+                  canManageCommunities: true,
+                  canManageApexPlans: true,
+                  canManageCosmetics: true,
+                  canCreateGifts: true,
+                  canManageReceipts: true,
+                  canProcessRefunds: false,
+                };
+
+                return (
+                  <div
+                    key={ownerAcc.uid}
+                    className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-sm font-display font-bold text-[#F0F5F1]">
+                            {ownerAcc.displayName}
+                          </span>
+                          <span className="text-xs font-mono text-[#718478]">
+                            @{ownerAcc.username}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
+                              isAccRoot
+                                ? 'bg-[#D9BB79]/20 text-[#D9BB79] border border-[#D9BB79]/40'
+                                : 'bg-[#8BE2B8]/15 text-[#8BE2B8] border border-[#8BE2B8]/30'
+                            }`}
+                          >
+                            {isAccRoot ? 'ROOT OWNER' : 'SECONDARY OWNER'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-mono text-[#9BAEA2] mt-1">
+                          {ownerAcc.email} · Created{' '}
+                          {new Date(ownerAcc.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      {!isAccRoot && isRoot && (
+                        <button
+                          onClick={async () => {
+                            await onUpdateUserRole(ownerAcc.uid, 'member');
+                            showFlash(
+                              `Revoked Secondary Owner status from @${ownerAcc.username}.`
+                            );
+                          }}
+                          className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-[#E57373]/30 text-xs text-[#E57373]"
+                        >
+                          Revoke Owner Role
+                        </button>
+                      )}
+                    </div>
+
+                    {!isAccRoot && isRoot && (
+                      <div className="pt-3 border-t border-white/[0.06]">
+                        <div className="text-[11px] font-mono uppercase text-[#718478] mb-2.5">
+                          Granular Secondary Owner Permissions
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          {(
+                            [
+                              { key: 'canManageUsers', label: 'Manage Users' },
+                              {
+                                key: 'canManageCommunities',
+                                label: 'Manage Communities',
+                              },
+                              {
+                                key: 'canManageApexPlans',
+                                label: 'Manage APEX Plans',
+                              },
+                              {
+                                key: 'canManageCosmetics',
+                                label: 'Manage Cosmetics',
+                              },
+                              { key: 'canCreateGifts', label: 'Create Gifts' },
+                              {
+                                key: 'canManageReceipts',
+                                label: 'Create Receipts',
+                              },
+                              {
+                                key: 'canProcessRefunds',
+                                label: 'Process Refunds',
+                              },
+                            ] as const
+                          ).map((p) => (
+                            <label
+                              key={p.key}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-[#192620] border border-white/[0.05] text-xs text-[#F0F5F1] cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={Boolean(perms[p.key])}
+                                onChange={async (e) => {
+                                  const updated = {
+                                    ...perms,
+                                    [p.key]: e.target.checked,
+                                  };
+                                  await onUpdateSecondaryOwnerPermissions(
+                                    ownerAcc.uid,
+                                    updated
+                                  );
+                                  showFlash(
+                                    `Updated permissions for @${ownerAcc.username}.`
+                                  );
+                                }}
+                                className="accent-[#8BE2B8]"
+                              />
+                              <span>{p.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pending Owner Invitations */}
+            {ownerInvitations.length > 0 && (
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                  Owner Invitations History ({ownerInvitations.length})
+                </h3>
+                {ownerInvitations.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4"
+                  >
+                    <div>
+                      <div className="text-xs font-semibold text-[#F0F5F1]">
+                        {inv.email}{' '}
+                        <span className="font-mono text-[#8BE2B8] uppercase ml-2">
+                          [{inv.status}]
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-mono text-[#718478]">
+                        Token: {inv.tokenPreview} · Created{' '}
+                        {new Date(inv.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+
+                    {inv.status === 'pending' && isRoot && (
+                      <button
+                        onClick={() => onRevokeOwnerInvite(inv.id)}
+                        className="h-8 px-3 rounded-lg bg-[#192620] text-xs text-[#E57373]"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 4. OWNER UNLIMITED GIFTING STUDIO (#28-#31) */}
+        {activeTab === 'gifts' && (
+          <div className="space-y-6">
+            {canCreateGifts ? (
+              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                      Owner Unlimited Gifting Studio (₹0 Complimentary)
+                    </h2>
+                    <p className="text-xs text-[#9BAEA2] mt-0.5">
+                      Generate single-use gift links for DOOMCORD APEX, DOOMCORD APEX+, Lifetime APEX+, or any Cosmetic item without payment.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded bg-[#192620] border border-[#8BE2B8]/30 text-xs font-mono text-[#8BE2B8]">
+                    COST: ₹0 INR
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                      APEX Membership Tier
+                    </label>
+                    <select
+                      value={giftApexTier}
+                      onChange={(e) =>
+                        setGiftApexTier(
+                          e.target.value as 'none' | 'basic' | 'nitro'
+                        )
+                      }
+                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    >
+                      <option value="nitro">DOOMCORD APEX+ (Full Tier)</option>
+                      <option value="basic">DOOMCORD APEX (Basic Tier)</option>
+                      <option value="none">Cosmetics Only (No Membership)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                      Entitlement Duration
+                    </label>
+                    <select
+                      value={giftDuration}
+                      onChange={(e) =>
+                        setGiftDuration(e.target.value as GiftDuration)
+                      }
+                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    >
+                      <option value="lifetime">
+                        Lifetime / Permanent (Never Expires)
+                      </option>
+                      <option value="1y">1 Year (365 Days)</option>
+                      <option value="90d">90 Days</option>
+                      <option value="30d">30 Days</option>
+                      <option value="7d">7 Days</option>
+                      <option value="1d">1 Day</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                      Restrict to @username (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Leave blank for anyone with link..."
+                      value={giftRecipientUsername}
+                      onChange={(e) => setGiftRecipientUsername(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional Cosmetics Selector */}
+                <div>
+                  <label className="text-xs font-medium text-[#9BAEA2] block mb-2">
+                    Include Bonus Cosmetics ({giftSelectedCosmetics.length}{' '}
+                    selected)
+                  </label>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-3 rounded-lg bg-[#101A17] border border-white/[0.06]">
+                    {cosmetics.map((c) => {
+                      const selected = giftSelectedCosmetics.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() =>
+                            setGiftSelectedCosmetics((prev) =>
+                              selected
+                                ? prev.filter((id) => id !== c.id)
+                                : [...prev, c.id]
+                            )
+                          }
+                          className={`px-2.5 py-1 rounded text-xs transition-colors border ${
+                            selected
+                              ? 'bg-[#24362C] border-[#8BE2B8] text-[#8BE2B8] font-semibold'
+                              : 'bg-[#141F1B] border-white/[0.06] text-[#9BAEA2]'
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1.5">
+                      Personal Gift Message
+                    </label>
+                    <input
+                      type="text"
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                      className="w-full h-10 px-3.5 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const rec = await onCreateOwnerGift({
+                          apexTier: giftApexTier,
+                          cosmeticIds: giftSelectedCosmetics,
+                          duration: giftDuration,
+                          personalMessage: giftMessage,
+                          restrictedRecipientUsername:
+                            giftRecipientUsername.trim() || undefined,
+                          restrictedRecipientEmail:
+                            giftRecipientEmail.trim() || undefined,
+                        });
+                        const url = `${window.location.origin}/?gift=${rec.claimToken}`;
+                        setGeneratedGiftUrl(url);
+                        showFlash(
+                          'Generated complimentary gift link & official receipt!'
+                        );
+                      } catch (err: any) {
+                        showFlash(err.message || 'Failed to create gift.');
+                      }
+                    }}
+                    className="h-10 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center justify-center gap-2"
+                  >
+                    <Gift className="w-4 h-4" />
+                    <span>Generate Free Gift Link</span>
+                  </button>
+                </div>
+
+                {generatedGiftUrl && (
+                  <div className="p-4 rounded-xl bg-[#192620] border border-[#D9BB79]/40 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-mono uppercase text-[#D9BB79]">
+                        Shareable Gift Claim URL (Single-Use)
+                      </div>
+                      <div className="text-xs font-mono text-[#F0F5F1] truncate mt-1">
+                        {generatedGiftUrl}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => copyText(generatedGiftUrl, 'gift_new')}
+                      className="h-8 px-3.5 rounded-lg bg-[#D9BB79] text-[#101A17] text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                    >
+                      {copiedId === 'gift_new' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Gift Link</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] text-xs text-[#9BAEA2]">
+                Your Secondary Owner account does not currently have gift generation permission enabled.
+              </div>
+            )}
+
+            {/* Gift Records Table */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                Generated Gifts Ledger ({gifts.length})
+              </h3>
+              {gifts.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
+                  No gifts generated yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {gifts.map((g) => {
+                    const giftUrl = g.claimToken
+                      ? `${window.location.origin}/?gift=${g.claimToken}`
+                      : null;
+                    return (
+                      <div
+                        key={g.id}
+                        className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex flex-wrap items-center justify-between gap-4"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[#F0F5F1]">
+                              {g.apexTier === 'nitro'
+                                ? 'DOOMCORD APEX+'
+                                : g.apexTier === 'basic'
+                                ? 'DOOMCORD APEX'
+                                : 'Cosmetic Bundle'}{' '}
+                              ({g.duration.toUpperCase()})
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono uppercase text-[#8BE2B8]">
+                              {g.status}
+                            </span>
+                            {g.isPaidGift ? (
+                              <span className="text-[10px] font-mono text-[#D9BB79]">
+                                Paid Gift (₹{g.amountPaidINR})
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono text-[#9BAEA2]">
+                                Owner Complimentary (₹0)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-mono text-[#718478] mt-1">
+                            Token: {g.tokenPreview} · Created by {g.creatorName}
+                            {g.redeemedByEmail
+                              ? ` · Redeemed by ${g.redeemedByEmail}`
+                              : ''}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {giftUrl && g.status === 'unclaimed' && (
+                            <button
+                              onClick={() => copyText(giftUrl, g.id)}
+                              className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#F0F5F1] flex items-center gap-1.5"
+                            >
+                              {copiedId === g.id ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  <span>Copy Link</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {g.status === 'unclaimed' && canCreateGifts && (
+                            <button
+                              onClick={async () => {
+                                await onRevokeGift(g.id);
+                                showFlash(`Revoked gift ${g.tokenPreview}.`);
+                              }}
+                              className="h-8 px-3 rounded-lg bg-[#192620] border border-[#E57373]/30 text-xs text-[#E57373]"
+                            >
+                              Revoke
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 5. FINANCE -> RECEIPTS (#36) */}
+        {activeTab === 'receipts' && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-display font-bold text-[#F0F5F1]">
+                  Admin Dashboard → Finance → Receipts
+                </h2>
+                <p className="text-xs text-[#9BAEA2] mt-0.5">
+                  Create, customize, download, and manage official Doomcord receipts (`DC-2026-XXXXXX`) with automated duration & expiration tracking.
+                </p>
+              </div>
+
+              {canManageReceipts && (
+                <button
+                  onClick={() => setShowReceiptForm(!showReceiptForm)}
+                  className="h-9 px-4 rounded-lg bg-[#8BE2B8] hover:bg-[#7AD4A8] text-[#101A17] font-semibold text-xs flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {showReceiptForm ? 'Close Receipt Form' : '+ Create New Receipt'}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {showReceiptForm && canManageReceipts && (
+              <form
+                onSubmit={handleIssueReceiptSubmit}
+                className="p-6 rounded-xl bg-[#141F1B] border border-[#8BE2B8]/30 space-y-5"
+              >
+                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  Create Official Doomcord Receipt
+                </h3>
+
+                {/* Quick Select Registered User */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                      Auto-Fill from Registered User
+                    </label>
+                    <select
+                      onChange={(e) => handleSelectReceiptCustomer(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    >
+                      <option value="">Select user or enter manually...</option>
+                      {users.map((u) => (
+                        <option key={u.uid} value={u.uid}>
+                          {u.displayName} (@{u.username}) — {u.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                      Receipt Template Type
+                    </label>
+                    <select
+                      value={rcpType}
+                      onChange={(e) => {
+                        const val = e.target.value as ReceiptType;
+                        setRcpType(val);
+                        setRcpTitle(val.replace(' Receipt', ''));
+                      }}
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    >
+                      <option value="APEX Membership Receipt">
+                        APEX Membership Receipt
+                      </option>
+                      <option value="APEX+ Membership Receipt">
+                        APEX+ Membership Receipt
+                      </option>
+                      <option value="Cosmetic Purchase Receipt">
+                        Cosmetic Purchase Receipt
+                      </option>
+                      <option value="Decoration Purchase Receipt">
+                        Decoration Purchase Receipt
+                      </option>
+                      <option value="APEX Gift Receipt">APEX Gift Receipt</option>
+                      <option value="Lifetime Membership Receipt">
+                        Lifetime Membership Receipt
+                      </option>
+                      <option value="Lifetime Cosmetic Receipt">
+                        Lifetime Cosmetic Receipt
+                      </option>
+                      <option value="Custom Service Receipt">
+                        Custom Service Receipt
+                      </option>
+                      <option value="Complimentary Gift Receipt">
+                        Complimentary Gift Receipt
+                      </option>
+                      <option value="Refund Receipt">Refund Receipt</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#9BAEA2] block mb-1">
+                      Payment Status
+                    </label>
+                    <select
+                      value={rcpPaymentStatus}
+                      onChange={(e) =>
+                        setRcpPaymentStatus(
+                          e.target.value as ReceiptPaymentStatus
+                        )
+                      }
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    >
+                      <option value="Paid">Paid</option>
+                      <option value="Complimentary">Complimentary (₹0)</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Failed">Failed</option>
+                      <option value="Refunded">Refunded</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Customer Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Customer Username
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpCustomerUsername}
+                      onChange={(e) => setRcpCustomerUsername(e.target.value)}
+                      placeholder="username"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Customer Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpCustomerDisplayName}
+                      onChange={(e) => setRcpCustomerDisplayName(e.target.value)}
+                      placeholder="Display Name"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Customer Email
+                    </label>
+                    <input
+                      type="email"
+                      value={rcpCustomerEmail}
+                      onChange={(e) => setRcpCustomerEmail(e.target.value)}
+                      placeholder="user@domain.com"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Customer UUID
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpCustomerUid}
+                      onChange={(e) => setRcpCustomerUid(e.target.value)}
+                      placeholder="UUID"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Line Item & Duration Configuration */}
+                <div className="p-4 rounded-xl bg-[#101A17] border border-white/[0.06] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#8BE2B8]">
+                      Product / Service Line Item & Duration Configuration
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddReceiptLineItem}
+                      className="text-xs text-[#8BE2B8] hover:underline"
+                    >
+                      + Add Another Line Item
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="lg:col-span-2">
+                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                        Product or Service Name
+                      </label>
+                      <input
+                        type="text"
+                        value={rcpItemName}
+                        onChange={(e) => setRcpItemName(e.target.value)}
+                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={rcpItemQty}
+                        onChange={(e) => setRcpItemQty(Number(e.target.value))}
+                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                        Unit Price (₹ INR)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={rcpItemPrice}
+                        onChange={(e) => setRcpItemPrice(Number(e.target.value))}
+                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                        Discount (₹ INR)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={rcpItemDiscount}
+                        onChange={(e) =>
+                          setRcpItemDiscount(Number(e.target.value))
+                        }
+                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duration Selector */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div>
+                      <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                        Service Duration Preset
+                      </label>
+                      <select
+                        value={rcpDurationPreset}
+                        onChange={(e) =>
+                          setRcpDurationPreset(
+                            e.target.value as ReceiptDurationPreset
+                          )
+                        }
+                        className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                      >
+                        <option value="1d">1 Day</option>
+                        <option value="3d">3 Days</option>
+                        <option value="7d">7 Days</option>
+                        <option value="15d">15 Days</option>
+                        <option value="30d">30 Days</option>
+                        <option value="60d">60 Days</option>
+                        <option value="90d">90 Days</option>
+                        <option value="180d">180 Days</option>
+                        <option value="1y">1 Year</option>
+                        <option value="lifetime">
+                          Lifetime / Permanent (LIFETIME — NO EXPIRATION)
+                        </option>
+                        <option value="custom">Custom Duration...</option>
+                      </select>
+                    </div>
+
+                    {rcpDurationPreset === 'custom' && (
+                      <>
+                        <div>
+                          <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                            Custom Duration Value
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={rcpCustomVal}
+                            onChange={(e) =>
+                              setRcpCustomVal(Number(e.target.value))
+                            }
+                            className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                            Custom Unit
+                          </label>
+                          <select
+                            value={rcpCustomUnit}
+                            onChange={(e) =>
+                              setRcpCustomUnit(
+                                e.target.value as CustomDurationUnit
+                              )
+                            }
+                            className="w-full h-9 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                          >
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Payment Method, Transaction ID, Notes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Payment Method
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpPaymentMethod}
+                      onChange={(e) => setRcpPaymentMethod(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Transaction ID
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpTxId}
+                      onChange={(e) => setRcpTxId(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1] font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                      Additional Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={rcpNotes}
+                      onChange={(e) => setRcpNotes(e.target.value)}
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/[0.08] text-xs text-[#F0F5F1]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowReceiptForm(false)}
+                    className="h-9 px-4 rounded-lg bg-[#192620] text-xs text-[#9BAEA2]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="h-9 px-5 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
+                  >
+                    Issue Official Receipt
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Receipts Management Table */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#9BAEA2]">
+                  Issued Receipts ({receipts.length})
+                </span>
+                <input
+                  type="text"
+                  value={receiptSearch}
+                  onChange={(e) => setReceiptSearch(e.target.value)}
+                  placeholder="Search DC-2026-..., username, or email..."
+                  className="h-8 px-3 rounded-lg bg-[#141F1B] border border-white/[0.08] text-xs text-[#F0F5F1] outline-none w-64"
+                />
+              </div>
+
+              {receipts.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#141F1B] border border-white/[0.06] text-center text-xs text-[#9BAEA2]">
+                  No receipts issued yet. Click "+ Create New Receipt" above or complete an APEX purchase/gift to generate one.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {receipts
+                    .filter((r) => {
+                      if (!receiptSearch.trim()) return true;
+                      const q = receiptSearch.toLowerCase();
+                      return (
+                        r.receiptNumber.toLowerCase().includes(q) ||
+                        r.customerUsername.toLowerCase().includes(q) ||
+                        r.customerEmail.toLowerCase().includes(q) ||
+                        r.title.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((rcp) => {
+                      const exp = getReceiptExpirationInfo(
+                        rcp.serviceExpiryDate
+                      );
+                      const shareUrl = `${window.location.origin}/?receipt=${rcp.receiptNumber}&token=${rcp.accessToken}`;
+                      return (
+                        <div
+                          key={rcp.id}
+                          className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-xs font-mono font-bold text-[#8BE2B8]">
+                                  {rcp.receiptNumber}
+                                </span>
+                                <span className="text-sm font-semibold text-[#F0F5F1]">
+                                  {rcp.title}
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono uppercase text-[#D9BB79]">
+                                  {rcp.paymentStatus}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#9BAEA2] mt-1 font-mono tabular-nums">
+                                Customer: {rcp.customerDisplayName} (@
+                                {rcp.customerUsername}) · ₹{rcp.totalAmountINR}{' '}
+                                INR · Duration: {rcp.serviceDurationLabel} (
+                                {exp.remainingLabel})
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => onOpenReceiptModal(rcp)}
+                                className="h-8 px-3 rounded-lg bg-[#8BE2B8] text-[#101A17] text-xs font-semibold flex items-center gap-1.5"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>View / Print PDF</span>
+                              </button>
+
+                              <button
+                                onClick={() => copyText(shareUrl, rcp.id)}
+                                className="h-8 px-3 rounded-lg bg-[#192620] hover:bg-[#24362C] border border-white/10 text-xs text-[#F0F5F1] flex items-center gap-1.5"
+                              >
+                                {copiedId === rcp.id ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-[#8BE2B8]" />
+                                    <span>Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Share Link</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {canManageReceipts && (
+                                <button
+                                  onClick={() => {
+                                    setEditingReceiptId(
+                                      editingReceiptId === rcp.id
+                                        ? null
+                                        : rcp.id
+                                    );
+                                    setEditReceiptNotes(rcp.notes);
+                                    setEditReceiptReason('');
+                                  }}
+                                  className="h-8 px-3 rounded-lg bg-[#192620] border border-white/10 text-xs text-[#9BAEA2] hover:text-[#F0F5F1]"
+                                >
+                                  Amend Notes
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {editingReceiptId === rcp.id && (
+                            <div className="pt-3 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                              <input
+                                type="text"
+                                value={editReceiptNotes}
+                                onChange={(e) =>
+                                  setEditReceiptNotes(e.target.value)
+                                }
+                                placeholder="Updated receipt notes..."
+                                className="h-8 px-3 rounded bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                              />
+                              <input
+                                type="text"
+                                value={editReceiptReason}
+                                onChange={(e) =>
+                                  setEditReceiptReason(e.target.value)
+                                }
+                                placeholder="Audit reason for metadata amendment..."
+                                className="h-8 px-3 rounded bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
+                              />
+                              <button
+                                onClick={async () => {
+                                  if (!editReceiptReason.trim()) return;
+                                  await onCorrectReceiptMetadata(
+                                    rcp.id,
+                                    editReceiptNotes,
+                                    editReceiptReason
+                                  );
+                                  setEditingReceiptId(null);
+                                  showFlash(
+                                    `Recorded audited metadata correction on ${rcp.receiptNumber}.`
+                                  );
+                                }}
+                                className="h-8 px-3 rounded bg-[#8BE2B8] text-[#101A17] text-xs font-semibold"
+                              >
+                                Save Audited Amendment
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 6. APEX PLANS */}
         {activeTab === 'nitro_plans' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {nitroPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4"
+                className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
               >
-                <div>
-                  <span className="text-[10px] font-mono uppercase text-[oklch(0.85_0.12_165)]">
-                    Tier ID: {plan.id}
-                  </span>
-                  <h3 className="text-base font-bold text-white">{plan.name}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                    {plan.name}
+                  </h3>
+                  <Crown className="w-4 h-4 text-[#D9BB79]" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="space-y-2.5 text-xs">
                   <div>
-                    <label className="text-[11px] text-[oklch(0.7_0.03_155)] block mb-1">
-                      Monthly Price (INR)
+                    <label className="text-[#9BAEA2] block mb-1">
+                      Monthly Price (₹ INR)
                     </label>
                     <input
                       type="number"
@@ -506,13 +1890,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           monthlyPriceINR: Number(e.target.value),
                         })
                       }
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-[#F0F5F1] font-mono"
                     />
                   </div>
-
                   <div>
-                    <label className="text-[11px] text-[oklch(0.7_0.03_155)] block mb-1">
-                      Yearly Price (INR)
+                    <label className="text-[#9BAEA2] block mb-1">
+                      Yearly Price (₹ INR)
                     </label>
                     <input
                       type="number"
@@ -523,505 +1906,296 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           yearlyPriceINR: Number(e.target.value),
                         })
                       }
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-[oklch(0.7_0.03_155)] block mb-1">
-                      Upload Limit (MB)
-                    </label>
-                    <input
-                      type="number"
-                      value={plan.uploadLimitMB}
-                      onChange={(e) =>
-                        onUpdateNitroPlan({
-                          ...plan,
-                          uploadLimitMB: Number(e.target.value),
-                        })
-                      }
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-[oklch(0.7_0.03_155)] block mb-1">
-                      Shop Discount (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={plan.shopDiscountPercent}
-                      onChange={(e) =>
-                        onUpdateNitroPlan({
-                          ...plan,
-                          shopDiscountPercent: Number(e.target.value),
-                        })
-                      }
-                      className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 font-mono"
+                      className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-[#F0F5F1] font-mono"
                     />
                   </div>
                 </div>
-
-                <p className="text-[11px] text-[oklch(0.7_0.03_155)]">
-                  Changes sync immediately to Firestore and update the live Nitro Storefront.
-                </p>
               </div>
             ))}
           </div>
         )}
 
-        {/* 4. COSMETICS SHOP MANAGEMENT */}
+        {/* 7. COSMETICS */}
         {activeTab === 'cosmetics' && (
           <div className="space-y-6">
-            {/* Add New Cosmetic Form */}
             <form
               onSubmit={handleCreateCosmetic}
-              className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4"
+              className="p-5 rounded-xl bg-[#141F1B] border border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
             >
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
-                <span>Add New Cosmetic Product to Catalog</span>
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                  Cosmetic Name
+                </label>
                 <input
                   type="text"
-                  placeholder="Cosmetic Name"
                   value={newCosmName}
                   onChange={(e) => setNewCosmName(e.target.value)}
-                  className="bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  placeholder="Emerald Halo"
+                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
                   required
                 />
-
+              </div>
+              <div>
+                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                  Category
+                </label>
                 <select
                   value={newCosmCategory}
-                  onChange={(e) => setNewCosmCategory(e.target.value as CosmeticCategory)}
-                  className="bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  onChange={(e) =>
+                    setNewCosmCategory(e.target.value as CosmeticCategory)
+                  }
+                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
                 >
-                  {[
-                    'Avatar Decorations',
-                    'Profile Effects',
-                    'Profile Themes',
-                    'Nameplates',
-                    'Profile Badges',
-                    'Banners',
-                    'Animated Avatars',
-                    'App Themes and Icons',
-                    'Chat Cosmetics',
-                    'Sound Effects',
-                    'Seasonal Collections',
-                    'Exclusive Bundles',
-                  ].map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
+                  <option value="Avatar Decorations">Avatar Decorations</option>
+                  <option value="Profile Effects">Profile Effects</option>
+                  <option value="Profile Themes">Profile Themes</option>
+                  <option value="Nameplates">Nameplates</option>
+                  <option value="Profile Badges">Profile Badges</option>
+                  <option value="Banners">Banners</option>
                 </select>
-
+              </div>
+              <div>
+                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                  Price (₹ INR)
+                </label>
                 <input
                   type="number"
-                  placeholder="Price in INR (e.g. 39)"
                   value={newCosmPrice}
                   onChange={(e) => setNewCosmPrice(Number(e.target.value))}
-                  className="bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 font-mono outline-none"
-                  required
+                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
                 />
-
+              </div>
+              <div>
+                <label className="text-[11px] text-[#9BAEA2] block mb-1">
+                  Rarity
+                </label>
                 <select
                   value={newCosmRarity}
-                  onChange={(e) => setNewCosmRarity(e.target.value as CosmeticRarity)}
-                  className="bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                  onChange={(e) =>
+                    setNewCosmRarity(e.target.value as CosmeticRarity)
+                  }
+                  className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1]"
                 >
-                  {['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'].map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
+                  <option value="Common">Common</option>
+                  <option value="Rare">Rare</option>
+                  <option value="Epic">Epic</option>
+                  <option value="Legendary">Legendary</option>
+                  <option value="Mythic">Mythic</option>
                 </select>
               </div>
-
-              <div className="flex flex-wrap items-center gap-3 text-xs">
-                <input
-                  type="text"
-                  placeholder="Description..."
-                  value={newCosmDesc}
-                  onChange={(e) => setNewCosmDesc(e.target.value)}
-                  className="flex-1 bg-[oklch(0.235_0.032_158)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
-                />
-                <input
-                  type="color"
-                  value={newCosmColor1}
-                  onChange={(e) => setNewCosmColor1(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer bg-transparent"
-                  title="Primary Accent"
-                />
-                <input
-                  type="color"
-                  value={newCosmColor2}
-                  onChange={(e) => setNewCosmColor2(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer bg-transparent"
-                  title="Secondary Accent"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)]"
-                >
-                  Publish Cosmetic
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
+              >
+                + Add Cosmetic
+              </button>
             </form>
 
-            {/* Cosmetics Pricing & Status Table */}
-            <div className="rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-white/10 text-[oklch(0.7_0.03_155)]">
-                      <th className="py-3 px-6">Cosmetic Item</th>
-                      <th className="py-3 px-6">Category / Rarity</th>
-                      <th className="py-3 px-6">Price (INR)</th>
-                      <th className="py-3 px-6 text-right">Store Availability</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {cosmetics.map((c) => (
-                      <tr key={c.id} className="hover:bg-white/5">
-                        <td className="py-3 px-6 font-bold text-white">{c.name}</td>
-                        <td className="py-3 px-6 text-[oklch(0.7_0.03_155)]">
-                          {c.category} · {c.rarity}
-                        </td>
-                        <td className="py-3 px-6">
-                          <div className="flex items-center gap-1">
-                            <span className="font-mono text-[oklch(0.7_0.03_155)]">₹</span>
-                            <input
-                              type="number"
-                              value={c.priceINR}
-                              onChange={(e) =>
-                                onSaveCosmetic({ ...c, priceINR: Number(e.target.value) })
-                              }
-                              className="w-20 bg-[oklch(0.235_0.032_158)] text-white px-2 py-1 rounded-lg border border-white/10 font-mono"
-                            />
-                          </div>
-                        </td>
-                        <td className="py-3 px-6 text-right">
-                          <button
-                            onClick={() => onSaveCosmetic({ ...c, enabled: !c.enabled })}
-                            className={`px-3 py-1 rounded-lg font-semibold ${
-                              c.enabled
-                                ? 'bg-[oklch(0.85_0.12_165)]/20 text-[oklch(0.85_0.12_165)]'
-                                : 'bg-white/5 text-[oklch(0.7_0.03_155)]'
-                            }`}
-                          >
-                            {c.enabled ? 'Enabled in Shop' : 'Disabled'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {cosmetics.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                      {c.name}
+                    </div>
+                    <div className="text-[11px] font-mono text-[#9BAEA2]">
+                      {c.category} · ₹{c.priceINR} INR · {c.rarity}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      onSaveCosmetic({ ...c, enabled: !c.enabled })
+                    }
+                    className={`px-2.5 py-1 rounded text-[10px] font-mono uppercase ${
+                      c.enabled
+                        ? 'bg-[#8BE2B8]/20 text-[#8BE2B8]'
+                        : 'bg-white/5 text-[#718478]'
+                    }`}
+                  >
+                    {c.enabled ? 'Enabled' : 'Disabled'}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* 5. RAZORPAY GATEWAY SETTINGS & TRANSACTIONS / REFUNDS */}
+        {/* 8. RAZORPAY & TRANSACTIONS */}
         {activeTab === 'razorpay' && (
           <div className="space-y-6">
             <form
               onSubmit={handleSaveRazorpayConfig}
-              className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4"
+              className="p-6 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-4"
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    Razorpay Payment Gateway Configuration (INR)
-                  </h3>
-                  <p className="text-xs text-[oklch(0.7_0.03_155)]">
-                    Secrets are stored strictly on the backend server and never exposed to client queries.
-                  </p>
-                </div>
-                <span className="text-xs font-mono text-[oklch(0.85_0.12_165)]">
-                  Status: {rzpStatus?.configured ? `${rzpStatus.mode.toUpperCase()} MODE` : 'UNCONFIGURED'}
+                <h3 className="text-sm font-display font-bold text-[#F0F5F1]">
+                  Razorpay Gateway Configuration (INR)
+                </h3>
+                <span className="text-xs font-mono text-[#8BE2B8]">
+                  Status:{' '}
+                  {rzpStatus?.configured ? 'LIVE KEYS SET' : 'AWAITING KEYS'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-white font-semibold block mb-1">
-                    Razorpay Key ID (RAZORPAY_KEY_ID)
+                  <label className="text-xs text-[#9BAEA2] block mb-1">
+                    Razorpay Key ID
                   </label>
                   <input
                     type="text"
                     value={rzpKeyId}
                     onChange={(e) => setRzpKeyId(e.target.value)}
-                    placeholder="rzp_test_... or rzp_live_..."
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10 font-mono"
+                    placeholder="rzp_live_..."
+                    className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
                   />
                 </div>
-
                 <div>
-                  <label className="text-white font-semibold block mb-1">
-                    Razorpay Key Secret (RAZORPAY_KEY_SECRET)
+                  <label className="text-xs text-[#9BAEA2] block mb-1">
+                    Razorpay Key Secret (Server-Only)
                   </label>
                   <input
                     type="password"
                     value={rzpKeySecret}
                     onChange={(e) => setRzpKeySecret(e.target.value)}
-                    placeholder="Leave blank to keep existing server secret"
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-white font-semibold block mb-1">
-                    Webhook Secret (RAZORPAY_WEBHOOK_SECRET)
-                  </label>
-                  <input
-                    type="password"
-                    value={rzpWebhookSecret}
-                    onChange={(e) => setRzpWebhookSecret(e.target.value)}
-                    placeholder="Webhook HMAC verification secret"
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-white font-semibold block mb-1">
-                    Merchant UPI ID Reference
-                  </label>
-                  <input
-                    type="text"
-                    value={merchantUpi}
-                    onChange={(e) => setMerchantUpi(e.target.value)}
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10 font-mono"
+                    placeholder="••••••••••••"
+                    className="w-full h-9 px-3 rounded-lg bg-[#101A17] border border-white/10 text-xs text-[#F0F5F1] font-mono"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)]"
+                className="h-9 px-4 rounded-lg bg-[#8BE2B8] text-[#101A17] font-semibold text-xs"
               >
-                Save Gateway Configuration
+                Save Razorpay Configuration
               </button>
             </form>
-
-            {/* Transactions & Refund Management */}
-            <div className="rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 overflow-hidden">
-              <div className="px-6 py-4 bg-[oklch(0.14_0.025_162)] border-b border-white/5 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white">
-                  Transaction Logs & Refund Management ({transactions.length})
-                </h3>
-              </div>
-
-              {transactions.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[oklch(0.7_0.03_155)]">
-                  No payment transactions have been recorded yet.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-white/10 text-[oklch(0.7_0.03_155)]">
-                        <th className="py-3 px-6">Date</th>
-                        <th className="py-3 px-6">User</th>
-                        <th className="py-3 px-6">Item</th>
-                        <th className="py-3 px-6">Amount</th>
-                        <th className="py-3 px-6">Status</th>
-                        <th className="py-3 px-6 text-right">Refund Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {transactions.map((tx) => (
-                        <tr key={tx.id}>
-                          <td className="py-3 px-6 font-mono text-[oklch(0.7_0.03_155)]">
-                            {new Date(tx.createdAt).toLocaleString()}
-                          </td>
-                          <td className="py-3 px-6 font-mono text-white">{tx.userEmail}</td>
-                          <td className="py-3 px-6 text-white font-semibold">{tx.itemName}</td>
-                          <td className="py-3 px-6 font-mono tabular-nums text-white">
-                            ₹{tx.amountINR}
-                          </td>
-                          <td className="py-3 px-6 font-mono uppercase text-[oklch(0.85_0.12_165)]">
-                            {tx.status}
-                          </td>
-                          <td className="py-3 px-6 text-right">
-                            {tx.status !== 'refunded' && (
-                              <button
-                                onClick={async () => {
-                                  await onRefundTransaction(tx);
-                                  showFlash(`Processed refund for transaction ${tx.id}.`);
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-[oklch(0.72_0.15_355)]/20 text-[oklch(0.72_0.15_355)]"
-                              >
-                                Process Refund
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
-        {/* 6. COMMUNITIES & ORBS MODERATION */}
+        {/* 9. COMMUNITIES & ORBS MODERATION */}
         {activeTab === 'moderation' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4">
-              <h3 className="text-sm font-bold text-white">
-                Communities Moderation ({communities.length})
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono uppercase text-[#9BAEA2]">
+                Communities ({communities.length})
               </h3>
-              {communities.length === 0 ? (
-                <p className="text-xs text-[oklch(0.7_0.03_155)]">
-                  No communities created yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {communities.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5"
-                    >
-                      <div>
-                        <div className="text-xs font-bold text-white">{c.name}</div>
-                        <div className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                          ID: {c.id} · Owner: {c.ownerId}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => onDeleteCommunity(c.id)}
-                        className="p-2 rounded-xl bg-[oklch(0.72_0.15_355)]/20 text-[oklch(0.72_0.15_355)]"
-                        title="Delete Community"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              {communities.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                      {c.name}
                     </div>
-                  ))}
+                    <div className="text-[11px] text-[#718478] font-mono">
+                      {c.members?.length || 1} members
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onDeleteCommunity(c.id)}
+                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#192620]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+              ))}
             </div>
 
-            <div className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4">
-              <h3 className="text-sm font-bold text-white">3D Orbs Moderation ({orbs.length})</h3>
-              {orbs.length === 0 ? (
-                <p className="text-xs text-[oklch(0.7_0.03_155)]">No Orbs created yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {orbs.map((o) => (
-                    <div
-                      key={o.id}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5"
-                    >
-                      <div>
-                        <div className="text-xs font-bold text-white">{o.name}</div>
-                        <div className="text-[11px] text-[oklch(0.7_0.03_155)] font-mono">
-                          Category: {o.category} · Creator: {o.creatorName}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => onDeleteOrb(o.id)}
-                        className="p-2 rounded-xl bg-[oklch(0.72_0.15_355)]/20 text-[oklch(0.72_0.15_355)]"
-                        title="Delete Orb"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+            <div className="space-y-3">
+              <h3 className="text-xs font-mono uppercase text-[#9BAEA2]">
+                Orbs ({orbs.length})
+              </h3>
+              {orbs.map((o) => (
+                <div
+                  key={o.id}
+                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between"
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-[#F0F5F1]">
+                      {o.name}
                     </div>
-                  ))}
+                    <div className="text-[11px] text-[#718478] font-mono">
+                      {o.category} · {o.memberCount || 1} members
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onDeleteOrb(o.id)}
+                    className="p-2 rounded-lg text-[#E57373] hover:bg-[#192620]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* 7. SYSTEM CONFIGURATION, ANNOUNCEMENTS & AUDIT LOGS */}
-        {activeTab === 'system_audit' && (
-          <div className="space-y-6">
-            <div className="p-6 rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Megaphone className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
-                <span>Platform-Wide Announcement & Promotional Controls</span>
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="md:col-span-2">
-                  <label className="text-white font-semibold block mb-1">
-                    Global Announcement Banner Text
-                  </label>
-                  <input
-                    type="text"
-                    value={announcementInput}
-                    onChange={(e) => setAnnouncementInput(e.target.value)}
-                    placeholder="Leave empty to hide banner..."
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-white font-semibold block mb-1">
-                    Storewide Promotional Discount (%)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={90}
-                    value={discountInput}
-                    onChange={(e) => setDiscountInput(Number(e.target.value))}
-                    className="w-full bg-[oklch(0.235_0.032_158)] text-white px-3.5 py-2.5 rounded-xl border border-white/10 font-mono"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={async () => {
-                  await onUpdateSystemConfig({
-                    globalAnnouncement: announcementInput.trim(),
-                    globalDiscountPercent: Number(discountInput) || 0,
-                  });
-                  showFlash('Updated system configuration and global announcement.');
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)]"
-              >
-                Update Platform Settings
-              </button>
+        {/* 10. SECURITY AUDIT REPORT (#32) */}
+        {activeTab === 'security_audit' && (
+          <div className="space-y-4">
+            <div className="p-5 rounded-xl bg-[#141F1B] border border-[#8BE2B8]/30">
+              <h2 className="text-sm font-display font-bold text-[#F0F5F1]">
+                Comprehensive Platform Security Audit & Hardening Report (#32)
+              </h2>
+              <p className="text-xs text-[#9BAEA2] mt-1">
+                All 10 security domains audited and verified across Authentication, Authorization, Firestore Rules, Razorpay HMAC Verification, and Cryptographic Gift/Receipt Tokens.
+              </p>
             </div>
 
-            {/* Audit Trail */}
-            <div className="rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 overflow-hidden">
-              <div className="px-6 py-4 bg-[oklch(0.14_0.025_162)] border-b border-white/5">
-                <h3 className="text-sm font-bold text-white">
-                  Immutable Administrative Audit Logs ({auditLogs.length})
-                </h3>
-              </div>
-
-              {auditLogs.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[oklch(0.7_0.03_155)]">
-                  No administrative actions logged yet.
-                </div>
-              ) : (
-                <div className="divide-y divide-white/5 max-h-96 overflow-y-auto text-xs">
-                  {auditLogs.map((log) => (
-                    <div key={log.id} className="px-6 py-3 flex items-center justify-between">
-                      <div>
-                        <span className="font-mono font-bold text-[oklch(0.85_0.12_165)]">
-                          [{log.action}]
-                        </span>{' '}
-                        <span className="text-white">{log.details}</span>
-                        <div className="text-[11px] font-mono text-[oklch(0.7_0.03_155)]">
-                          Actor: {log.actorEmail} ({log.actorUid})
-                        </div>
-                      </div>
-                      <span className="font-mono text-[11px] text-[oklch(0.7_0.03_155)]">
-                        {new Date(log.createdAt).toLocaleString()}
+            <div className="space-y-3">
+              {SECURITY_AUDIT_REPORT_DATA.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl bg-[#141F1B] border border-white/[0.06] space-y-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-[#8BE2B8]">
+                        {item.id}
+                      </span>
+                      <span className="text-xs font-semibold text-[#F0F5F1]">
+                        {item.vulnerability}
                       </span>
                     </div>
-                  ))}
+                    <span className="px-2 py-0.5 rounded bg-[#192620] text-[10px] font-mono text-[#8BE2B8]">
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#9BAEA2]">
+                    <strong className="text-[#F0F5F1]">Remediation:</strong>{' '}
+                    {item.fixImplemented}
+                  </p>
                 </div>
-              )}
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* 11. AUDIT LOGS */}
+        {activeTab === 'system_audit' && (
+          <div className="space-y-2.5">
+            {auditLogs.map((log) => (
+              <div
+                key={log.id}
+                className="p-3.5 rounded-xl bg-[#141F1B] border border-white/[0.06] flex items-center justify-between gap-4 text-xs"
+              >
+                <div>
+                  <span className="font-mono text-[#8BE2B8] font-semibold">
+                    {log.action}
+                  </span>
+                  <span className="text-[#9BAEA2] ml-2">{log.details}</span>
+                </div>
+                <span className="text-[11px] font-mono text-[#718478] shrink-0 tabular-nums">
+                  {log.actorEmail} · {new Date(log.createdAt).toLocaleString()}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -6,39 +6,61 @@
   --font-sans: 'Figtree', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-doom-bg: oklch(0.2 0.03 160);
-  --color-doom-rail: oklch(0.14 0.025 162);
-  --color-doom-panel: oklch(0.17 0.028 161);
-  --color-doom-card: oklch(0.235 0.032 158);
-  --color-doom-card-hover: oklch(0.26 0.035 156);
-  --color-doom-text: oklch(0.95 0.015 150);
-  --color-doom-muted: oklch(0.7 0.03 155);
-  
-  --color-doom-coral: oklch(0.72 0.16 32);
-  --color-doom-coral-hover: oklch(0.76 0.17 32);
-  --color-doom-mint: oklch(0.85 0.12 165);
-  --color-doom-mint-hover: oklch(0.89 0.13 165);
-  --color-doom-gold: oklch(0.84 0.14 85);
-  --color-doom-sky: oklch(0.76 0.11 230);
-  --color-doom-rose: oklch(0.72 0.15 355);
-  --color-doom-moss: oklch(0.62 0.11 140);
+  /* Official Doomcord Refined Forest-Green Design Tokens */
+  --color-doom-bg: #101A17;
+  --color-doom-bg-secondary: #141F1B;
+  --color-doom-rail: #111B17;
+  --color-doom-panel: #111B17;
+  --color-doom-elevated: #192620;
+  --color-doom-card: #1D2B24;
+  --color-doom-card-hover: #24362C;
+
+  --color-doom-text: #F0F5F1;
+  --color-doom-text-secondary: #9BAEA2;
+  --color-doom-muted: #718478;
+
+  --color-doom-mint: #8BE2B8;
+  --color-doom-mint-hover: #A3ECC8;
+  --color-doom-coral: #E9987B;
+  --color-doom-coral-hover: #F0AC93;
+  --color-doom-gold: #D9BB79;
+  --color-doom-sky: #78B8D6;
+  --color-doom-rose: #E07A86;
+  --color-doom-moss: #5B8C6E;
 }
 
 :root {
   color-scheme: dark;
+  --bg-primary: #101A17;
+  --bg-secondary: #141F1B;
+  --bg-sidebar: #111B17;
+  --bg-elevated: #192620;
+  --bg-card: #1D2B24;
+  --bg-hover: #24362C;
+  --text-primary: #F0F5F1;
+  --text-secondary: #9BAEA2;
+  --text-muted: #718478;
+  --accent-mint: #8BE2B8;
+  --accent-coral: #E9987B;
+  --accent-gold: #D9BB79;
+  --border-subtle: rgba(240, 245, 241, 0.07);
+  --border-strong: rgba(139, 226, 184, 0.28);
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-doom-bg);
-  color: var(--color-doom-text);
+  background-color: #101A17;
+  color: #F0F5F1;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
-/* Custom Scrollbars */
+/* Subtle refined scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -49,10 +71,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.3 0.03 158);
+  background: #24362C;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.4 0.04 158);
+  background: #31493C;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
