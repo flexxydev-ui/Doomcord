@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and presence configuration",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 32, "pattern": "^[a-z0-9_.-]+$" },
+        "displayName": { "type": "string", "maxLength": 50 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "bannerURL": { "type": "string", "maxLength": 1024 },
+        "bio": { "type": "string", "maxLength": 300 },
+        "statusMessage": { "type": "string", "maxLength": 100 },
+        "presence": { "type": "string", "enum": ["online", "idle", "dnd", "invisible"] },
+        "accentColor": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "displayName"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "Social friend request document",
+      "type": "object",
+      "properties": {
+        "fromUid": { "type": "string", "maxLength": 128 },
+        "toUid": { "type": "string", "maxLength": 128 },
+        "fromUsername": { "type": "string", "maxLength": 50 },
+        "toUsername": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUid", "toUid", "status"]
+    },
+    "DirectMessage": {
+      "title": "DirectMessage",
+      "description": "Direct message thread between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "participants": { "type": "array" },
+        "lastMessageText": { "type": "string", "maxLength": 1000 },
+        "lastMessageSenderId": { "type": "string", "maxLength": 128 },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message with attachments, reactions, and read receipts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 50 },
+        "senderAvatar": { "type": "string", "maxLength": 1024 },
+        "content": { "type": "string", "maxLength": 4000 },
+        "readBy": { "type": "array" },
+        "reactions": { "type": "object" },
+        "attachments": { "type": "array" },
+        "isEdited": { "type": "boolean" },
+        "isPinned": { "type": "boolean" },
+        "replyTo": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "senderName", "createdAt"]
+    },
+    "Community": {
+      "title": "Community",
+      "description": "Social community server",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 60 },
+        "description": { "type": "string", "maxLength": 400 },
+        "iconUrl": { "type": "string", "maxLength": 1024 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "themeColor": { "type": "string", "maxLength": 30 },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "Channel": {
+      "title": "Channel",
+      "description": "Community channel for text, announcement, voice, or stage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "communityId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 40 },
+        "topic": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["text", "announcement", "voice", "stage"] },
+        "position": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["communityId", "name", "type"]
+    },
+    "Orb": {
+      "title": "Orb",
+      "description": "Signature spatial interest realm",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 40 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "primaryColor": { "type": "string", "maxLength": 30 },
+        "secondaryColor": { "type": "string", "maxLength": 30 },
+        "visibility": { "type": "string", "enum": ["public", "friends", "private"] },
+        "creatorId": { "type": "string", "maxLength": 128 },
+        "memberCount": { "type": "number" },
+        "activityScore": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "creatorId", "visibility"]
+    },
+    "VoiceRoom": {
+      "title": "VoiceRoom",
+      "description": "Live WebRTC audio room state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "channelId": { "type": "string", "maxLength": 128 },
+        "participants": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["channelId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and presence"
+    },
+    "/friend_requests/{requestId}": {
+      "schema": "FriendRequest",
+      "description": "Incoming and outgoing friend requests"
+    },
+    "/direct_messages/{dmId}": {
+      "schema": "DirectMessage",
+      "description": "Direct message threads"
+    },
+    "/direct_messages/{dmId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages inside direct message threads"
+    },
+    "/communities/{communityId}": {
+      "schema": "Community",
+      "description": "Communities"
+    },
+    "/communities/{communityId}/channels/{channelId}": {
+      "schema": "Channel",
+      "description": "Channels inside communities"
+    },
+    "/communities/{communityId}/channels/{channelId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages inside community channels"
+    },
+    "/orbs/{orbId}": {
+      "schema": "Orb",
+      "description": "Signature spatial Orbs"
+    },
+    "/orbs/{orbId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Live discussion messages within an Orb"
+    },
+    "/voice_rooms/{roomId}": {
+      "schema": "VoiceRoom",
+      "description": "Active WebRTC voice rooms"
+    }
+  }
+}

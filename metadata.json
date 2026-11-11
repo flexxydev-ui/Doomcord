@@ -1,0 +1,10 @@
+{
+  "name": "Doomcord",
+  "description": "Next-generation social communication platform with real-time direct messaging, communities, WebRTC audio rooms, and interactive 3D Orbs.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
