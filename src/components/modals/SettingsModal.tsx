@@ -1,48 +1,86 @@
 import React, { useState } from 'react';
-import { 
-  X, User, Shield, Palette, Bell, Sparkles, 
-  Trash2, LogOut, Check, Ban, Key 
+import {
+  X,
+  User,
+  Shield,
+  Palette,
+  Bell,
+  LogOut,
+  Check,
+  Crown,
+  ShoppingBag,
+  Lock,
 } from 'lucide-react';
-import { UserProfile, UserPresence } from '../../types';
+import { UserProfile } from '../../types';
 
 interface SettingsModalProps {
   currentUser: UserProfile;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateProfile: (updates: Partial<UserProfile>) => void;
+  onUpdateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  onOpenNitro: () => void;
+  onOpenShop: () => void;
   onLogout: () => void;
 }
 
-type SettingsTab = 'account' | 'privacy' | 'appearance' | 'notifications';
+type SettingsTab = 'account' | 'nitro' | 'privacy' | 'appearance' | 'notifications';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   currentUser,
   isOpen,
   onClose,
   onUpdateProfile,
-  onLogout
+  onChangePassword,
+  onOpenNitro,
+  onOpenShop,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [displayName, setDisplayName] = useState(currentUser.displayName);
   const [bio, setBio] = useState(currentUser.bio || '');
   const [statusMessage, setStatusMessage] = useState(currentUser.statusMessage || '');
-  const [accentColor, setAccentColor] = useState(currentUser.accentColor || 'oklch(0.85 0.12 165)');
+  const [accentColor, setAccentColor] = useState(
+    currentUser.accentColor || 'oklch(0.85 0.12 165)'
+  );
   const [photoURL, setPhotoURL] = useState(currentUser.photoURL || '');
+  const [bannerURL, setBannerURL] = useState(currentUser.bannerURL || '');
   const [savedFeedback, setSavedFeedback] = useState(false);
+
+  // Password Change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [pwdFeedback, setPwdFeedback] = useState<string | null>(null);
+  const [pwdError, setPwdError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSaveAccount = (e: React.FormEvent) => {
+  const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile({
+    await onUpdateProfile({
       displayName,
       bio,
       statusMessage,
       accentColor,
-      photoURL
+      photoURL,
+      bannerURL,
     });
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 3000);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdFeedback(null);
+    try {
+      await onChangePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setPwdFeedback('Password updated on server successfully.');
+    } catch (err: any) {
+      setPwdError(err.message || 'Password update failed.');
+    }
   };
 
   const ACCENT_PRESETS = [
@@ -51,12 +89,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { label: 'Gold', value: 'oklch(0.84 0.14 85)' },
     { label: 'Sky', value: 'oklch(0.76 0.11 230)' },
     { label: 'Rose', value: 'oklch(0.72 0.15 355)' },
-    { label: 'Moss', value: 'oklch(0.62 0.11 140)' }
+    { label: 'Moss', value: 'oklch(0.62 0.11 140)' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl h-[600px] flex rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-3xl h-[620px] flex rounded-3xl bg-[oklch(0.17_0.028_161)] border border-white/10 shadow-2xl overflow-hidden">
         {/* Left Settings Sidebar */}
         <div className="w-56 p-4 bg-[oklch(0.14_0.025_162)] border-r border-white/5 flex flex-col justify-between">
           <div>
@@ -64,7 +102,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span className="text-[10px] font-bold text-[oklch(0.7_0.03_155)] uppercase tracking-wider block">
                 User Settings
               </span>
-              <h3 className="text-sm font-bold text-white tracking-wide">Doomcord Preferences</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide">
+                Doomcord Preferences
+              </h3>
             </div>
 
             <nav className="space-y-1">
@@ -78,6 +118,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 <User className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
                 <span>My Account</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('nitro')}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'nitro'
+                    ? 'bg-[oklch(0.235_0.032_158)] text-white shadow-sm'
+                    : 'text-[oklch(0.7_0.03_155)] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Crown className="w-4 h-4 text-[oklch(0.84_0.14_85)]" />
+                <span>Nitro & Cosmetics</span>
               </button>
 
               <button
@@ -118,7 +170,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </nav>
           </div>
 
-          {/* Logout Button */}
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[oklch(0.72_0.15_355)] hover:bg-[oklch(0.72_0.15_355)]/20 rounded-xl transition-colors"
@@ -133,9 +184,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
               <h2 className="text-base font-bold text-white capitalize">
-                {activeTab === 'account' ? 'My Account & Identity' :
-                 activeTab === 'privacy' ? 'Privacy and Security' :
-                 activeTab === 'appearance' ? 'Theme & Visual Styling' : 'Notification Preferences'}
+                {activeTab === 'account'
+                  ? 'My Account & Identity'
+                  : activeTab === 'nitro'
+                  ? 'Doomcord Nitro & Cosmetics Inventory'
+                  : activeTab === 'privacy'
+                  ? 'Privacy and Security'
+                  : activeTab === 'appearance'
+                  ? 'Theme & Visual Styling'
+                  : 'Notification Preferences'}
               </h2>
               <button
                 onClick={onClose}
@@ -145,11 +202,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
 
-            {/* Tab: My Account */}
             {activeTab === 'account' && (
               <form onSubmit={handleSaveAccount} className="space-y-4 max-w-lg">
                 <div>
-                  <label className="text-xs font-semibold text-white block mb-1">Display Name</label>
+                  <label className="text-xs font-semibold text-white block mb-1">
+                    Display Name
+                  </label>
                   <input
                     type="text"
                     value={displayName}
@@ -159,7 +217,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white block mb-1">Avatar Image URL</label>
+                  <label className="text-xs font-semibold text-white block mb-1">
+                    Avatar Image URL
+                  </label>
                   <input
                     type="text"
                     value={photoURL}
@@ -170,7 +230,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white block mb-1">Custom Status Message</label>
+                  <label className="text-xs font-semibold text-white block mb-1">
+                    Banner Image URL
+                  </label>
+                  <input
+                    type="text"
+                    value={bannerURL}
+                    onChange={(e) => setBannerURL(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full bg-[oklch(0.235_0.032_158)] text-white text-xs px-3.5 py-2.5 rounded-xl border border-white/10 outline-none focus:border-[oklch(0.85_0.12_165)] font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-white block mb-1">
+                    Custom Status Message
+                  </label>
                   <input
                     type="text"
                     value={statusMessage}
@@ -181,7 +256,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white block mb-1">Personal Biography</label>
+                  <label className="text-xs font-semibold text-white block mb-1">
+                    Personal Biography
+                  </label>
                   <textarea
                     rows={3}
                     value={bio}
@@ -200,26 +277,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                   {savedFeedback && (
                     <span className="text-xs text-[oklch(0.85_0.12_165)] flex items-center gap-1 font-medium">
-                      <Check className="w-3.5 h-3.5" /> Profile updated successfully!
+                      <Check className="w-3.5 h-3.5" /> Profile updated!
                     </span>
                   )}
                 </div>
               </form>
             )}
 
-            {/* Tab: Privacy & Security */}
-            {activeTab === 'privacy' && (
+            {activeTab === 'nitro' && (
               <div className="space-y-4 max-w-lg text-xs">
-                <div className="p-4 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5">
-                  <h4 className="text-sm font-bold text-white mb-1">Direct Message Privacy</h4>
-                  <p className="text-[oklch(0.7_0.03_155)] mb-3">
-                    Allow direct messages from mutual community members.
+                <div className="p-5 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white text-sm">
+                      Current Tier: Doomcord {currentUser.nitroTier.toUpperCase()}
+                    </span>
+                    <Crown className="w-4 h-4 text-[oklch(0.84_0.14_85)]" />
+                  </div>
+                  <p className="text-[oklch(0.7_0.03_155)]">
+                    Owned Cosmetics: {currentUser.ownedCosmetics?.length || 0} item(s)
                   </p>
-                  <label className="flex items-center gap-2 cursor-pointer text-white font-medium">
-                    <input type="checkbox" defaultChecked className="accent-[oklch(0.85_0.12_165)]" />
-                    <span>Enable DM requests from server members</span>
-                  </label>
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenNitro();
+                      }}
+                      className="px-4 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)]"
+                    >
+                      Open Nitro Plans & Billing
+                    </button>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenShop();
+                      }}
+                      className="px-4 py-2 rounded-xl font-semibold text-white bg-white/10 hover:bg-white/15 flex items-center gap-1.5"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>Open Cosmetics Shop</span>
+                    </button>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'privacy' && (
+              <div className="space-y-5 max-w-lg text-xs">
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="p-4 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5 space-y-3"
+                >
+                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+                    <Lock className="w-4 h-4 text-[oklch(0.85_0.12_165)]" />
+                    <span>Change Account Password</span>
+                  </div>
+
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full bg-[oklch(0.17_0.028_161)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="New strong password (min 6 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-[oklch(0.17_0.028_161)] text-white px-3 py-2 rounded-xl border border-white/10 outline-none"
+                    required
+                  />
+                  {pwdError && <div className="text-[oklch(0.72_0.15_355)]">{pwdError}</div>}
+                  {pwdFeedback && (
+                    <div className="text-[oklch(0.85_0.12_165)]">{pwdFeedback}</div>
+                  )}
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl font-semibold text-black bg-[oklch(0.85_0.12_165)]"
+                  >
+                    Update Password
+                  </button>
+                </form>
 
                 <div className="p-4 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5">
                   <h4 className="text-sm font-bold text-white mb-1">Read Status Transparency</h4>
@@ -227,19 +366,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     Send read receipts when you view messages in direct messages.
                   </p>
                   <label className="flex items-center gap-2 cursor-pointer text-white font-medium">
-                    <input type="checkbox" defaultChecked className="accent-[oklch(0.85_0.12_165)]" />
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="accent-[oklch(0.85_0.12_165)]"
+                    />
                     <span>Send read receipts (shows checkmarks to sender)</span>
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Tab: Appearance */}
             {activeTab === 'appearance' && (
               <div className="space-y-4 max-w-lg text-xs">
                 <div>
-                  <label className="text-xs font-semibold text-white block mb-2">Accent Colour</label>
-                  <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold text-white block mb-2">
+                    Accent Colour
+                  </label>
+                  <div className="flex items-center gap-2 flex-wrap">
                     {ACCENT_PRESETS.map((p) => (
                       <button
                         key={p.label}
@@ -249,44 +393,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           onUpdateProfile({ accentColor: p.value });
                         }}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs transition-all ${
-                          accentColor === p.value 
-                            ? 'border-white text-white font-bold bg-white/10' 
+                          accentColor === p.value
+                            ? 'border-white text-white font-bold bg-white/10'
                             : 'border-white/5 text-[oklch(0.7_0.03_155)] hover:border-white/20'
                         }`}
                       >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.value }} />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: p.value }}
+                        />
                         <span>{p.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-
-                <div className="p-4 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5 mt-4">
-                  <h4 className="text-sm font-bold text-white mb-1">Color Palette Specification</h4>
-                  <p className="text-[oklch(0.7_0.03_155)] leading-relaxed">
-                    Doomcord strictly enforces a sophisticated dark forest-green aesthetic with coral and mint brand accents:
-                  </p>
-                  <div className="mt-2 text-[11px] font-mono text-[oklch(0.85_0.12_165)]">
-                    Main Background: oklch(0.2 0.03 160) · Rail: oklch(0.14 0.025 162)
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* Tab: Notifications */}
             {activeTab === 'notifications' && (
               <div className="space-y-3 max-w-lg text-xs">
                 {[
-                  { title: 'Direct Message Chimes', desc: 'Play subtle audio chime on incoming direct messages' },
-                  { title: 'Friend Request Alerts', desc: 'Display toast notifications for incoming friend invitations' },
-                  { title: 'Community Mentions', desc: 'Notify when @mentioned in text channels or announcements' }
+                  {
+                    title: 'Direct Message Chimes',
+                    desc: 'Play subtle audio chime on incoming direct messages',
+                  },
+                  {
+                    title: 'Friend Request Alerts',
+                    desc: 'Display notifications for incoming friend invitations',
+                  },
+                  {
+                    title: 'Community Mentions',
+                    desc: 'Notify when @mentioned in text channels or announcements',
+                  },
                 ].map((n, i) => (
-                  <div key={i} className="flex items-center justify-between p-3.5 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/5"
+                  >
                     <div>
                       <span className="text-xs font-bold text-white block">{n.title}</span>
                       <span className="text-[11px] text-[oklch(0.7_0.03_155)]">{n.desc}</span>
                     </div>
-                    <input type="checkbox" defaultChecked className="accent-[oklch(0.85_0.12_165)] w-4 h-4 cursor-pointer" />
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="accent-[oklch(0.85_0.12_165)] w-4 h-4 cursor-pointer"
+                    />
                   </div>
                 ))}
               </div>

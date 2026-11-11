@@ -1,325 +1,366 @@
-import { 
-  collection, doc, getDocs, getDoc, setDoc, updateDoc, 
-  query, where, orderBy, onSnapshot, arrayUnion, arrayRemove
-} from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
-import { 
-  Community, Channel, OrbData, ChatMessage, 
-  DirectMessageThread, FriendRequest, UserProfile 
-} from '../types';
+import { NitroPlanConfig, CosmeticItem, SystemConfigData } from '../types';
 
-// Default initial communities
-export const DEFAULT_COMMUNITIES: Community[] = [
+/**
+ * Generates a deterministic, original SVG data URI avatar from a real user's display name and accent color.
+ * Zero external image dependencies or fake photos.
+ */
+export function generateInitialsAvatar(name: string, bgColor = '#11362a'): string {
+  const cleanName = (name || 'U').trim();
+  const parts = cleanName.split(/\s+/);
+  const initials =
+    parts.length >= 2
+      ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+      : cleanName.slice(0, 2).toUpperCase();
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+    <defs>
+      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${bgColor}" />
+        <stop offset="100%" stop-color="#071a14" />
+      </linearGradient>
+    </defs>
+    <rect width="128" height="128" rx="28" fill="url(#g)" />
+    <circle cx="64" cy="64" r="56" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" />
+    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#e6f7f0" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="46">${initials}</text>
+  </svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Default Doomcord Nitro Subscription Plans (INR)
+ * Stored in Firestore /nitro_plans and editable in real time from the Admin Dashboard.
+ */
+export const INITIAL_NITRO_PLANS: NitroPlanConfig[] = [
   {
-    id: 'citadel-prime',
-    name: 'The Citadel',
-    description: 'The central gathering hub for Doomcord pioneers, gaming, tech discussion, and voice sessions.',
-    iconUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000&auto=format&fit=crop&q=80',
-    ownerId: 'demo_alex_shadow',
-    themeColor: 'oklch(0.72 0.16 32)',
-    isPublic: true,
-    memberCount: 284,
-    createdAt: '2026-01-10T12:00:00Z',
-    channels: [
-      { id: 'c-welcome', communityId: 'citadel-prime', name: 'welcome-and-rules', topic: 'Read guidelines before diving into the forest', type: 'announcement', position: 1 },
-      { id: 'c-general', communityId: 'citadel-prime', name: 'general-chat', topic: 'Real-time discussions and realm banter', type: 'text', position: 2 },
-      { id: 'c-showcase', communityId: 'citadel-prime', name: 'project-showcase', topic: 'Share your creations, code, and setups', type: 'text', position: 3 },
-      { id: 'c-voice-1', communityId: 'citadel-prime', name: 'The Forest Lounge', topic: 'Casual open voice room', type: 'voice', position: 4 },
-      { id: 'c-stage-1', communityId: 'citadel-prime', name: 'Council Stage', topic: 'Weekly developer AMA and community stage', type: 'stage', position: 5 }
-    ]
+    id: 'plan_free',
+    tier: 'free',
+    name: 'Doomcord Free',
+    tagline: 'Essential real-time messaging, communities, and public 3D Orbs.',
+    monthlyPriceINR: 0,
+    yearlyPriceINR: 0,
+    uploadLimitMB: 25,
+    maxMessageLength: 2000,
+    shopDiscountPercent: 0,
+    benefits: [
+      'Standard real-time messaging & read receipts',
+      'Basic profile customization & standard avatar/banner',
+      'Basic forest-green themes',
+      'Standard file uploads up to 25 MB',
+      'Standard emojis and stickers',
+      'Access to public Orbs and communities',
+      'Basic profile badges & decoration collection',
+    ],
+    updatedAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'synth-collective',
-    name: 'Synthetix Modular',
-    description: 'Patch cables, generative ambient modular synthesis, analog warmth, and music production.',
-    iconUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=150&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000&auto=format&fit=crop&q=80',
-    ownerId: 'demo_seraph_mint',
-    themeColor: 'oklch(0.85 0.12 165)',
-    isPublic: true,
-    memberCount: 148,
-    createdAt: '2026-02-15T10:00:00Z',
-    channels: [
-      { id: 's-announcements', communityId: 'synth-collective', name: 'releases', topic: 'New tracks and firmware drops', type: 'announcement', position: 1 },
-      { id: 's-patching', communityId: 'synth-collective', name: 'patch-diaries', topic: 'Eurorack and VCV Rack recipes', type: 'text', position: 2 },
-      { id: 's-voice', communityId: 'synth-collective', name: 'Studio Jam', topic: 'Live audio monitoring and jam room', type: 'voice', position: 3 }
-    ]
+    id: 'plan_nitro_basic',
+    tier: 'basic',
+    name: 'Doomcord Nitro Basic',
+    tagline: 'Enhanced personal identity, animated avatars, and larger file sharing.',
+    monthlyPriceINR: 49,
+    yearlyPriceINR: 499,
+    uploadLimitMB: 50,
+    maxMessageLength: 2500,
+    shopDiscountPercent: 10,
+    benefits: [
+      'Exclusive Nitro Basic profile badge',
+      'Animated avatar support',
+      'Profile theme & custom colour customization',
+      'Premium avatar decorations & profile frames',
+      'Premium emoji and sticker access',
+      'Increased file upload limit up to 50 MB',
+      'Exclusive profile cosmetics & selected profile effects',
+      'Premium display name styling',
+      'Nitro member pricing in the Cosmetics Shop (10% off)',
+    ],
+    updatedAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'obsidian-devs',
-    name: 'Obsidian Systems',
-    description: 'High-performance TypeScript, WebGL shaders, distributed consensus, and UI architecture.',
-    iconUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150&auto=format&fit=crop&q=80',
-    ownerId: 'demo_cipher_gold',
-    themeColor: 'oklch(0.84 0.14 85)',
-    isPublic: true,
-    memberCount: 96,
-    createdAt: '2026-03-01T08:00:00Z',
-    channels: [
-      { id: 'o-general', communityId: 'obsidian-devs', name: 'dev-stream', topic: 'Architecture, PRs, and benchmarking', type: 'text', position: 1 },
-      { id: 'o-shaders', communityId: 'obsidian-devs', name: 'threejs-and-glsl', topic: '3D spatial geometry and compute shaders', type: 'text', position: 2 },
-      { id: 'o-voice', communityId: 'obsidian-devs', name: 'Pair Programming', topic: 'Screenshare and pair coding room', type: 'voice', position: 3 }
-    ]
-  }
+    id: 'plan_nitro_pro',
+    tier: 'nitro',
+    name: 'Doomcord Nitro',
+    tagline: 'The ultimate Doomcord experience with full cosmetics, 500 MB uploads, and 20% shop discount.',
+    monthlyPriceINR: 99,
+    yearlyPriceINR: 999,
+    uploadLimitMB: 500,
+    maxMessageLength: 4000,
+    shopDiscountPercent: 20,
+    benefits: [
+      'Everything included in Nitro Basic',
+      'Exclusive animated Nitro badge',
+      'Animated profile avatars & animated profile banners',
+      'Advanced profile effects & complete premium decoration access',
+      'Unlimited profile theme & custom background customization',
+      'Advanced display name styles & per-community custom profiles',
+      'Massive file uploads up to 500 MB',
+      'Premium emojis, animated stickers & custom soundboard access',
+      'Custom interface themes & exclusive app icons',
+      'Two community boosts per billing cycle',
+      '4,000-character long-form messages',
+      'HD WebRTC voice & stage streaming',
+      'Exclusive Nitro shop collections & early feature access',
+      '20% discount on all eligible Cosmetics Shop purchases',
+    ],
+    updatedAt: '2026-11-11T00:00:00Z',
+  },
 ];
 
-// Default Signature Orbs
-export const DEFAULT_ORBS: OrbData[] = [
+/**
+ * Official Doomcord Cosmetics Catalog across all 12 required categories.
+ * Stored in Firestore /cosmetics and editable via the Admin Dashboard.
+ */
+export const INITIAL_COSMETICS_CATALOG: CosmeticItem[] = [
+  // 1. Avatar Decorations
   {
-    id: 'orb-gaming-glory',
-    name: 'Neo Cyber Gaming',
-    description: 'Co-op tactical shooters, indie roguelikes, speedrunning, and midnight raid coordination.',
-    category: 'Gaming',
-    icon: 'Gamepad2',
-    primaryColor: '#f43f5e',
-    secondaryColor: '#ec4899',
-    visibility: 'public',
-    creatorId: 'demo_alex_shadow',
-    creatorName: 'Alex Thorne',
-    memberCount: 312,
-    activityScore: 98,
-    tags: ['Cyberpunk', 'Roguelike', 'Speedrun', 'Co-op'],
-    createdAt: '2026-01-20T14:30:00Z'
+    id: 'cosm_frame_neon_coral',
+    name: 'Solaris Coral Neon Ring',
+    description: 'High-luminance coral plasma ring with dual rotating orbital nodes.',
+    category: 'Avatar Decorations',
+    priceINR: 39,
+    rarity: 'Rare',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'ring-4 ring-[oklch(0.72_0.16_32)] shadow-[0_0_20px_oklch(0.72_0.16_32)]',
+    previewColorPrimary: '#f97316',
+    previewColorSecondary: '#ec4899',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'orb-quantum-code',
-    name: 'Quantum Systems',
-    description: 'Systems programming, WebGL shaders, Three.js spatial canvas, and real-time networking.',
-    category: 'Coding',
-    icon: 'Code2',
-    primaryColor: '#10b981',
-    secondaryColor: '#06b6d4',
-    visibility: 'public',
-    creatorId: 'demo_cipher_gold',
-    creatorName: 'Cipher',
-    memberCount: 245,
-    activityScore: 92,
-    tags: ['TypeScript', 'WebGL', 'Three.js', 'Rust'],
-    createdAt: '2026-02-05T09:15:00Z'
+    id: 'cosm_frame_emerald_crystal',
+    name: 'Sylvan Emerald Crystal Crown',
+    description: 'Faceted forest-mint crystalline border with refracted light shards.',
+    category: 'Avatar Decorations',
+    priceINR: 59,
+    rarity: 'Epic',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'ring-4 ring-[oklch(0.85_0.12_165)] shadow-[0_0_24px_oklch(0.85_0.12_165)]',
+    previewColorPrimary: '#10b981',
+    previewColorSecondary: '#34d399',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'orb-ambient-audio',
-    name: 'Modular Ambient',
-    description: 'Generative tape loops, Eurorack synthesis, field recordings, and soothing soundscapes.',
-    category: 'Music',
-    icon: 'Headphones',
-    primaryColor: '#f59e0b',
-    secondaryColor: '#f97316',
-    visibility: 'public',
-    creatorId: 'demo_seraph_mint',
-    creatorName: 'Seraphina Vale',
-    memberCount: 189,
-    activityScore: 86,
-    tags: ['Modular', 'Ambient', 'Generative', 'Vinyl'],
-    createdAt: '2026-02-12T16:00:00Z'
+    id: 'cosm_frame_minimal_moss',
+    name: 'Minimalist Moss Halo',
+    description: 'Clean architectural sage-green frame for understated profiles.',
+    category: 'Avatar Decorations',
+    priceINR: 19,
+    rarity: 'Common',
+    nitroEligible: 'none',
+    cssPreviewClass: 'ring-2 ring-[oklch(0.62_0.11_140)]',
+    previewColorPrimary: '#4ade80',
+    previewColorSecondary: '#166534',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 2. Profile Effects
+  {
+    id: 'cosm_effect_aurora_canopy',
+    name: 'Boreal Forest Aurora',
+    description: 'Sweeping mint-and-coral aurora ribbons that illuminate your profile card on open.',
+    category: 'Profile Effects',
+    priceINR: 99,
+    rarity: 'Legendary',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'bg-gradient-to-br from-emerald-500/30 via-teal-400/15 to-orange-500/30',
+    previewColorPrimary: '#10b981',
+    previewColorSecondary: '#f97316',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'orb-anime-realm',
-    name: 'Manga & Sakuga',
-    description: 'Seasonal anime discourse, sakuga key animation breakdowns, light novels, and fan art.',
-    category: 'Anime',
-    icon: 'Sparkles',
-    primaryColor: '#a855f7',
-    secondaryColor: '#d946ef',
-    visibility: 'public',
-    creatorId: 'demo_alex_shadow',
-    creatorName: 'Alex Thorne',
-    memberCount: 420,
-    activityScore: 99,
-    tags: ['Anime', 'Sakuga', 'Manga', 'Seasonal'],
-    createdAt: '2026-01-15T18:00:00Z'
+    id: 'cosm_effect_voltaic_storm',
+    name: 'Voltaic Arc Cascade',
+    description: 'Crackling golden-sky electric surges across your profile header.',
+    category: 'Profile Effects',
+    priceINR: 79,
+    rarity: 'Epic',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'bg-gradient-to-tr from-amber-500/25 via-sky-500/20 to-emerald-500/25',
+    previewColorPrimary: '#eab308',
+    previewColorSecondary: '#0ea5e9',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 3. Profile Themes
+  {
+    id: 'cosm_theme_obsidian_sanctum',
+    name: 'Obsidian Sanctum Theme',
+    description: 'Deep canopy emerald gradient with golden filigree borders and custom card contrast.',
+    category: 'Profile Themes',
+    priceINR: 49,
+    rarity: 'Rare',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'bg-gradient-to-b from-[#0d2b22] to-[#061510] border-emerald-400/40',
+    previewColorPrimary: '#0d2b22',
+    previewColorSecondary: '#eab308',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 4. Nameplates
+  {
+    id: 'cosm_nameplate_coral_flare',
+    name: 'Coral Supernova Nameplate',
+    description: 'Metallic coral-to-gold gradient display name styling with luminous typography.',
+    category: 'Nameplates',
+    priceINR: 39,
+    rarity: 'Rare',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'bg-gradient-to-r from-[#ff7e5f] via-[#feb47b] to-[#6ee7b7] bg-clip-text text-transparent font-extrabold',
+    previewColorPrimary: '#ff7e5f',
+    previewColorSecondary: '#6ee7b7',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
   },
   {
-    id: 'orb-astrophysics',
-    name: 'Cosmic Horizons',
-    description: 'Deep space photography, James Webb data, orbital mechanics, and stellar cosmology.',
-    category: 'Science',
-    icon: 'Globe',
-    primaryColor: '#0ea5e9',
-    secondaryColor: '#6366f1',
-    visibility: 'public',
-    creatorId: 'demo_seraph_mint',
-    creatorName: 'Seraphina Vale',
-    memberCount: 142,
-    activityScore: 78,
-    tags: ['JWST', 'Exoplanets', 'Physics', 'Astrophotography'],
-    createdAt: '2026-02-28T21:00:00Z'
+    id: 'cosm_nameplate_cyber_mint',
+    name: 'Hyperion Mint Nameplate',
+    description: 'Crisp mint-to-sky neon gradient text effect for channel member lists and messages.',
+    category: 'Nameplates',
+    priceINR: 39,
+    rarity: 'Rare',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'bg-gradient-to-r from-[#34d399] via-[#38bdf8] to-[#a7f3d0] bg-clip-text text-transparent font-extrabold',
+    previewColorPrimary: '#34d399',
+    previewColorSecondary: '#38bdf8',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
   },
+  // 5. Profile Badges
   {
-    id: 'orb-deep-study',
-    name: 'Deep Focus Sanctuary',
-    description: 'Quiet Pomodoro sessions, distraction-free study logs, research notes, and academic goals.',
-    category: 'Study',
-    icon: 'BookOpen',
-    primaryColor: '#14b8a6',
-    secondaryColor: '#10b981',
-    visibility: 'public',
-    creatorId: 'demo_cipher_gold',
-    creatorName: 'Cipher',
-    memberCount: 275,
-    activityScore: 88,
-    tags: ['Focus', 'Pomodoro', 'Research', 'Study'],
-    createdAt: '2026-03-05T07:30:00Z'
-  }
+    id: 'cosm_badge_early_pioneer',
+    name: 'Realm Pioneer Emblem',
+    description: 'Collectible emblem commemorating early supporters of the Doomcord ecosystem.',
+    category: 'Profile Badges',
+    priceINR: 19,
+    rarity: 'Epic',
+    nitroEligible: 'none',
+    cssPreviewClass: 'text-amber-300 border-amber-400/40 bg-amber-500/10',
+    previewColorPrimary: '#f59e0b',
+    previewColorSecondary: '#fef08a',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 6. Banners
+  {
+    id: 'cosm_banner_nebula_forest',
+    name: 'Bioluminescent Canopy Banner',
+    description: 'Layered procedural forest horizon with glowing spores and twilight mist.',
+    category: 'Banners',
+    priceINR: 59,
+    rarity: 'Epic',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500 via-teal-900 to-slate-950',
+    previewColorPrimary: '#10b981',
+    previewColorSecondary: '#0f766e',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 7. Animated Avatars
+  {
+    id: 'cosm_avatar_pulse_orb',
+    name: 'Harmonic Core Animated Avatar',
+    description: 'Dynamic geometric core avatar with smooth harmonic rotation.',
+    category: 'Animated Avatars',
+    priceINR: 59,
+    rarity: 'Epic',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'bg-gradient-to-tr from-emerald-400 to-cyan-500',
+    previewColorPrimary: '#34d399',
+    previewColorSecondary: '#06b6d4',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 8. App Themes and Icons
+  {
+    id: 'cosm_apptheme_deep_pine',
+    name: 'Midnight Pine Interface Matrix',
+    description: 'High-contrast deep pine workspace theme with luminous mint borders.',
+    category: 'App Themes and Icons',
+    priceINR: 49,
+    rarity: 'Rare',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'bg-[#091e17] border-emerald-500/30',
+    previewColorPrimary: '#091e17',
+    previewColorSecondary: '#10b981',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 9. Chat Cosmetics
+  {
+    id: 'cosm_chat_emerald_flair',
+    name: 'Sylvan Whisper Message Flair',
+    description: 'Subtle emerald glow accent around your sent messages in channels and DMs.',
+    category: 'Chat Cosmetics',
+    priceINR: 39,
+    rarity: 'Rare',
+    nitroEligible: 'nitro',
+    cssPreviewClass: 'border border-emerald-500/30 bg-emerald-950/20',
+    previewColorPrimary: '#10b981',
+    previewColorSecondary: '#064e3b',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 10. Sound Effects
+  {
+    id: 'cosm_sound_crystal_chime',
+    name: 'Harmonic Quartz Sound Pack',
+    description: 'Unlocks 652Hz & 963Hz harmonic quartz synthesizer cues in voice and stage channels.',
+    category: 'Sound Effects',
+    priceINR: 19,
+    rarity: 'Common',
+    nitroEligible: 'basic',
+    cssPreviewClass: 'bg-sky-500/20 border-sky-400/30',
+    previewColorPrimary: '#38bdf8',
+    previewColorSecondary: '#0284c7',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 11. Seasonal Collections
+  {
+    id: 'cosm_seasonal_solstice_bloom',
+    name: 'Winter Solstice Biolume Crest',
+    description: 'Limited-edition seasonal frost and bioluminescent pine decoration.',
+    category: 'Seasonal Collections',
+    priceINR: 59,
+    rarity: 'Legendary',
+    nitroEligible: 'nitro',
+    isLimitedEdition: true,
+    cssPreviewClass: 'ring-4 ring-sky-300 shadow-[0_0_20px_#38bdf8]',
+    previewColorPrimary: '#38bdf8',
+    previewColorSecondary: '#a7f3d0',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
+  // 12. Exclusive Bundles
+  {
+    id: 'cosm_bundle_sovereign_pack',
+    name: 'Sovereign of the Canopy Bundle',
+    description: 'Includes Solaris Coral Frame, Boreal Aurora Profile Effect, Coral Supernova Nameplate, and Bioluminescent Banner.',
+    category: 'Exclusive Bundles',
+    priceINR: 149,
+    rarity: 'Mythic',
+    nitroEligible: 'nitro',
+    bundleItems: [
+      'cosm_frame_neon_coral',
+      'cosm_effect_aurora_canopy',
+      'cosm_nameplate_coral_flare',
+      'cosm_banner_nebula_forest',
+    ],
+    cssPreviewClass: 'bg-gradient-to-r from-[#ff7e5f] via-[#10b981] to-[#38bdf8]',
+    previewColorPrimary: '#ff7e5f',
+    previewColorSecondary: '#10b981',
+    enabled: true,
+    createdAt: '2026-11-11T00:00:00Z',
+  },
 ];
 
-// Seed initial messages for direct messages & channels
-export const SEED_MESSAGES: Record<string, ChatMessage[]> = {
-  'dm-seraphina': [
-    {
-      id: 'msg-s-1',
-      conversationId: 'dm-seraphina',
-      senderId: 'demo_seraph_mint',
-      senderName: 'Seraphina Vale',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SeraphMint&backgroundColor=154338',
-      content: 'Hey Alex! Did you check out the new 3D spatial Orbs in Doomcord? The orbital physics feel incredible.',
-      createdAt: '2026-11-11T07:15:00Z',
-      readBy: ['demo_seraph_mint', 'demo_alex_shadow'],
-      reactions: { '✨': ['demo_alex_shadow'] }
-    },
-    {
-      id: 'msg-s-2',
-      conversationId: 'dm-seraphina',
-      senderId: 'demo_alex_shadow',
-      senderName: 'Alex Thorne',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AlexThorne&backgroundColor=0d382e',
-      content: 'Yes! The Three.js WebGL canvas runs so smoothly, and the read receipt tracking gives instant feedback.',
-      createdAt: '2026-11-11T07:18:00Z',
-      readBy: ['demo_alex_shadow', 'demo_seraph_mint'],
-      reactions: { '🔥': ['demo_seraph_mint'] }
-    },
-    {
-      id: 'msg-s-3',
-      conversationId: 'dm-seraphina',
-      senderId: 'demo_seraph_mint',
-      senderName: 'Seraphina Vale',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SeraphMint&backgroundColor=154338',
-      content: 'Here is a quick snapshot of the shader bloom test from the Modular Synthesizers space:',
-      attachments: [
-        {
-          id: 'att-1',
-          name: 'ambient_orb_preview.png',
-          url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-          type: 'image'
-        }
-      ],
-      createdAt: '2026-11-11T07:22:00Z',
-      readBy: ['demo_seraph_mint', 'demo_alex_shadow']
-    }
-  ],
-  'dm-cipher': [
-    {
-      id: 'msg-c-1',
-      conversationId: 'dm-cipher',
-      senderId: 'demo_cipher_gold',
-      senderName: 'Cipher',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=CipherZero&backgroundColor=2e3a1f',
-      content: 'The WebRTC audio room signaling pipeline is verified. Live microphone level analysis works with zero delay.',
-      createdAt: '2026-11-11T06:50:00Z',
-      readBy: ['demo_cipher_gold', 'demo_alex_shadow'],
-      isPinned: true
-    },
-    {
-      id: 'msg-c-2',
-      conversationId: 'dm-cipher',
-      senderId: 'demo_alex_shadow',
-      senderName: 'Alex Thorne',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AlexThorne&backgroundColor=0d382e',
-      content: 'Awesome! Let me know if you want to hop into Council Stage for a soundcheck.',
-      createdAt: '2026-11-11T06:55:00Z',
-      readBy: ['demo_alex_shadow', 'demo_cipher_gold']
-    }
-  ],
-  'c-general': [
-    {
-      id: 'msg-cg-1',
-      conversationId: 'c-general',
-      senderId: 'demo_alex_shadow',
-      senderName: 'Alex Thorne',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AlexThorne&backgroundColor=0d382e',
-      content: 'Welcome everyone to Doomcord! Feel free to explore the communities, create your own custom Orbs, or jump into voice channels.',
-      isPinned: true,
-      createdAt: '2026-11-11T06:00:00Z',
-      readBy: ['demo_alex_shadow', 'demo_seraph_mint', 'demo_cipher_gold'],
-      reactions: { '🌲': ['demo_seraph_mint', 'demo_cipher_gold'], '🚀': ['demo_seraph_mint'] }
-    },
-    {
-      id: 'msg-cg-2',
-      conversationId: 'c-general',
-      senderId: 'demo_seraph_mint',
-      senderName: 'Seraphina Vale',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SeraphMint&backgroundColor=154338',
-      content: 'Loving the dark forest-green palette with coral and mint accents. So much easier on the eyes during late night coding sessions.',
-      createdAt: '2026-11-11T06:12:00Z',
-      readBy: ['demo_seraph_mint', 'demo_alex_shadow']
-    }
-  ],
-  'orb-gaming-glory': [
-    {
-      id: 'msg-og-1',
-      conversationId: 'orb-gaming-glory',
-      senderId: 'demo_alex_shadow',
-      senderName: 'Alex Thorne',
-      senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AlexThorne&backgroundColor=0d382e',
-      content: 'Orb discussion active! Who is down for an extraction run tonight at 21:00 UTC?',
-      createdAt: '2026-11-11T07:00:00Z',
-      readBy: ['demo_alex_shadow'],
-      reactions: { '🎯': ['demo_alex_shadow'] }
-    }
-  ]
+export const INITIAL_SYSTEM_CONFIG: SystemConfigData = {
+  id: 'global',
+  merchantUpiId: 'adrenoxshriyans@fam',
+  maintenanceMode: false,
+  globalAnnouncement: '',
+  globalDiscountPercent: 0,
+  updatedAt: '2026-11-11T00:00:00Z',
 };
-
-// Seed demo friends list
-export const DEMO_FRIENDS: UserProfile[] = [
-  {
-    uid: 'demo_seraph_mint',
-    email: 'seraphina@doomcord.io',
-    username: 'seraph_mint',
-    displayName: 'Seraphina Vale',
-    bio: 'Spatial UI researcher & ambient music producer. Orb enthusiast.',
-    statusMessage: 'Crafting glowing geometry',
-    presence: 'online',
-    accentColor: 'oklch(0.85 0.12 165)',
-    photoURL: 'https://api.dicebear.com/7.x/bottts/svg?seed=SeraphMint&backgroundColor=154338',
-    createdAt: '2026-01-01T00:00:00Z'
-  },
-  {
-    uid: 'demo_cipher_gold',
-    email: 'cipher@doomcord.io',
-    username: 'cipher_zero',
-    displayName: 'Cipher',
-    bio: 'Distributed systems & cryptographic protocols.',
-    statusMessage: 'Do Not Disturb // Deep in code',
-    presence: 'dnd',
-    accentColor: 'oklch(0.84 0.14 85)',
-    photoURL: 'https://api.dicebear.com/7.x/bottts/svg?seed=CipherZero&backgroundColor=2e3a1f',
-    createdAt: '2026-01-05T00:00:00Z'
-  },
-  {
-    uid: 'demo_elena_sky',
-    email: 'elena@doomcord.io',
-    username: 'elena_sky',
-    displayName: 'Elena Rostova',
-    bio: '3D technical artist & particle fx developer.',
-    statusMessage: 'Away grabbing coffee',
-    presence: 'idle',
-    accentColor: 'oklch(0.76 0.11 230)',
-    photoURL: 'https://api.dicebear.com/7.x/bottts/svg?seed=ElenaSky&backgroundColor=1e3a4b',
-    createdAt: '2026-01-12T00:00:00Z'
-  }
-];
-
-export const DEMO_PENDING_REQUESTS: FriendRequest[] = [
-  {
-    id: 'req-kai-1',
-    fromUid: 'demo_kai_moss',
-    toUid: 'demo_alex_shadow',
-    fromUsername: 'kai_moss',
-    fromDisplayName: 'Kai Linden',
-    fromPhotoURL: 'https://api.dicebear.com/7.x/bottts/svg?seed=KaiMoss&backgroundColor=1a3824',
-    toUsername: 'shadow_weaver',
-    status: 'pending',
-    createdAt: '2026-11-10T19:40:00Z'
-  }
-];

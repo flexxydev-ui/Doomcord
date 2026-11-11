@@ -2,23 +2,125 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "User profile and presence configuration",
+      "description": "Real registered user account with role, Nitro status, and equipped cosmetics",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128 },
         "email": { "type": "string", "maxLength": 128 },
         "username": { "type": "string", "maxLength": 32, "pattern": "^[a-z0-9_.-]+$" },
         "displayName": { "type": "string", "maxLength": 50 },
-        "photoURL": { "type": "string", "maxLength": 1024 },
-        "bannerURL": { "type": "string", "maxLength": 1024 },
+        "role": { "type": "string", "enum": ["owner", "admin", "moderator", "member"] },
+        "photoURL": { "type": "string", "maxLength": 2048 },
+        "bannerURL": { "type": "string", "maxLength": 2048 },
         "bio": { "type": "string", "maxLength": 300 },
         "statusMessage": { "type": "string", "maxLength": 100 },
         "presence": { "type": "string", "enum": ["online", "idle", "dnd", "invisible"] },
-        "accentColor": { "type": "string", "maxLength": 30 },
+        "accentColor": { "type": "string", "maxLength": 40 },
+        "secondaryColor": { "type": "string", "maxLength": 40 },
+        "nitroTier": { "type": "string", "enum": ["free", "basic", "nitro"] },
+        "nitroBillingCycle": { "type": "string", "enum": ["none", "monthly", "yearly"] },
+        "nitroExpiresAt": { "type": "string" },
+        "nitroAutoRenew": { "type": "boolean" },
+        "ownedCosmetics": { "type": "array" },
+        "equippedCosmetics": { "type": "object" },
+        "badges": { "type": "array" },
+        "isBanned": { "type": "boolean" },
+        "isSuspended": { "type": "boolean" },
+        "mustChangePassword": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "username", "displayName"]
+    },
+    "NitroPlan": {
+      "title": "NitroPlan",
+      "description": "Configurable Doomcord Nitro subscription tier in INR",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "tier": { "type": "string", "enum": ["free", "basic", "nitro"] },
+        "name": { "type": "string", "maxLength": 60 },
+        "tagline": { "type": "string", "maxLength": 200 },
+        "monthlyPriceINR": { "type": "number" },
+        "yearlyPriceINR": { "type": "number" },
+        "uploadLimitMB": { "type": "number" },
+        "maxMessageLength": { "type": "number" },
+        "shopDiscountPercent": { "type": "number" },
+        "benefits": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tier", "name", "monthlyPriceINR", "yearlyPriceINR"]
+    },
+    "CosmeticItem": {
+      "title": "CosmeticItem",
+      "description": "Original Doomcord Shop cosmetic item or bundle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 50 },
+        "priceINR": { "type": "number" },
+        "rarity": { "type": "string", "enum": ["Common", "Rare", "Epic", "Legendary", "Mythic"] },
+        "nitroEligible": { "type": "string", "enum": ["none", "basic", "nitro"] },
+        "cssPreviewClass": { "type": "string", "maxLength": 200 },
+        "previewColorPrimary": { "type": "string", "maxLength": 40 },
+        "previewColorSecondary": { "type": "string", "maxLength": 40 },
+        "enabled": { "type": "boolean" },
+        "isLimitedEdition": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "category", "priceINR", "rarity"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Verified Razorpay payment or subscription transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["nitro_subscription", "cosmetic_purchase", "admin_grant", "refund"] },
+        "itemId": { "type": "string", "maxLength": 128 },
+        "itemName": { "type": "string", "maxLength": 120 },
+        "amountINR": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "status": { "type": "string", "enum": ["created", "verified", "captured", "failed", "refunded"] },
+        "razorpayOrderId": { "type": "string", "maxLength": 128 },
+        "razorpayPaymentId": { "type": "string", "maxLength": 128 },
+        "razorpaySignature": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "amountINR", "status", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable administrative audit trail record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorEmail": { "type": "string", "maxLength": 128 },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "actorUid", "action", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "Platform-wide configuration, announcements, and Razorpay settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "merchantUpiId": { "type": "string", "maxLength": 100 },
+        "maintenanceMode": { "type": "boolean" },
+        "globalAnnouncement": { "type": "string", "maxLength": 500 },
+        "globalDiscountPercent": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id"]
     },
     "FriendRequest": {
       "title": "FriendRequest",
@@ -36,7 +138,7 @@
     },
     "DirectMessage": {
       "title": "DirectMessage",
-      "description": "Direct message thread between users",
+      "description": "Direct message thread between real users",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -57,7 +159,7 @@
         "conversationId": { "type": "string", "maxLength": 128 },
         "senderId": { "type": "string", "maxLength": 128 },
         "senderName": { "type": "string", "maxLength": 50 },
-        "senderAvatar": { "type": "string", "maxLength": 1024 },
+        "senderAvatar": { "type": "string", "maxLength": 2048 },
         "content": { "type": "string", "maxLength": 4000 },
         "readBy": { "type": "array" },
         "reactions": { "type": "object" },
@@ -72,16 +174,17 @@
     },
     "Community": {
       "title": "Community",
-      "description": "Social community server",
+      "description": "Social community server created by a real user",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 60 },
         "description": { "type": "string", "maxLength": 400 },
-        "iconUrl": { "type": "string", "maxLength": 1024 },
+        "iconUrl": { "type": "string", "maxLength": 2048 },
         "ownerId": { "type": "string", "maxLength": 128 },
-        "themeColor": { "type": "string", "maxLength": 30 },
+        "themeColor": { "type": "string", "maxLength": 40 },
         "isPublic": { "type": "boolean" },
+        "members": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "ownerId"]
@@ -103,7 +206,7 @@
     },
     "Orb": {
       "title": "Orb",
-      "description": "Signature spatial interest realm",
+      "description": "Signature spatial interest realm created by a real user",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -137,11 +240,31 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profile and presence"
+      "description": "User profile, role, Nitro subscription, and cosmetics"
+    },
+    "/nitro_plans/{planId}": {
+      "schema": "NitroPlan",
+      "description": "Doomcord Nitro plans and INR pricing"
+    },
+    "/cosmetics/{cosmeticId}": {
+      "schema": "CosmeticItem",
+      "description": "Doomcord Cosmetics Shop catalog"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Verified Razorpay and store transaction records"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Owner and administrator action audit logs"
+    },
+    "/system_config/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Platform settings, UPI ID reference, and global banners"
     },
     "/friend_requests/{requestId}": {
       "schema": "FriendRequest",
-      "description": "Incoming and outgoing friend requests"
+      "description": "Real incoming and outgoing friend requests"
     },
     "/direct_messages/{dmId}": {
       "schema": "DirectMessage",
@@ -153,7 +276,7 @@
     },
     "/communities/{communityId}": {
       "schema": "Community",
-      "description": "Communities"
+      "description": "Real user-created communities"
     },
     "/communities/{communityId}/channels/{channelId}": {
       "schema": "Channel",

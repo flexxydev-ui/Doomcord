@@ -82,8 +82,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   const pinnedMessages = messages.filter(m => m.isPinned);
 
+  const maxCharLimit = currentUser.nitroTier === 'nitro' ? 4000 : 2000;
+
   const handleSend = () => {
     if (!inputValue.trim()) return;
+    if (inputValue.length > maxCharLimit) return;
 
     onSendMessage(
       inputValue.trim(),
@@ -97,17 +100,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
     setInputValue('');
     setReplyingTo(null);
-
-    // Simulate natural typing indicator response from recipient in demo mode
-    if (recipientProfile && recipientProfile.uid.startsWith('demo_')) {
-      setTimeout(() => {
-        setTypingUser(recipientProfile.displayName);
-      }, 1200);
-
-      setTimeout(() => {
-        setTypingUser(null);
-      }, 3500);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

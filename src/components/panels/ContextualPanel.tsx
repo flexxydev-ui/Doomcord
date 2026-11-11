@@ -61,10 +61,22 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
 
         {/* User Info */}
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-white tracking-wide">{recipientProfile.displayName}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white tracking-wide">{recipientProfile.displayName}</h3>
+            {recipientProfile.role === 'owner' && (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[oklch(0.72_0.16_32)]">
+                · OWNER
+              </span>
+            )}
+            {recipientProfile.nitroTier && recipientProfile.nitroTier !== 'free' && (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[oklch(0.85_0.12_165)]">
+                · {recipientProfile.nitroTier === 'nitro' ? 'NITRO' : 'BASIC'}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-[oklch(0.7_0.03_155)] font-mono block">@{recipientProfile.username}</span>
           <p className="text-xs text-[oklch(0.95_0.015_150)] mt-2 leading-relaxed">
-            {recipientProfile.bio || 'Exploring the Doomcord digital ecosystem.'}
+            {recipientProfile.bio || 'No biography set.'}
           </p>
         </div>
 
@@ -76,7 +88,7 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
             Status
           </span>
           <span className="text-xs text-white bg-[oklch(0.235_0.032_158)] px-2.5 py-1.5 rounded-lg block border border-white/5">
-            {recipientProfile.statusMessage || 'Available'}
+            {recipientProfile.statusMessage || 'Online'}
           </span>
         </div>
 
@@ -84,11 +96,11 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
         <div className="space-y-2 text-xs text-[oklch(0.7_0.03_155)]">
           <div className="flex items-center gap-2">
             <Calendar className="w-3.5 h-3.5 text-[oklch(0.85_0.12_165)]" />
-            <span>Member since {new Date(recipientProfile.createdAt || '2026-01-01').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
+            <span>Member since {new Date(recipientProfile.createdAt || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-[oklch(0.72_0.16_32)]" />
-            <span>Verified Realm Identity</span>
+            <span className="capitalize">Role: {recipientProfile.role || 'user'}</span>
           </div>
         </div>
       </div>

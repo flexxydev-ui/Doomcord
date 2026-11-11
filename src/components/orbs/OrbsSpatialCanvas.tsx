@@ -322,16 +322,16 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-gradient-to-b from-[oklch(0.2_0.03_160)] via-[oklch(0.18_0.028_161)] to-[oklch(0.14_0.025_162)]">
       {/* Top Header Bar */}
-      <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5 backdrop-blur-md bg-[oklch(0.17_0.028_161)]/80">
+      <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[oklch(0.17_0.028_161)]/95">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-gradient-to-tr from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] shadow-lg shadow-black/20">
             <Compass className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              Spatial Orbs Nexus
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[oklch(0.85_0.12_165)]/20 text-[oklch(0.85_0.12_165)] border border-[oklch(0.85_0.12_165)]/30 font-sans font-medium">
-                Live 3D Viewport
+            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2.5">
+              <span>Spatial Orbs Nexus</span>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[oklch(0.85_0.12_165)]">
+                · Live 3D Viewport
               </span>
             </h1>
             <p className="text-xs text-[oklch(0.7_0.03_155)]">
@@ -341,7 +341,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
         </div>
 
         {/* Category Filters */}
-        <div className="hidden lg:flex items-center gap-1.5 p-1 rounded-xl bg-[oklch(0.235_0.032_158)]/60 border border-white/5">
+        <div className="hidden lg:flex items-center gap-1.5 p-1 rounded-xl bg-[oklch(0.235_0.032_158)]/80 border border-white/5">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -380,17 +380,39 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
       <div className="relative flex-1 w-full h-full">
         <div ref={mountRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
 
+        {/* Empty State Overlay when no Orbs exist in database */}
+        {orbs.length === 0 && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center p-6 pointer-events-none">
+            <div className="max-w-md p-6 rounded-2xl bg-[oklch(0.17_0.028_161)]/95 border border-white/10 shadow-2xl text-center pointer-events-auto">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-[oklch(0.235_0.032_158)] border border-white/10 flex items-center justify-center text-[oklch(0.85_0.12_165)]">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h2 className="text-base font-bold text-white mb-1">No Orbs Spawned Yet</h2>
+              <p className="text-xs text-[oklch(0.7_0.03_155)] leading-relaxed mb-4">
+                The 3D spatial cosmos is ready. Create the first public or private interest Orb to populate the real-time orbital viewport.
+              </p>
+              <button
+                onClick={onCreateOrb}
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-gradient-to-r from-[oklch(0.72_0.16_32)] to-[oklch(0.85_0.12_165)] rounded-xl shadow-lg hover:opacity-95 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create First Orb</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hovered / Inspected Tooltip Card */}
         {hoveredOrb && (
-          <div className="absolute top-6 left-6 z-20 max-w-sm p-4 rounded-2xl bg-[oklch(0.17_0.028_161)]/95 border border-white/10 shadow-2xl backdrop-blur-md pointer-events-none transition-all">
+          <div className="absolute top-6 left-6 z-20 max-w-sm p-4 rounded-2xl bg-[oklch(0.17_0.028_161)]/95 border border-white/10 shadow-2xl pointer-events-none transition-all">
             <div className="flex items-center gap-3 mb-2">
               <div 
                 className="w-4 h-4 rounded-full shadow-sm"
                 style={{ backgroundColor: hoveredOrb.primaryColor }}
               />
               <span className="text-sm font-bold text-white tracking-wide">{hoveredOrb.name}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-[oklch(0.7_0.03_155)] border border-white/10">
-                {hoveredOrb.category}
+              <span className="text-xs font-mono text-[oklch(0.85_0.12_165)]">
+                · {hoveredOrb.category}
               </span>
             </div>
             <p className="text-xs text-[oklch(0.7_0.03_155)] line-clamp-2 mb-3">
@@ -411,7 +433,7 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
 
         {/* Selected Orb Inspector Modal/Panel */}
         {selectedOrb && (
-          <div className="absolute bottom-24 right-6 z-20 w-80 p-5 rounded-2xl bg-[oklch(0.17_0.028_161)] border border-white/10 shadow-2xl backdrop-blur-lg">
+          <div className="absolute bottom-24 right-6 z-20 w-80 p-5 rounded-2xl bg-[oklch(0.17_0.028_161)]/95 border border-white/10 shadow-2xl">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <span className="text-xs font-medium text-[oklch(0.85_0.12_165)] tracking-wider uppercase">
@@ -460,50 +482,52 @@ export const OrbsSpatialCanvas: React.FC<OrbsSpatialCanvasProps> = ({
       </div>
 
       {/* Sleek Collapsible Bottom Dock (Zero Viewport Occlusion per Three.js Directives) */}
-      <div className="relative z-20 flex flex-col items-center pb-4 px-6 pointer-events-none">
-        {/* Toggle Drawer Button */}
-        <button
-          onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-          className="pointer-events-auto px-4 py-1 mb-2 text-[11px] font-medium text-[oklch(0.7_0.03_155)] hover:text-white bg-[oklch(0.17_0.028_161)]/90 border border-white/10 rounded-full shadow-md backdrop-blur-md transition-all"
-        >
-          {isControlsCollapsed ? '▲ Show Orbs Navigator' : '▼ Hide Controls'}
-        </button>
+      {orbs.length > 0 && (
+        <div className="relative z-20 flex flex-col items-center pb-4 px-6 pointer-events-none">
+          {/* Toggle Drawer Button */}
+          <button
+            onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
+            className="pointer-events-auto px-4 py-1 mb-2 text-[11px] font-medium text-[oklch(0.7_0.03_155)] hover:text-white bg-[oklch(0.17_0.028_161)]/95 border border-white/10 rounded-lg shadow-md transition-all"
+          >
+            {isControlsCollapsed ? '▲ Show Orbs Navigator' : '▼ Hide Controls'}
+          </button>
 
-        {/* Horizontal Dock Cards */}
-        <div 
-          className={`pointer-events-auto w-full max-w-4xl p-2.5 rounded-2xl bg-[oklch(0.17_0.028_161)]/90 border border-white/10 shadow-2xl backdrop-blur-md transition-all duration-300 ${
-            isControlsCollapsed ? 'opacity-0 translate-y-6 pointer-events-none h-0 p-0 overflow-hidden' : 'opacity-100 translate-y-0'
-          }`}
-        >
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-            {filteredOrbs.map((orb) => {
-              const isSelected = selectedOrb?.id === orb.id;
-              return (
-                <button
-                  key={orb.id}
-                  onClick={() => onSelectOrb(orb)}
-                  className={`flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all shrink-0 text-left ${
-                    isSelected
-                      ? 'bg-[oklch(0.235_0.032_158)] border-[oklch(0.85_0.12_165)] shadow-md'
-                      : 'bg-white/5 border-white/5 hover:border-white/15 hover:bg-white/10'
-                  }`}
-                >
-                  <div 
-                    className="w-3.5 h-3.5 rounded-full shadow-sm"
-                    style={{ backgroundColor: orb.primaryColor }}
-                  />
-                  <div>
-                    <span className="text-xs font-semibold text-white block leading-tight">{orb.name}</span>
-                    <span className="text-[10px] text-[oklch(0.7_0.03_155)] font-mono tabular-nums">
-                      {orb.memberCount} members · {orb.category}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+          {/* Horizontal Dock Cards */}
+          <div 
+            className={`pointer-events-auto w-full max-w-4xl p-2.5 rounded-2xl bg-[oklch(0.17_0.028_161)]/95 border border-white/10 shadow-2xl transition-all duration-300 ${
+              isControlsCollapsed ? 'opacity-0 translate-y-6 pointer-events-none h-0 p-0 overflow-hidden' : 'opacity-100 translate-y-0'
+            }`}
+          >
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+              {filteredOrbs.map((orb) => {
+                const isSelected = selectedOrb?.id === orb.id;
+                return (
+                  <button
+                    key={orb.id}
+                    onClick={() => onSelectOrb(orb)}
+                    className={`flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all shrink-0 text-left ${
+                      isSelected
+                        ? 'bg-[oklch(0.235_0.032_158)] border-[oklch(0.85_0.12_165)] shadow-md'
+                        : 'bg-white/5 border-white/5 hover:border-white/15 hover:bg-white/10'
+                    }`}
+                  >
+                    <div 
+                      className="w-3.5 h-3.5 rounded-full shadow-sm"
+                      style={{ backgroundColor: orb.primaryColor }}
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-white block leading-tight">{orb.name}</span>
+                      <span className="text-[10px] text-[oklch(0.7_0.03_155)] font-mono tabular-nums">
+                        {orb.memberCount} members · {orb.category}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
