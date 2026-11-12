@@ -1,0 +1,1926 @@
+DOOMCORD — ULTIMATE MASTER DEVELOPMENT PROMPT
+
+COMPLETE PLATFORM DEVELOPMENT, DISCORD FEATURE PARITY, SECURITY, MONETIZATION AND UI REDESIGN
+
+You are the lead software architect, senior full-stack developer, security engineer and product designer responsible for completing Doomcord.
+
+EXISTING PROJECT: https://doom-cord.ai.studio
+
+Your task is to transform the existing Doomcord application into a comprehensive, production-quality social communication ecosystem with feature coverage comparable to Discord across its major product areas.
+
+This is not a request to create a simple chat application.
+
+This is not a request to generate a visual prototype.
+
+This is not a request to create a new disconnected project.
+
+I want the existing application thoroughly inspected, redesigned, expanded, secured, tested and completed.
+
+The goal is to provide users with a complete alternative social communication platform with all major capabilities expected from a modern community and messaging application.
+
+Do not intentionally simplify major features.
+
+Do not remove functionality to make development easier.
+
+Do not replace real functionality with fake buttons or static demonstrations.
+
+---
+
+SECTION 1 — INSPECT THE EXISTING DOOMCORD PROJECT
+
+Before modifying anything, inspect the complete existing project.
+
+Examine:
+
+- Frontend architecture.
+- Backend architecture.
+- Existing framework and dependencies.
+- All routes and pages.
+- React components.
+- Database schema.
+- Authentication provider.
+- API endpoints.
+- Server-side functions.
+- Database permissions.
+- Storage configuration.
+- Payment integrations.
+- Subscription management.
+- Owner hierarchy.
+- Gifting implementation.
+- Receipt implementation.
+- Mobile layouts.
+- Existing design system.
+- Build and deployment configuration.
+
+Inspect the actual implementation rather than assuming that requested features already work.
+
+Create an internal feature inventory with these statuses:
+
+- COMPLETE AND VERIFIED.
+- PARTIALLY IMPLEMENTED.
+- BROKEN.
+- NOT IMPLEMENTED.
+- BLOCKED BY EXTERNAL CONFIGURATION.
+
+Identify bugs, unfinished features, duplicate functionality, missing integrations and inconsistent implementations.
+
+Do not ask me to repeat features or requirements already specified here.
+
+Preserve all existing user accounts, messages, communities, Orbs, subscriptions, payment records, purchases and other production data.
+
+Take a backup and use safe database migrations before making structural changes.
+
+SECTION 2 — OFFICIAL DOOMCORD BRAND IDENTITY
+
+Original Doomcord logo
+
+Use the uploaded original Doomcord purple D logo as the official application logo.
+
+This exact logo must be used throughout the product.
+
+Requirements:
+
+- Do not redraw the logo.
+- Do not distort its proportions.
+- Do not replace it with a generic Discord-like icon.
+- Do not change its recognizable shape.
+- Preserve its original purple identity.
+- Use appropriately sized versions for different interface locations.
+
+Integrate it into:
+
+- Main application navigation.
+- Authentication pages.
+- Loading screens.
+- Application branding.
+- Browser favicon.
+- Profile and community branding where appropriate.
+
+Official colour system
+
+Completely replace the previous forest-green theme.
+
+Use this new official Doomcord colour palette:
+
+Element| Colour
+Main background| #09090D
+Secondary background| #101014
+Sidebar| #0D0D12
+Elevated surface| #17171F
+Card surface| #1C1B25
+Hover surface| #22212C
+Primary purple| #8957F5
+Secondary purple| #A47BFF
+Light lavender| #C4B1FF
+Primary text| #F5F3FA
+Secondary text| #A19DAD
+Muted text| #706C7B
+Borders| #282631
+Success| #59C995
+Warning| #E8B768
+Error| #EA747E
+
+Use purple for primary actions, selected navigation, badges and highlights.
+
+Use lavender sparingly.
+
+UI design philosophy
+
+Make Doomcord:
+
+- Minimalistic.
+- Premium.
+- Clean.
+- Modern.
+- Consistent.
+- Easy to navigate.
+- Fast.
+- Responsive.
+- Professionally designed.
+
+Use Inter or Figtree for interface typography.
+
+Use Lucide icons consistently.
+
+Avoid excessive animation, unnecessary gradients, excessive glowing, random decorative elements, cluttered card grids and oversized components.
+
+Animations should only be used where they improve interaction or provide meaningful feedback.
+
+The application should feel like a polished desktop product, not a generic AI-generated dashboard.
+
+---
+
+SECTION 3 — COMPLETE ACCOUNT SYSTEM AND SECURITY
+
+Build a comprehensive account management system.
+
+Registration and authentication
+
+Implement:
+
+- Email and password registration.
+- Login.
+- Logout.
+- Email verification.
+- Password reset.
+- Secure account recovery.
+- Google OAuth where configured.
+- Protected application routes.
+- Session management.
+- Account deletion.
+- Account deactivation.
+- Login history.
+- New-device notifications.
+- Suspicious login detection.
+
+Two-factor authentication
+
+Implement genuine two-factor authentication.
+
+Support:
+
+- TOTP authenticator applications.
+- Backup recovery codes.
+- Passkeys.
+- WebAuthn/FIDO2 security keys.
+- Trusted devices.
+- Device revocation.
+- Recovery procedures.
+- Login verification.
+- Sensitive-action verification.
+
+Provide a dedicated Security settings page.
+
+Users must be able to enable, disable and manage their authentication methods.
+
+Never store plaintext TOTP secrets or recovery codes.
+
+Account security
+
+Include:
+
+- Change password.
+- Change email with verification.
+- Active sessions.
+- Sign out all devices.
+- Trusted device management.
+- Login activity.
+- Account recovery.
+- Security notifications.
+- Privacy settings.
+- Connected applications.
+
+Require additional authentication for dangerous administrative operations.
+
+User profiles
+
+Support:
+
+- Unique username.
+- Display name.
+- Avatar.
+- Animated avatar where supported.
+- Profile banner.
+- Biography.
+- Custom status.
+- Presence.
+- Profile themes.
+- Decorations.
+- Badges.
+- Connected accounts.
+- Joined communities.
+- Public Orbs.
+- Profile privacy.
+
+Presence states:
+
+- Online.
+- Idle.
+- Do Not Disturb.
+- Invisible.
+
+---
+
+SECTION 4 — COMPLETE FRIENDS AND SOCIAL SYSTEM
+
+Implement a fully functional friendship system.
+
+Features:
+
+- Search users.
+- Profile previews.
+- Send friend requests.
+- Accept requests.
+- Reject requests.
+- Cancel outgoing requests.
+- Remove friends.
+- Block users.
+- Unblock users.
+- Pending requests.
+- Sent requests.
+- Online friends.
+- Friend suggestions.
+- Mutual communities.
+- Shared Orbs.
+- Quick messaging.
+
+Support message requests from people who are not friends.
+
+Allow users to control who can send requests and messages.
+
+---
+
+SECTION 5 — ADVANCED DIRECT MESSAGING
+
+Create a full-featured real-time messaging system.
+
+Conversations
+
+Support:
+
+- One-to-one conversations.
+- Group conversations.
+- Group names.
+- Group icons.
+- Member invitations.
+- Member removal with permissions.
+- Group ownership.
+- Conversation settings.
+- Mute conversations.
+- Message requests.
+
+Message functionality
+
+Implement:
+
+- Real-time message delivery.
+- Message editing.
+- Message deletion.
+- Replies.
+- Threads.
+- Reactions.
+- Emoji reactions.
+- Mentions.
+- Pinned messages.
+- Bookmarks.
+- Message search.
+- Read receipts.
+- Typing indicators.
+- Unread tracking.
+- Message timestamps.
+- Draft messages.
+- Message reporting.
+- Attachments.
+- Image previews.
+- Video previews.
+- Link embeds.
+- Spoilers.
+- Markdown.
+- Code blocks.
+- Syntax highlighting.
+- Polls.
+- Voice messages.
+- Message forwarding where appropriate.
+
+Rich message composer
+
+Support:
+
+- Bold.
+- Italic.
+- Underline.
+- Strikethrough.
+- Code.
+- Code blocks.
+- Blockquotes.
+- Lists.
+- Links.
+- Spoilers.
+- Emoji picker.
+- GIF picker.
+- Sticker picker.
+- File uploads.
+- Image paste.
+- Drag and drop.
+
+Include typing status, upload progress and attachment removal.
+
+Messages must persist in the real database and synchronize across devices.
+
+---
+
+SECTION 6 — COMPLETE SERVER AND COMMUNITY MANAGEMENT
+
+Treat Doomcord Communities as full-featured servers.
+
+Each server must have a complete management system.
+
+Server settings
+
+Allow authorized users to configure:
+
+- Server name.
+- Server icon.
+- Server banner.
+- Description.
+- Server theme.
+- Server visibility.
+- Invite settings.
+- Verification level.
+- Content filters.
+- Default notifications.
+- Welcome messages.
+- Server rules.
+- Community discovery.
+- Onboarding.
+- Member requirements.
+
+Advanced channel management
+
+Support:
+
+1. Text channels.
+2. Voice channels.
+3. Announcement channels.
+4. Forum channels.
+5. Stage channels.
+6. Media channels.
+
+Include:
+
+- Channel categories.
+- Drag-and-drop channel ordering.
+- Channel descriptions.
+- Channel topics.
+- Permissions.
+- Slow mode.
+- Private channels.
+- Role-exclusive channels.
+- Archived channels.
+- Channel templates.
+- Channel cloning.
+- Channel notification settings.
+
+Role management
+
+Create a proper role-management interface.
+
+Include:
+
+- Custom role names.
+- Role colours.
+- Role icons.
+- Role descriptions.
+- Role hierarchy.
+- Drag-and-drop ordering.
+- Multiple roles per member.
+- Default roles.
+- Temporary roles.
+- Mentionable roles.
+- Role-based visibility.
+- Automatic role assignment where configured.
+
+Granular permissions
+
+Support:
+
+- Administrator.
+- Manage Server.
+- Manage Channels.
+- Manage Roles.
+- Manage Members.
+- Manage Messages.
+- Manage Integrations.
+- Manage Webhooks.
+- Manage Events.
+- Manage Invites.
+- View Audit Logs.
+- Kick Members.
+- Ban Members.
+- Timeout Members.
+- Send Messages.
+- Embed Links.
+- Attach Files.
+- Add Reactions.
+- Mention Everyone.
+- Create Threads.
+- Manage Threads.
+- Connect to Voice.
+- Speak.
+- Use Video.
+- Screen Share.
+- Use Soundboard.
+
+Enforce permissions on the backend.
+
+Implement correct role hierarchy and channel-specific overrides.
+
+Users must never be able to grant themselves privileges by changing frontend data.
+
+Server member management
+
+Include:
+
+- Member search.
+- Member profiles.
+- Role assignment.
+- Role removal.
+- Nickname editing.
+- Kick.
+- Ban.
+- Temporary ban.
+- Unban.
+- Timeout.
+- Member verification.
+- Join dates.
+- Moderator notes.
+- Bulk moderation.
+- Member activity where permitted.
+
+Server invitations
+
+Implement:
+
+- Permanent invite links.
+- Temporary invite links.
+- Expiring links.
+- Limited-use links.
+- Custom invite codes where supported.
+- Invite tracking.
+- Invite revocation.
+- Invitation analytics.
+
+---
+
+SECTION 7 — ADVANCED MESSAGING AND COMMUNITY FEATURES
+
+Add:
+
+- Message threads.
+- Forum discussions.
+- Polls.
+- Announcements.
+- Pinned messages.
+- Message bookmarks.
+- Scheduled messages.
+- Slow mode.
+- Cross-posting.
+- Rich embeds.
+- Media galleries.
+- Code snippets.
+- Channel followers where supported.
+- Channel permissions.
+- Message moderation.
+- Announcement notifications.
+
+All features must respect permissions and visibility.
+
+---
+
+SECTION 8 — VOICE, VIDEO AND SCREEN SHARING
+
+Implement actual real-time communication.
+
+Do not create decorative call buttons.
+
+Voice
+
+Support:
+
+- One-to-one voice calls.
+- Group voice calls.
+- Voice channels.
+- Push-to-talk.
+- Voice activity detection.
+- Microphone selection.
+- Speaker selection.
+- Noise suppression.
+- Echo cancellation.
+- Mute.
+- Deafen.
+- Individual participant volume.
+- Reconnection handling.
+- Speaking indicators.
+
+Video
+
+Support:
+
+- One-to-one video calls.
+- Group video calls.
+- Camera selection.
+- Video previews.
+- Camera controls.
+- Call invitations.
+- Participant management.
+- Video quality settings.
+
+Screen sharing
+
+Support:
+
+- Entire screen.
+- Application window.
+- Browser tab where available.
+- Audio sharing where supported.
+- Stream quality selection.
+- Resolution controls.
+- Multiple viewers.
+- Stream permissions.
+
+Use real WebRTC or a suitable managed communication service such as LiveKit.
+
+Implement signalling, TURN/STUN, room authentication, secure tokens, connection recovery and appropriate participant limits.
+
+If external infrastructure is required, identify exactly which service and credentials are missing.
+
+Never claim voice/video is complete without a functioning media connection.
+
+---
+
+SECTION 9 — AUTOMOD AND MODERATION
+
+Create an advanced moderation engine.
+
+Include:
+
+- Keyword filtering.
+- Spam detection.
+- Mention spam prevention.
+- Duplicate message detection.
+- Suspicious link filtering.
+- Invite link filtering.
+- Raid detection.
+- New-account restrictions.
+- Username filtering.
+- Automated warnings.
+- Automatic message removal.
+- Configurable moderation actions.
+
+Moderation tools
+
+Implement:
+
+- Warnings.
+- Timeouts.
+- Kicks.
+- Temporary bans.
+- Permanent bans.
+- Unbans.
+- Ban appeals.
+- Message reports.
+- User reports.
+- Evidence attachments.
+- Moderator notes.
+- Moderation queues.
+- Audit logs.
+
+Provide moderators with a complete, searchable moderation dashboard.
+
+Automated moderation must be configurable and auditable.
+
+Do not automatically issue severe punishments based only on unreliable detection.
+
+---
+
+SECTION 10 — BOTS, WEBHOOKS AND DEVELOPER PLATFORM
+
+Build a genuine Doomcord bot ecosystem.
+
+Bot system
+
+Support:
+
+- Bot account creation.
+- Bot profiles.
+- Bot tokens.
+- Token rotation.
+- Permission scopes.
+- Server installation.
+- Slash commands.
+- Command permissions.
+- Event subscriptions.
+- Bot management.
+- Rate limits.
+- Audit logs.
+- Interaction endpoints.
+
+Developer portal
+
+Build a developer portal supporting:
+
+- Application registration.
+- Application management.
+- OAuth configuration.
+- Redirect URI management.
+- API credentials.
+- Bot management.
+- Permission configuration.
+- Webhook configuration.
+- API documentation.
+- Usage analytics.
+- Integration testing.
+
+Protect API secrets and bot credentials.
+
+Do not expose them in browser code.
+
+Webhooks
+
+Support:
+
+- Webhook creation.
+- Webhook editing.
+- Webhook deletion.
+- Channel targeting.
+- Secure webhook secrets.
+- Signature verification.
+- Delivery logs.
+- Retry mechanisms.
+- Rate limiting.
+- Revocation.
+
+External integrations
+
+Design integration support for:
+
+- GitHub.
+- Twitch.
+- YouTube.
+- Spotify.
+- Steam.
+- Google.
+- Other supported external platforms.
+
+Only enable integrations with real API access and properly configured credentials.
+
+---
+
+SECTION 11 — DISCOVERY, ONBOARDING AND EVENTS
+
+Server discovery
+
+Create:
+
+- Featured communities.
+- Trending communities.
+- Search.
+- Categories.
+- Tags.
+- Community previews.
+- Join requirements.
+- Public server descriptions.
+- Report community.
+- Discovery moderation.
+
+Use actual activity data. Never invent popularity statistics.
+
+Community onboarding
+
+Support:
+
+- Welcome screens.
+- Rules acceptance.
+- Custom onboarding questions.
+- Role selection.
+- Channel selection.
+- Interest selection.
+- Recommended channels.
+- Welcome messages.
+
+Events
+
+Support:
+
+- Event creation.
+- Event descriptions.
+- Event banners.
+- Start and end dates.
+- Timezone support.
+- Voice events.
+- Stage events.
+- External links.
+- RSVP.
+- Interested participants.
+- Reminders.
+- Event cancellation.
+
+Activities
+
+Build an extensible real-time activity framework supporting:
+
+- Polls.
+- Quizzes.
+- Shared media experiences.
+- Collaborative whiteboards.
+- Mini-games.
+- Interactive community tools.
+
+---
+
+SECTION 12 — DOOMCORD ORBS
+
+Orbs are Doomcord's signature social feature.
+
+Preserve and expand the existing Orb system.
+
+Support:
+
+- Orb creation.
+- Orb editing.
+- Orb deletion.
+- Orb discovery.
+- Search.
+- Categories.
+- Public visibility.
+- Friends-only visibility.
+- Private visibility.
+- Following.
+- Joining.
+- Sharing.
+- Reactions.
+- Member management.
+- Owner controls.
+- Ownership transfer.
+- Custom descriptions.
+- Custom icons.
+- Custom colours.
+- Live activity where supported.
+
+Create a beautiful but minimalistic Orb discovery interface.
+
+Use original circular visuals and subtle purple accents.
+
+Do not overcrowd the interface with floating graphics and excessive animations.
+
+---
+
+SECTION 13 — NOTIFICATIONS AND PRESENCE
+
+Build a complete notification system.
+
+Include:
+
+- Direct messages.
+- Friend requests.
+- Mentions.
+- Community announcements.
+- Server invitations.
+- Event reminders.
+- Orb activity.
+- APEX membership.
+- Gift notifications.
+- Security notifications.
+
+Support:
+
+- In-app notifications.
+- Browser push notifications.
+- Notification preferences.
+- Mute server.
+- Mute channel.
+- Mute user.
+- Do Not Disturb settings.
+- Quiet hours.
+- Unread counters.
+- Read/unread management.
+
+Implement real notification persistence.
+
+---
+
+SECTION 14 — UNIVERSAL SEARCH AND PRODUCTIVITY
+
+Create global search for:
+
+- People.
+- Messages.
+- Communities.
+- Channels.
+- Orbs.
+- Events.
+- Media.
+
+Include:
+
+- Search suggestions.
+- Filters.
+- Search history.
+- Date filters.
+- User filters.
+- Channel filters.
+- Content filters.
+
+Respect user permissions when returning results.
+
+Also add:
+
+- Quick switcher.
+- Keyboard shortcuts.
+- Saved messages.
+- Bookmarks.
+- Message reminders.
+- Recently viewed channels.
+- Draft persistence.
+- Unread markers.
+
+---
+
+SECTION 15 — PROFILE CUSTOMIZATION AND COSMETICS
+
+Build an extensive profile customization system.
+
+Include:
+
+- Static avatars.
+- Animated avatars.
+- Profile banners.
+- Animated banners.
+- Biography.
+- Profile themes.
+- Avatar decorations.
+- Profile frames.
+- Profile effects.
+- Animated effects.
+- Nameplates.
+- Gradient names.
+- Premium badges.
+- Custom status.
+- Connected accounts.
+- Public activity settings.
+- Per-community profiles where supported.
+
+Create a complete cosmetic shop and permanent inventory.
+
+Users must be able to preview cosmetics before purchasing.
+
+Use original Doomcord designs, not copied Discord assets.
+
+---
+
+SECTION 16 — APEX PREMIUM MEMBERSHIP SYSTEM
+
+Completely replace user-facing Nitro terminology with DOOMCORD APEX.
+
+The two official membership tiers are:
+
+APEX
+
+- ₹49 per month.
+- ₹499 per year.
+
+APEX+
+
+- ₹99 per month.
+- ₹999 per year.
+
+Preserve previously defined benefits for both tiers.
+
+APEX membership features must include:
+
+- Premium badges.
+- Avatar decorations.
+- Profile effects.
+- Animated banners.
+- Nameplates.
+- Themes.
+- Premium emojis.
+- Animated stickers.
+- Custom cosmetics.
+- Higher upload limits.
+- Customization features.
+- Premium collections.
+- Additional benefits configured by the platform.
+
+Do not reduce, remove or silently change existing membership benefits.
+
+Create a dedicated APEX page featuring:
+
+- Plan comparison.
+- Pricing.
+- Benefits.
+- Membership management.
+- Upgrade.
+- Downgrade.
+- Cancellation.
+- Renewal information.
+- Purchase history.
+- Receipts.
+- Premium cosmetic previews.
+
+Remove all outdated Nitro references from the user-facing experience while preserving internal database identifiers and existing subscription records where necessary for compatibility.
+
+---
+
+SECTION 17 — APEX PURCHASE AND SEND AS A GIFT CHECKBOX
+
+This feature is mandatory.
+
+On every APEX membership purchase page, display:
+
+☐ SEND AS A GIFT
+
+Description:
+
+"Purchase this membership for someone else and give them access to Doomcord premium features."
+
+Show this checkbox for:
+
+- APEX monthly.
+- APEX yearly.
+- APEX+ monthly.
+- APEX+ yearly.
+
+Normal purchase
+
+When unchecked:
+
+- Purchase for the authenticated user.
+- Process Razorpay payment.
+- Verify payment.
+- Activate the correct membership.
+- Update entitlements.
+- Generate a receipt.
+
+Gift purchase
+
+When checked:
+
+Reveal an expandable gift form.
+
+Allow:
+
+- Recipient username.
+- Recipient email.
+- Unrestricted gift link.
+- Optional personal message.
+
+Change the payment button to:
+
+PURCHASE GIFT
+
+After payment verification:
+
+1. Create a gift record.
+2. Create a unique secure token.
+3. Generate a unique gift URL.
+4. Associate the recipient if specified.
+5. Record purchaser details.
+6. Show the gift confirmation.
+7. Provide copy and share options.
+8. Generate the appropriate receipt.
+
+Do not grant membership to the purchaser when they purchase a gift.
+
+Membership should activate for the recipient only after successful gift redemption.
+
+---
+
+SECTION 18 — OWNER UNLIMITED APEX PRIVILEGES
+
+The original Main Owner must automatically receive permanent, unlimited, complimentary APEX+.
+
+Use the entitlement identifier:
+
+OWNER_PERMANENT_APEX
+
+Associate it with the actual root-owner authentication UUID.
+
+The owner receives:
+
+- Permanent APEX+.
+- Every current APEX benefit.
+- Every current APEX+ benefit.
+- All premium cosmetics.
+- All profile effects.
+- All premium badges.
+- All future membership benefits.
+- Unlimited complimentary gifting privileges.
+
+The owner must never lose this entitlement because of:
+
+- Failed payments.
+- Subscription expiry.
+- Razorpay events.
+- Cancellation.
+- Renewal problems.
+- Cosmetic shop changes.
+
+Owner membership experience
+
+When the root owner opens the APEX page, display:
+
+APEX+ UNLOCKED
+
+PERMANENT OWNER MEMBERSHIP
+
+Do not show:
+
+- Personal purchase buttons.
+- Subscription checkout.
+- Upgrade prompts.
+- Pricing intended for purchasing the owner's own membership.
+
+The owner must directly access all APEX+ features.
+
+Important: The owner must still be able to purchase APEX gifts for other people and issue complimentary gifts.
+
+Do not hide or disable gift purchasing.
+
+---
+
+SECTION 19 — UNLIMITED OWNER GIFTING SYSTEM
+
+The Main Owner must be able to gift any premium entitlement to any registered user.
+
+Giftable items include:
+
+- APEX.
+- APEX+.
+- Lifetime APEX.
+- Lifetime APEX+.
+- Any avatar decoration.
+- Any profile effect.
+- Any banner.
+- Any nameplate.
+- Any premium badge.
+- Any cosmetic collection.
+- Any future premium item.
+
+Duration options:
+
+- 1 day.
+- 3 days.
+- 7 days.
+- 15 days.
+- 30 days.
+- 90 days.
+- 180 days.
+- 1 year.
+- Lifetime.
+- Custom duration.
+
+The Main Owner must be able to issue unlimited complimentary gifts without buying the items first.
+
+Unique gift URLs
+
+Every gift must receive a unique URL.
+
+Example:
+
+https://doomcord.com/gift/UNIQUE-SECURE-TOKEN
+
+Requirements:
+
+- Cryptographically secure token generation.
+- Hashed token storage.
+- Single-use redemption by default.
+- Recipient restrictions.
+- Redemption timestamps.
+- Gift status.
+- Gift history.
+- Revocation of unclaimed gifts.
+- Duplicate redemption prevention.
+- Atomic database redemption.
+
+The recipient must authenticate before claiming a gift.
+
+A lifetime gift must create a permanent entitlement that does not expire after redemption.
+
+The owner must have a dedicated Gift Management dashboard.
+
+Include:
+
+- Create gift.
+- Select multiple items.
+- Select duration.
+- Select recipient.
+- Generate unique URL.
+- Copy gift URL.
+- View redeemed gifts.
+- View pending gifts.
+- Revoke pending gifts.
+- View recipient.
+- View redemption history.
+- View gift analytics.
+
+Do not allow normal users to access owner gifting privileges.
+
+---
+
+SECTION 20 — RAZORPAY PAYMENT INTEGRATION
+
+Integrate Razorpay properly.
+
+Merchant UPI reference provided:
+
+adrenoxshriyans@fam
+
+Use this UPI ID only in the appropriate verified merchant UPI configuration.
+
+Do not assume that a UPI ID alone activates Razorpay merchant payments or bank settlement.
+
+The merchant must complete Razorpay onboarding, KYC and payment configuration.
+
+Razorpay payment methods
+
+Support payment methods available and enabled on the merchant account:
+
+- UPI.
+- Cards.
+- Net banking.
+- Supported wallets.
+- Recurring payment methods.
+
+Subscription management
+
+Create or configure:
+
+- APEX Monthly: ₹49.
+- APEX Yearly: ₹499.
+- APEX+ Monthly: ₹99.
+- APEX+ Yearly: ₹999.
+
+Support actual recurring billing through Razorpay Subscriptions where eligible.
+
+Handle cancellation, renewal, pending, activated, charged, failed and completed states correctly.
+
+Secure integration
+
+Use server-side environment secrets:
+
+RAZORPAY_KEY_ID
+RAZORPAY_KEY_SECRET
+RAZORPAY_WEBHOOK_SECRET
+
+Never expose secrets in frontend code.
+
+Implement:
+
+- Server-side order creation.
+- Server-side subscription creation.
+- Payment signature verification.
+- Webhook signature verification.
+- Webhook idempotency.
+- Duplicate event prevention.
+- Payment state validation.
+- Refund tracking.
+- Subscription lifecycle management.
+- Transaction history.
+- Reconciliation.
+
+Never activate premium benefits because of a client-side success redirect alone.
+
+If credentials or merchant activation are missing, clearly report the blocker.
+
+Do not pretend live payments have been tested.
+
+---
+
+SECTION 21 — RECEIPT GENERATOR AND FINANCE SYSTEM
+
+Create a complete Receipt Management module.
+
+Location:
+
+Admin Dashboard → Finance → Receipts
+
+The Main Owner must be able to create receipts manually or through verified payment events.
+
+Support receipt types:
+
+- APEX.
+- APEX+.
+- Cosmetic purchase.
+- Decoration purchase.
+- Gift purchase.
+- Complimentary gift.
+- Lifetime membership.
+- Lifetime cosmetic.
+- Custom service.
+- Refund.
+
+Receipt fields
+
+Include:
+
+- Unique receipt number.
+- Customer username.
+- Customer display name.
+- Customer email.
+- Customer UUID.
+- Receipt title.
+- Product name.
+- Category.
+- Quantity.
+- Unit price.
+- Discount.
+- Tax breakdown where applicable.
+- Total amount.
+- Currency.
+- Payment method.
+- Payment status.
+- Transaction reference.
+- Issue date.
+- Service start date.
+- Expiry date.
+- Duration.
+- Additional notes.
+
+Duration configuration
+
+Support:
+
+- 1 day.
+- 3 days.
+- 7 days.
+- 15 days.
+- 30 days.
+- 60 days.
+- 90 days.
+- 180 days.
+- 1 year.
+- Lifetime.
+- Custom duration.
+
+Allow custom units:
+
+- Minutes.
+- Hours.
+- Days.
+- Weeks.
+- Months.
+- Years.
+
+Automatically calculate start date and expiry date.
+
+Lifetime services must display:
+
+LIFETIME — NO EXPIRATION
+
+Receipt management
+
+Support:
+
+- PDF generation.
+- Printing.
+- Secure receipt URLs.
+- Download.
+- Email delivery where configured.
+- Receipt search.
+- Receipt filtering.
+- Payment history.
+- Duplicate receipt copies.
+- Corrected receipts.
+- Audit history.
+
+Example receipt number:
+
+DC-2026-000001
+
+Use actual transaction data.
+
+Clearly distinguish paid, pending, failed, refunded and complimentary receipts.
+
+Creating a receipt must not independently activate an entitlement.
+
+---
+
+SECTION 22 — MULTI-OWNER SYSTEM
+
+Implement a secure hierarchical owner system.
+
+Roles:
+
+1. root_owner.
+2. secondary_owner.
+3. administrator.
+4. moderator.
+5. member.
+
+Original Main Owner
+
+The original owner is the highest authority.
+
+Identify the account through its protected authentication UUID.
+
+The original Main Owner has full administrative access.
+
+Creating other owners
+
+Add:
+
+Admin Dashboard → Owner Management → Create Owner
+
+Allow the Main Owner to:
+
+- Invite a person by email.
+- Create a secondary-owner invitation.
+- Send a secure invitation link.
+- Allow the invited person to register or authenticate.
+- Grant secondary owner privileges.
+- View all secondary owners.
+- Suspend secondary owners.
+- Reactivate secondary owners.
+- Revoke secondary-owner privileges.
+- Inspect owner activity.
+
+Use actual authentication accounts and UUIDs.
+
+Never create hardcoded fictional owner profiles.
+
+Secondary owner permissions
+
+Secondary owners may receive extensive management capabilities:
+
+- User management.
+- Community management.
+- Orb management.
+- Moderation.
+- APEX management.
+- Cosmetics management.
+- Gift management if authorized.
+- Payment management if authorized.
+- Receipts.
+- Analytics.
+- Platform configuration where authorized.
+
+Absolute root-owner protection
+
+No secondary owner may:
+
+- Delete the root owner.
+- Suspend the root owner.
+- Ban the root owner.
+- Demote the root owner.
+- Replace the root owner UUID.
+- Remove root-owner privileges.
+- Change the root owner's credentials.
+- Revoke root-owner sessions.
+- Take ownership of the platform.
+
+Enforce these restrictions on the server and database.
+
+Do not rely on hiding frontend buttons.
+
+Only the root owner can create or revoke secondary-owner privileges.
+
+Secondary owners cannot create another root owner.
+
+Initial account bootstrap
+
+If the original root owner account does not already exist, use the supplied initial owner email:
+
+razorpay@admin.doom
+
+Use the temporary initial credential supplied during secure bootstrap only if required.
+
+Do not hardcode, expose, log or store the password in source code or plaintext database fields.
+
+Require an immediate password change and MFA enrollment before public production use.
+
+If the account already exists, preserve its actual authentication UUID and do not create a duplicate.
+
+---
+
+SECTION 23 — COMPLETE ADMIN DASHBOARD
+
+Create a professional administration interface.
+
+Include:
+
+- Overview.
+- User Management.
+- Owner Management.
+- Communities.
+- Channels.
+- Members.
+- Moderation.
+- AutoMod.
+- Orbs.
+- Bots.
+- Integrations.
+- Events.
+- APEX Management.
+- Cosmetics.
+- Gift Management.
+- Payments.
+- Receipts.
+- Revenue Analytics.
+- Security.
+- Audit Logs.
+- System Configuration.
+- Feature Flags.
+- Maintenance Mode.
+
+All administrative functions must enforce backend permissions.
+
+Revenue and analytics must use real database information.
+
+No fabricated statistics.
+
+---
+
+SECTION 24 — FULL MOBILE REDESIGN
+
+This is a mandatory part of the project.
+
+Do not simply shrink the desktop layout.
+
+Build a dedicated mobile experience for Android and iOS.
+
+Mobile navigation
+
+Create a bottom navigation bar containing:
+
+- Home.
+- Messages.
+- Communities.
+- Orbs.
+- Profile.
+
+Use contextual navigation for secondary options.
+
+Mobile messaging
+
+Implement:
+
+- Full-screen conversations.
+- Touch-friendly message actions.
+- Proper message composer.
+- Keyboard-aware layout.
+- Attachment tray.
+- Image previews.
+- Voice message recording where supported.
+- Group conversation navigation.
+- Smooth scrolling.
+- Message search.
+
+The keyboard must never cover the composer or important message controls.
+
+Mobile communities
+
+Implement:
+
+- Collapsible channel navigation.
+- Channel switching.
+- Member list drawers.
+- Mobile server settings.
+- Role management.
+- Mobile moderation.
+- Invite management.
+- Touch-friendly menus.
+
+Mobile voice and video
+
+Support where device and browser capabilities allow:
+
+- Voice rooms.
+- Video calls.
+- Microphone controls.
+- Camera controls.
+- Screen sharing.
+- Participant controls.
+- Connection recovery.
+- Picture-in-picture where supported.
+
+Mobile account security
+
+Support:
+
+- 2FA.
+- Passkeys.
+- Recovery codes.
+- Session management.
+- Password changes.
+- Device revocation.
+
+Mobile testing
+
+Test on:
+
+- Android Chrome.
+- Android Firefox.
+- iOS Safari.
+- Desktop Chrome.
+- Desktop Edge.
+- Desktop Firefox.
+
+Fix:
+
+- Horizontal overflow.
+- Broken scrolling.
+- Overlapping elements.
+- Clipped text.
+- Broken modals.
+- Incorrect bottom navigation.
+- Keyboard overlap.
+- Touch target sizing.
+- Oversized tables.
+- Broken profile layouts.
+- Inaccessible menus.
+
+Support safe-area insets, landscape mode and reduced-motion settings.
+
+Progressive Web App
+
+Implement PWA capabilities where supported:
+
+- Installable application.
+- App manifest.
+- App icons.
+- Splash screen.
+- Service worker.
+- Offline fallback.
+- Static asset caching.
+- Push notifications.
+- Application updates.
+
+Never cache sensitive private data insecurely.
+
+---
+
+SECTION 25 — SECURITY AUDIT AND VULNERABILITY FIXES
+
+Conduct a complete defensive security audit.
+
+Use OWASP Top 10 and suitable OWASP ASVS controls.
+
+Inspect and remediate:
+
+- SQL injection.
+- XSS.
+- CSRF.
+- SSRF.
+- Broken access control.
+- Insecure direct object references.
+- Privilege escalation.
+- Session hijacking.
+- Open redirects.
+- Path traversal.
+- Insecure file uploads.
+- Mass assignment.
+- Race conditions.
+- Rate-limit bypass.
+- Sensitive data exposure.
+- Payment manipulation.
+- Webhook replay.
+- Gift redemption abuse.
+
+Database
+
+Implement:
+
+- Row-level security.
+- Ownership validation.
+- Secure database functions.
+- Parameterized queries.
+- Safe migrations.
+- Proper indexes.
+- Restricted privileged operations.
+
+Backend
+
+Implement:
+
+- Server-side authorization.
+- Input validation.
+- Rate limits.
+- Secure secret management.
+- Webhook verification.
+- Error handling.
+- Audit logging.
+- Secure file access.
+
+Testing
+
+Test with isolated accounts and controlled environments.
+
+Never run destructive penetration tests against real users or production records.
+
+Fix critical and high-severity vulnerabilities.
+
+Produce a report containing:
+
+- Vulnerability.
+- Severity.
+- Affected area.
+- Root cause.
+- Fix applied.
+- Test performed.
+- Remaining risks.
+
+Never claim the platform is vulnerability-free without actual verification.
+
+---
+
+SECTION 26 — REAL DATA ONLY
+
+This requirement is absolute.
+
+Do not create random or fictional:
+
+- Usernames.
+- Accounts.
+- Profiles.
+- Communities.
+- Servers.
+- Messages.
+- Friends.
+- Orb members.
+- Notifications.
+- Payment transactions.
+- Receipts.
+- Revenue statistics.
+- Online users.
+- Subscription purchases.
+
+Every record must represent genuine user activity or a clearly identified isolated test fixture.
+
+Start with a clean production dataset where appropriate.
+
+Display proper empty states when no records exist.
+
+Display zero when there are no transactions or members.
+
+Use real database queries for counts and analytics.
+
+Do not populate the interface with fake content simply to make it look busy.
+
+---
+
+SECTION 27 — UI AND UX QUALITY
+
+Apply the official black, purple and lavender Doomcord design to every feature.
+
+Use:
+
+- Consistent spacing.
+- Professional typography.
+- Clear page hierarchy.
+- Minimal navigation.
+- Properly sized icons.
+- Readable message layouts.
+- Refined dropdowns.
+- Consistent buttons.
+- Elegant forms.
+- Accessible contrast.
+- Responsive tables.
+- Useful empty states.
+- Clear error messages.
+
+Do not use the same card-grid layout for everything.
+
+Give messaging, server management, discovery, APEX and administration their own appropriate layouts.
+
+Use animation only for meaningful interactions:
+
+- Dropdowns.
+- Modals.
+- Navigation.
+- Small button feedback.
+- Loading states.
+- Gift opening.
+
+Avoid unnecessary floating particles, continuous backgrounds and excessive glowing effects.
+
+---
+
+SECTION 28 — PERFORMANCE AND RELIABILITY
+
+Optimize the application for real-world usage.
+
+Implement:
+
+- Database indexes.
+- Efficient queries.
+- Pagination.
+- Virtualized message lists.
+- Lazy loading.
+- Optimized images.
+- Efficient realtime subscriptions.
+- Background jobs.
+- Retry mechanisms.
+- Connection recovery.
+- API timeouts.
+- Error boundaries.
+- Resource cleanup.
+- Monitoring and error reporting.
+
+Avoid unnecessary database polling and excessive realtime connections.
+
+Make the application scalable without prematurely introducing unnecessary infrastructure.
+
+---
+
+SECTION 29 — DEVELOPMENT AND IMPLEMENTATION ORDER
+
+This is a substantial application.
+
+Implement it systematically without sacrificing functionality or security.
+
+Phase 1 — Inspect and stabilize
+
+- Project audit.
+- Existing feature inventory.
+- Fix build errors.
+- Fix runtime errors.
+- Fix database problems.
+- Preserve production data.
+
+Phase 2 — Security foundation
+
+- Authentication.
+- 2FA.
+- Passkeys.
+- Recovery.
+- Sessions.
+- Owner hierarchy.
+- Database security.
+
+Phase 3 — Core communication
+
+- Friends.
+- DMs.
+- Group DMs.
+- Threads.
+- Attachments.
+- Reactions.
+- Notifications.
+
+Phase 4 — Complete server platform
+
+- Channels.
+- Categories.
+- Roles.
+- Permissions.
+- Member management.
+- Invites.
+- Onboarding.
+- Moderation.
+- AutoMod.
+
+Phase 5 — Real-time infrastructure
+
+- Voice.
+- Video.
+- Screen sharing.
+- Stage channels.
+- Media connection management.
+
+Phase 6 — Platform ecosystem
+
+- Bots.
+- Developer portal.
+- Webhooks.
+- Integrations.
+- Events.
+- Activities.
+- Discovery.
+
+Phase 7 — Monetization
+
+- APEX.
+- APEX Collection.
+- Razorpay.
+- Gifting.
+- Lifetime entitlements.
+- Receipts.
+- Owner management.
+
+Phase 8 — Complete mobile experience
+
+- Dedicated mobile layouts.
+- Mobile messaging.
+- Mobile server management.
+- Mobile security.
+- Voice/video.
+- PWA support.
+
+Phase 9 — Final validation
+
+- Security testing.
+- Integration testing.
+- Performance testing.
+- Accessibility testing.
+- Cross-device testing.
+- Deployment readiness.
+
+Do not start ten incomplete modules simultaneously.
+
+Finish and test each phase before moving to the next.
+
+---
+
+SECTION 30 — FINAL ACCEPTANCE CHECKLIST
+
+The application must have a verified status for every item.
+
+Area| Required outcome
+Authentication| Fully functional
+2FA| Real TOTP, passkeys and recovery
+Accounts| Secure and persistent
+Friends| Complete
+Direct messages| Real-time
+Group messages| Functional
+Communities| Complete server management
+Roles| Granular permissions
+Channels| Multiple functional types
+Voice| Real communication infrastructure
+Video| Real communication infrastructure
+Screen sharing| Real implementation
+Bots| Working developer platform
+Webhooks| Secure and functional
+Integrations| Actual OAuth/API integrations
+Events| Complete event system
+AutoMod| Configurable moderation
+Orbs| Full social discovery
+Notifications| Persistent and real
+APEX| Complete memberships
+Gifting| Unique, secure gift URLs
+Owner| Permanent APEX+
+Multi-owner| Protected hierarchy
+Razorpay| Verified payment flow
+Receipts| PDF and duration management
+Admin| Complete management system
+Mobile| Proper Android/iOS experience
+Security| Tested and documented
+Real data| No fabricated content
+
+For each feature, record:
+
+- Frontend status.
+- Backend status.
+- Database status.
+- Required external services.
+- Security status.
+- Tests performed.
+- Remaining limitations.
+
+A feature is not complete simply because its interface exists.
+
+---
+
+FINAL DIRECTIVE
+
+Transform Doomcord into a complete, independent social communication platform with extensive feature coverage comparable to Discord across messaging, servers, security, voice, video, bots, moderation, integrations, customization and community management.
+
+Preserve Doomcord's original branding, original logo and black-purple-lavender design identity.
+
+Implement the complete APEX ecosystem with genuine payments, gifting and owner privileges.
+
+Make mobile a first-class experience.
+
+Fix real bugs and vulnerabilities.
+
+Preserve existing users and production records.
+
+Do not fabricate users or feature functionality.
+
+Do not claim integrations are working when their infrastructure or credentials are missing.
+
+Do not stop after building pages or changing the appearance.
+
+INSPECT. IMPLEMENT. CONNECT. TEST. VERIFY.
+
+I expect a genuinely functioning, secure and polished product, not another prototype or collection of unfinished screens.

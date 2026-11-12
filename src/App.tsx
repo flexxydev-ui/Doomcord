@@ -44,8 +44,20 @@ import { ForcePasswordChangeModal } from './components/modals/ForcePasswordChang
 import { ReceiptDocumentModal } from './components/receipts/ReceiptDocumentModal';
 import { QuickSwitcherModal } from './components/modals/QuickSwitcherModal';
 import { ServerSettingsModal } from './components/modals/ServerSettingsModal';
+import { CreateGroupDmModal } from './components/modals/CreateGroupDmModal';
+import { DeveloperPortalView } from './components/developer/DeveloperPortalView';
+import { PWAInstallButton, OfflineIndicator } from './components/pwa/PWAInstallPrompt';
 import { CommunityStarterTemplate } from './lib/chatEnhancements';
-import { Menu, X as CloseIcon, Settings as SettingsGearIcon } from 'lucide-react';
+import {
+  Menu,
+  X as CloseIcon,
+  Settings as SettingsGearIcon,
+  Home as HomeNavIcon,
+  MessageSquare as MsgNavIcon,
+  Compass as CompassNavIcon,
+  Users as UsersNavIcon,
+  User as UserNavIcon,
+} from 'lucide-react';
 
 import {
   INITIAL_NITRO_PLANS,
@@ -85,6 +97,8 @@ import {
   GiftRedemptionRecord,
   OwnerInvitationRecord,
   ReceiptRecord,
+  DeveloperApplication,
+  ServerBotRecord,
 } from './types';
 
 function generateSecureTokenString(prefix: string): string {
@@ -127,6 +141,7 @@ function MainApp() {
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [systemConfig, setSystemConfig] = useState<SystemConfigData>(INITIAL_SYSTEM_CONFIG);
+  const [developerApps, setDeveloperApps] = useState<DeveloperApplication[]>([]);
 
   // Active navigation view state
   const [activeView, setActiveView] = useState<ActiveView>({
@@ -150,6 +165,7 @@ function MainApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
   const [isCreateOrbOpen, setIsCreateOrbOpen] = useState(false);
+  const [isCreateGroupDmOpen, setIsCreateGroupDmOpen] = useState(false);
   const [createChannelCommunityId, setCreateChannelCommunityId] = useState<string | null>(null);
   const [serverSettingsCommunityId, setServerSettingsCommunityId] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -362,6 +378,16 @@ function MainApp() {
       }
     });
 
+    // 14. Developer Applications
+    const unsubDevApps = onSnapshot(collection(db, 'developer_apps'), (snap) => {
+      const list: DeveloperApplication[] = [];
+      snap.forEach((d) => list.push(d.data() as DeveloperApplication));
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setDeveloperApps(list);
+    });
+
     return () => {
       unsubUsers();
       unsubCommunities();
@@ -376,6 +402,7 @@ function MainApp() {
       unsubReceipts();
       unsubLogs();
       unsubSys();
+      unsubDevApps();
     };
   }, [profile?.uid]);
 
@@ -433,16 +460,22 @@ function MainApp() {
     return allUsers.filter((u) => friendIds.includes(u.uid));
   }, [profile, allUsers]);
 
-  // Enrich Direct Message threads with recipient profile
+  // Enrich Direct Message threads with recipient profile or group participants
   const directMessages: DirectMessageThread[] = useMemo(() => {
     if (!profile) return [];
     return dmDocs.map((dm) => {
       const otherUid =
         dm.participants.find((id) => id !== profile.uid) || profile.uid;
       const recipientProfile = allUsers.find((u) => u.uid === otherUid);
+      const groupParticipants = dm.isGroup
+        ? dm.participants
+            .map((uid) => allUsers.find((u) => u.uid === uid))
+            .filter(Boolean) as UserProfile[]
+        : undefined;
       return {
         ...dm,
         recipientProfile,
+        groupParticipants,
       };
     });
   }, [dmDocs, allUsers, profile]);
@@ -2418,12 +2451,103 @@ function MainApp() {
     activeView.type === 'shop' ||
     activeView.type === 'admin' ||
     activeView.type === 'gift_redeem' ||
-    activeView.type === 'owner_invite_accept';
+    activeView.type === 'owner_invite_accept' ||
+    activeView.type === 'developer_portal';
 
   const canShowContextualPanel =
     activeView.type === 'dm' ||
     activeView.type === 'community' ||
     (activeView.type === 'orbs' && !!selectedOrb);
+
+  // Create 1-to-1 or Group Direct Message handler
+  const handleCreateGroupDm = async (
+    participantUids: string[],
+    groupName: string
+  ) => {
+    if (!profile || participantUids.length === 0) return;
+    if (participantUids.length === 1) {
+      const targetUser = allUsers.find((u) => u.uid === participantUids[0]);
+      if (targetUser) {
+        await handleOpenDmWithUser(targetUser);
+      }
+      return;
+    }
+
+    const allParticipantUids = Array.from(
+      new Set([profile.uid, ...participantUids])
+    );
+    const dmId = `gdm_${Date.now()}`;
+    const defaultName =
+      groupName ||
+      participantUids
+        .map((uid) => allUsers.find((u) => u.uid === uid)?.displayName || 'User')
+        .join(', ');
+
+    const newGroupDm: DirectMessageThread = {
+      id: dmId,
+      participants: allParticipantUids,
+      isGroup: true,
+      groupName: defaultName,
+      ownerId: profile.uid,
+      unreadCount: 0,
+      lastMessageText: 'Group conversation created',
+      createdAt: new Date().toISOString(),
+    };
+
+    await setDoc(doc(db, 'direct_messages', dmId), cleanFirestoreData(newGroupDm));
+    setActiveView({ type: 'dm', dmId });
+  };
+
+  // Developer Portal handlers
+  const handleSaveDeveloperApp = async (app: DeveloperApplication) => {
+    await setDoc(doc(db, 'developer_apps', app.id), cleanFirestoreData(app));
+  };
+
+  const handleDeleteDeveloperApp = async (appId: string) => {
+    await deleteDoc(doc(db, 'developer_apps', appId));
+  };
+
+  const handleInstallBotToServer = async (
+    communityId: string,
+    bot: ServerBotRecord
+  ) => {
+    const comm = communities.find((c) => c.id === communityId);
+    if (!comm) return;
+
+    const existingBots = comm.installedBots || [];
+    if (!existingBots.some((b) => b.id === bot.id)) {
+      const updatedBots = [...existingBots, bot];
+      await updateDoc(
+        doc(db, 'communities', communityId),
+        cleanFirestoreData({ installedBots: updatedBots })
+      );
+    }
+  };
+
+  const handleSendWebhookTestMessage = async (
+    communityId: string,
+    channelId: string,
+    botName: string,
+    content: string
+  ) => {
+    const msgId = `msg_${Date.now()}`;
+    const botMsg: ChatMessage = {
+      id: msgId,
+      conversationId: channelId,
+      senderId: `webhook_${Date.now()}`,
+      senderName: `${botName} [BOT]`,
+      senderAvatar: '/assets/aistudio/doomcord-icon_378efdf9.png',
+      senderRole: 'member',
+      senderNitroTier: 'free',
+      content,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+    };
+    await setDoc(
+      doc(db, 'communities', communityId, 'channels', channelId, 'messages', msgId),
+      cleanFirestoreData(botMsg)
+    );
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#09090D] text-[#F5F3FA] relative">
@@ -2474,6 +2598,10 @@ function MainApp() {
           }}
           onNavigateAdmin={() => {
             setActiveView({ type: 'admin' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateDeveloperPortal={() => {
+            setActiveView({ type: 'developer_portal' });
             setMobileNavOpen(false);
           }}
           onNavigateExplore={() => {
@@ -2538,6 +2666,14 @@ function MainApp() {
               setActiveView({ type: 'admin' });
               setMobileNavOpen(false);
             }}
+            onNavigateDeveloperPortal={() => {
+              setActiveView({ type: 'developer_portal' });
+              setMobileNavOpen(false);
+            }}
+            onCreateGroupDm={() => {
+              setIsCreateGroupDmOpen(true);
+              setMobileNavOpen(false);
+            }}
             onSelectDm={(dmId) => {
               setActiveView({ type: 'dm', dmId });
               setMobileNavOpen(false);
@@ -2597,6 +2733,7 @@ function MainApp() {
             </span>
           </div>
           <div className="flex items-center gap-1.5">
+            <PWAInstallButton compact />
             {activeCommunity && (
               <button
                 onClick={() => setServerSettingsCommunityId(activeCommunity.id)}
@@ -2696,11 +2833,15 @@ function MainApp() {
         ) : activeView.type === 'dm' ? (
           <ChatView
             title={
-              activeDm?.recipientProfile?.displayName || 'Direct Message'
+              activeDm?.isGroup
+                ? activeDm.groupName || 'Group DM'
+                : activeDm?.recipientProfile?.displayName || 'Direct Message'
             }
             subtitle={
-              activeDm?.recipientProfile?.statusMessage ||
-              `@${activeDm?.recipientProfile?.username || 'user'}`
+              activeDm?.isGroup
+                ? `${activeDm.participants.length} Members · Group Direct Message`
+                : activeDm?.recipientProfile?.statusMessage ||
+                  `@${activeDm?.recipientProfile?.username || 'user'}`
             }
             conversationId={activeView.dmId}
             currentUser={profile}
@@ -2895,6 +3036,16 @@ function MainApp() {
             onRefundTransaction={handleRefundTransaction}
             onUpdateSystemConfig={handleUpdateSystemConfig}
           />
+        ) : activeView.type === 'developer_portal' ? (
+          <DeveloperPortalView
+            currentUser={profile}
+            communities={communities}
+            developerApps={developerApps}
+            onSaveDeveloperApp={handleSaveDeveloperApp}
+            onDeleteDeveloperApp={handleDeleteDeveloperApp}
+            onInstallBotToServer={handleInstallBotToServer}
+            onSendWebhookTestMessage={handleSendWebhookTestMessage}
+          />
         ) : null}
 
         {/* Persistent Voice Channel Dock at Bottom (When connected to voice) */}
@@ -2907,6 +3058,100 @@ function MainApp() {
             onDisconnect={() => setActiveVoice(null)}
           />
         )}
+
+        {/* Section 24: Dedicated 5-Tab Mobile Bottom Navigation Bar (<768px) */}
+        <nav
+          aria-label="Mobile Primary Navigation"
+          className="flex md:hidden items-center justify-around px-2 py-1.5 bg-[#0D0D12] border-t border-[#282631] shrink-0 z-30"
+        >
+          <button
+            onClick={() => {
+              setActiveView({ type: 'home' });
+              setMobileNavOpen(false);
+            }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+              activeView.type === 'home'
+                ? 'text-[#8957F5]'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <HomeNavIcon className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Home</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (directMessages.length > 0) {
+                setActiveView({ type: 'dm', dmId: directMessages[0].id });
+              } else {
+                setActiveView({ type: 'friends', subTab: 'all' });
+              }
+              setMobileNavOpen(false);
+            }}
+            className={`relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+              activeView.type === 'dm' || activeView.type === 'friends'
+                ? 'text-[#8957F5]'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <MsgNavIcon className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Messages</span>
+            {unreadDmCount > 0 && (
+              <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-[#8957F5]" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              const firstComm = communities[0];
+              const firstChannel = firstComm?.channels?.[0];
+              if (firstComm && firstChannel) {
+                handleSelectChannel(firstComm.id, firstChannel.id);
+              } else {
+                setActiveView({ type: 'explore_communities' });
+              }
+              setMobileNavOpen(false);
+            }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+              activeView.type === 'community' || activeView.type === 'explore_communities'
+                ? 'text-[#8957F5]'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <UsersNavIcon className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Communities</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveView({ type: 'orbs', viewMode: 'explore' });
+              setMobileNavOpen(false);
+            }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+              activeView.type === 'orbs'
+                ? 'text-[#8957F5]'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <CompassNavIcon className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Orbs</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveView({ type: 'profile', userId: profile.uid });
+              setMobileNavOpen(false);
+            }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+              activeView.type === 'profile'
+                ? 'text-[#8957F5]'
+                : 'text-[#A19DAD] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <UserNavIcon className="w-4 h-4" />
+            <span className="text-[10px] font-semibold">Profile</span>
+          </button>
+        </nav>
       </div>
 
       {/* 4. Collapsible Right Contextual Panel (300px, desktop only) */}
@@ -3025,6 +3270,17 @@ function MainApp() {
         onDeferForSession={() => setPasswordModalDismissed(true)}
         onLogout={logout}
       />
+
+      <CreateGroupDmModal
+        isOpen={isCreateGroupDmOpen}
+        currentUser={profile}
+        allUsers={allUsers}
+        onClose={() => setIsCreateGroupDmOpen(false)}
+        onCreateGroupDm={handleCreateGroupDm}
+        onStartDmWithUser={handleOpenDmWithUser}
+      />
+
+      <OfflineIndicator />
     </div>
   );
 }

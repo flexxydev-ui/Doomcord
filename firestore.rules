@@ -186,5 +186,12 @@ service cloud.firestore {
       allow get, list: if true;
       allow create, update, delete: if isValidId(roomId);
     }
+
+    // Developer Applications & Bots
+    match /developer_apps/{appId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(appId);
+    }
   }
 }
+

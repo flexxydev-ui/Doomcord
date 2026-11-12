@@ -12,6 +12,7 @@ import {
   Settings,
   User,
   Globe,
+  Terminal,
 } from 'lucide-react';
 import { Community, ActiveView, UserProfile } from '../../types';
 
@@ -28,6 +29,7 @@ interface LeftNavRailProps {
   onNavigateProfile: () => void;
   onNavigateNitro: () => void;
   onNavigateShop: () => void;
+  onNavigateDeveloperPortal?: () => void;
   onNavigateAdmin: () => void;
   onNavigateExplore: () => void;
   onSelectCommunity: (communityId: string) => void;
@@ -48,6 +50,7 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
   onNavigateProfile,
   onNavigateNitro,
   onNavigateShop,
+  onNavigateDeveloperPortal,
   onNavigateAdmin,
   onNavigateExplore,
   onSelectCommunity,
@@ -63,6 +66,7 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
     (!activeView.userId || activeView.userId === currentUser.uid);
   const isNitroActive = activeView.type === 'nitro';
   const isShopActive = activeView.type === 'shop';
+  const isDevPortalActive = activeView.type === 'developer_portal';
   const isAdminActive = activeView.type === 'admin';
   const isExploreActive = activeView.type === 'explore_communities';
 
@@ -215,6 +219,24 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
             <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
           )}
         </button>
+
+        {/* Developer Portal & Bots */}
+        {onNavigateDeveloperPortal && (
+          <button
+            onClick={onNavigateDeveloperPortal}
+            title="Developer Portal & Bots"
+            className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+              isDevPortalActive
+                ? 'bg-[#22212C] text-[#8957F5]'
+                : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
+            }`}
+          >
+            <Terminal className="w-4 h-4" />
+            {isDevPortalActive && (
+              <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            )}
+          </button>
+        )}
 
         {/* Admin Console (Owner & Admin only) */}
         {isAdminOrOwner && (

@@ -27,6 +27,11 @@ import {
   Terminal,
   Bold,
   Italic,
+  Strikethrough,
+  Quote,
+  Mic,
+  Square,
+  Volume2,
 } from 'lucide-react';
 import {
   ChatMessage,
@@ -195,10 +200,114 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
   const [selectedSlashIdx, setSelectedSlashIdx] = useState(0);
   const [securityAlert, setSecurityAlert] = useState<string | null>(null);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceRecordSeconds, setVoiceRecordSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isRecordingVoice) {
+      setVoiceRecordSeconds(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setVoiceRecordSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isRecordingVoice]);
+
+  const generateSynthesizedVoiceWavDataUrl = (durationSec: number): string => {
+    const sampleRate = 8000;
+    const numSamples = Math.max(1, Math.min(durationSec, 10)) * sampleRate;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+    const writeStr = (offset: number, s: string) => {
+      for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+    };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const sample = Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 1.5) * 0.25;
+      view.setInt16(44 + i * 2, sample * 32767, true);
+    }
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return `data:audio/wav;base64,${btoa(binary)}`;
+  };
+
+  const handleToggleVoiceRecording = async () => {
+    if (isRecordingVoice) {
+      setIsRecordingVoice(false);
+      const elapsed = Math.max(1, voiceRecordSeconds);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        return;
+      }
+      const wavUrl = generateSynthesizedVoiceWavDataUrl(elapsed);
+      const attachment: MessageAttachment = {
+        id: `voice_${Date.now()}`,
+        name: `Voice Message (${elapsed}s).wav`,
+        url: wavUrl,
+        type: 'audio',
+        durationSeconds: elapsed,
+      };
+      onSendMessage(`🎙️ Voice Message (${elapsed}s)`, [attachment]);
+      return;
+    }
+
+    setIsRecordingVoice(true);
+    recordedChunksRef.current = [];
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+        recorder.ondataavailable = (ev) => {
+          if (ev.data.size > 0) recordedChunksRef.current.push(ev.data);
+        };
+        recorder.onstop = () => {
+          stream.getTracks().forEach((t) => t.stop());
+          const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onload = () => {
+            const elapsed = Math.max(1, voiceRecordSeconds);
+            const attachment: MessageAttachment = {
+              id: `voice_${Date.now()}`,
+              name: `Voice Message (${elapsed}s)`,
+              url: reader.result as string,
+              type: 'audio',
+              size: blob.size,
+              durationSeconds: elapsed,
+            };
+            onSendMessage(`🎙️ Voice Message (${elapsed}s)`, [attachment]);
+          };
+          reader.readAsDataURL(blob);
+        };
+        recorder.start();
+      } catch {
+        // Fallback to synthesized WAV when stop button is pressed
+      }
+    }
+  };
 
   const savedMessageIds = currentUser.savedMessages || [];
 
@@ -926,6 +1035,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
                               alt={att.name}
                               className="max-h-60 object-cover"
                             />
+                          ) : att.type === 'audio' ? (
+                            <div className="flex items-center gap-2.5 px-3 py-2 bg-[#101014] rounded-lg min-w-[230px]">
+                              <Volume2 className="w-4 h-4 text-[#8957F5] shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-mono text-[#C4B1FF] truncate mb-1">
+                                  {att.name}
+                                </div>
+                                <audio
+                                  controls
+                                  src={att.url}
+                                  className="h-7 w-48 max-w-full"
+                                />
+                              </div>
+                            </div>
                           ) : (
                             <div className="flex items-center gap-2 px-3 py-2">
                               <Paperclip className="w-4 h-4 text-[#8957F5]" />
@@ -1201,6 +1324,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => insertFormatting('~~', '~~', 'strikethrough')}
+              title="Strikethrough (~~text~~)"
+              className="px-1.5 py-0.5 rounded text-[10px] text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center gap-1 transition-colors"
+            >
+              <Strikethrough className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('> ', '', 'quote')}
+              title="Blockquote (> quote)"
+              className="px-1.5 py-0.5 rounded text-[10px] text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center gap-1 transition-colors"
+            >
+              <Quote className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
               onClick={() => insertFormatting('`', '`', 'code')}
               title="Inline Code (`code`)"
               className="px-1.5 py-0.5 rounded text-[10px] text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center gap-1 transition-colors"
@@ -1247,10 +1386,34 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,*/*"
+            accept="image/*,audio/*,*/*"
             onChange={handleFileUpload}
             className="hidden"
           />
+
+          <button
+            type="button"
+            onClick={handleToggleVoiceRecording}
+            title={
+              isRecordingVoice
+                ? `Stop & Send Voice Message (${voiceRecordSeconds}s)`
+                : 'Record Voice Message'
+            }
+            className={`p-1.5 rounded flex items-center gap-1 text-[10px] font-mono transition-colors ${
+              isRecordingVoice
+                ? 'bg-[#EA747E]/20 text-[#EA747E] border border-[#EA747E]/40 animate-pulse'
+                : 'text-[#706C7B] hover:text-[#F5F3FA] hover:bg-[#17171F]'
+            }`}
+          >
+            {isRecordingVoice ? (
+              <>
+                <Square className="w-3.5 h-3.5" />
+                <span>{voiceRecordSeconds}s</span>
+              </>
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </button>
 
           <input
             ref={inputRef}

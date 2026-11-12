@@ -281,8 +281,9 @@ export interface MessageAttachment {
   id: string;
   name: string;
   url: string;
-  type: 'image' | 'file';
+  type: 'image' | 'audio' | 'file';
   size?: number;
+  durationSeconds?: number;
 }
 
 export interface PollOption {
@@ -327,6 +328,10 @@ export interface DirectMessageThread {
   id: string;
   participants: string[];
   recipientProfile?: UserProfile;
+  isGroup?: boolean;
+  groupName?: string;
+  groupIconUrl?: string;
+  ownerId?: string;
   lastMessageText?: string;
   lastMessageSenderId?: string;
   lastMessageAt?: string;
@@ -592,6 +597,24 @@ export interface OwnerInvitationRecord {
   createdAt: string;
 }
 
+export interface DeveloperApplication {
+  id: string;
+  name: string;
+  description: string;
+  ownerUid: string;
+  clientId: string;
+  clientSecretMasked: string;
+  botUsername: string;
+  botPrefix: string;
+  botTokenMasked: string;
+  redirectUris: string[];
+  scopes: string[];
+  permissionsBitfield: string;
+  installedServerIds: string[];
+  requestCount: number;
+  createdAt: string;
+}
+
 export type ActiveView =
   | { type: 'home' }
   | { type: 'friends'; subTab: 'online' | 'all' | 'pending' | 'blocked' | 'add' }
@@ -603,6 +626,8 @@ export type ActiveView =
   | { type: 'profile'; userId?: string }
   | { type: 'nitro' }
   | { type: 'shop'; initialCategory?: CosmeticCategory }
+  | { type: 'developer_portal' }
   | { type: 'admin' }
   | { type: 'gift_redeem'; token?: string }
   | { type: 'owner_invite_accept'; token?: string };
+

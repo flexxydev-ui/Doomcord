@@ -19,6 +19,7 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
+  Terminal,
 } from 'lucide-react';
 import {
   Community,
@@ -47,8 +48,10 @@ interface ContextSidebarProps {
   onNavigateProfile: () => void;
   onNavigateNitro: () => void;
   onNavigateShop: () => void;
+  onNavigateDeveloperPortal?: () => void;
   onNavigateAdmin: () => void;
   onSelectDm: (dmId: string) => void;
+  onCreateGroupDm?: () => void;
   onSelectChannel: (communityId: string, channelId: string) => void;
   onCreateChannel: (communityId: string) => void;
   onOpenServerSettings?: (communityId: string) => void;
@@ -72,8 +75,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
   onNavigateProfile,
   onNavigateNitro,
   onNavigateShop,
+  onNavigateDeveloperPortal,
   onNavigateAdmin,
   onSelectDm,
+  onCreateGroupDm,
   onSelectChannel,
   onCreateChannel,
   onOpenServerSettings,
@@ -571,6 +576,20 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 <span>Cosmetics Shop</span>
               </button>
 
+              {onNavigateDeveloperPortal && (
+                <button
+                  onClick={onNavigateDeveloperPortal}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                    activeView.type === 'developer_portal'
+                      ? 'bg-[#17171F] text-[#8957F5] font-semibold'
+                      : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
+                  }`}
+                >
+                  <Terminal className="w-4 h-4 text-[#A47BFF]" />
+                  <span>Developer Portal</span>
+                </button>
+              )}
+
               {(currentUser.role === 'root_owner' ||
                 currentUser.role === 'secondary_owner' ||
                 currentUser.role === 'owner' ||
@@ -592,10 +611,13 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
             {/* Direct Messages Section */}
             <div className="pt-2">
               <div className="flex items-center justify-between px-2 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#706C7B]">
-                <span>Direct Messages</span>
+                <span>Direct & Group Messages</span>
                 <button
-                  onClick={() => onNavigateFriends('add')}
-                  title="New Direct Message"
+                  onClick={() =>
+                    onCreateGroupDm ? onCreateGroupDm() : onNavigateFriends('add')
+                  }
+                  title="New Direct Message or Group Chat"
+                  aria-label="New Direct Message"
                   className="text-[#706C7B] hover:text-[#8957F5] transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -608,10 +630,12 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                     No active direct messages
                   </p>
                   <button
-                    onClick={() => onNavigateFriends('add')}
+                    onClick={() =>
+                      onCreateGroupDm ? onCreateGroupDm() : onNavigateFriends('add')
+                    }
                     className="text-[11px] font-medium text-[#8957F5] hover:underline"
                   >
-                    + Find a friend
+                    + New Message or Group DM
                   </button>
                 </div>
               ) : (
@@ -620,6 +644,10 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                     const isActive =
                       activeView.type === 'dm' && activeView.dmId === dm.id;
                     const recipient = dm.recipientProfile;
+                    const isGroup = Boolean(dm.isGroup || dm.participants.length > 2);
+                    const displayTitle = isGroup
+                      ? dm.groupName || `Group (${dm.participants.length})`
+                      : recipient?.displayName || 'Direct Message';
 
                     return (
                       <button
@@ -634,15 +662,16 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                         <div className="relative shrink-0">
                           <img
                             src={
-                              recipient?.photoURL ||
-                              generateInitialsAvatar(
-                                recipient?.displayName || 'User'
-                              )
+                              isGroup
+                                ? dm.groupIconUrl ||
+                                  generateInitialsAvatar(displayTitle, '#8957F5')
+                                : recipient?.photoURL ||
+                                  generateInitialsAvatar(displayTitle)
                             }
-                            alt={recipient?.displayName || 'User'}
+                            alt={displayTitle}
                             className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
                           />
-                          {recipient && (
+                          {!isGroup && recipient && (
                             <span
                               className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#0D0D12] ${getPresenceColor(
                                 recipient.presence
@@ -652,10 +681,15 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-1">
                             <span className="text-xs font-medium text-[#F5F3FA] truncate">
-                              {recipient?.displayName || 'Direct Message'}
+                              {displayTitle}
                             </span>
+                            {isGroup && (
+                              <span className="px-1 py-0.2 rounded bg-[#17171F] border border-[#282631] text-[8px] font-mono text-[#C4B1FF] shrink-0">
+                                {dm.participants.length}M
+                              </span>
+                            )}
                             {dm.unreadCount && dm.unreadCount > 0 ? (
                               <span className="px-1.5 py-0.5 rounded-full bg-[#8957F5] text-white text-[9px] font-mono font-bold tabular-nums">
                                 {dm.unreadCount}
