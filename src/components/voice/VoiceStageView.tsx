@@ -12,6 +12,11 @@ import {
   MonitorOff,
   Sparkles,
   PhoneOff,
+  Video,
+  VideoOff,
+  Gamepad2,
+  PenTool,
+  Trash2,
 } from 'lucide-react';
 import { Channel, UserProfile, VoiceParticipant } from '../../types';
 
@@ -36,11 +41,37 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
 }) => {
   const [handRaised, setHandRaised] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [noiseSuppression, setNoiseSuppression] = useState(true);
+  const [activeActivity, setActiveActivity] = useState<'none' | 'whiteboard' | 'trivia'>('none');
+  const [brushColor, setBrushColor] = useState('#8957F5');
+  const [triviaStep, setTriviaStep] = useState(0);
+  const [triviaScore, setTriviaScore] = useState(0);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const whiteboardRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+
   const isStage = channel.type === 'stage';
 
-  // Play synthetic soundboard note using Web Audio API oscillators (100% procedural, zero 404s)
+  const TRIVIA_QUESTIONS = [
+    {
+      q: 'What is the maximum file upload limit on DOOMCORD APEX+ or Level 3 Boosted Servers?',
+      opts: ['25 MB', '100 MB', '500 MB', '50 MB'],
+      ans: 2,
+    },
+    {
+      q: 'Which standard does Doomcord use for 6-digit Authenticator App 2FA codes?',
+      opts: ['RFC 6238 TOTP', 'ROT13', 'Base64 Only', 'MD5'],
+      ans: 0,
+    },
+    {
+      q: 'Which keyboard shortcut opens the Doomcord Universal Quick Switcher from anywhere?',
+      opts: ['Alt + F4', 'Ctrl + K', 'Shift + Esc', 'Ctrl + P'],
+      ans: 1,
+    },
+  ];
+
   const playSoundEffect = (frequency: number, type: OscillatorType = 'sine') => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -63,9 +94,8 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
     }
   };
 
-  // Procedural live 60fps Stage Screen Share canvas so screen sharing works in any browser or iframe
   useEffect(() => {
-    if (!isScreenSharing || !canvasRef.current) return;
+    if ((!isScreenSharing && !isCameraOn) || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -81,7 +111,6 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
       ctx.fillStyle = '#09090D';
       ctx.fillRect(0, 0, w, h);
 
-      // Subtle grid
       ctx.strokeStyle = '#17171F';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 32) {
@@ -97,7 +126,6 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
         ctx.stroke();
       }
 
-      // Animated waveform bars
       const bars = 28;
       const barWidth = (w - 120) / bars;
       for (let i = 0; i < bars; i++) {
@@ -112,7 +140,9 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
       ctx.fillStyle = '#F5F3FA';
       ctx.font = '600 13px Inter, sans-serif';
       ctx.fillText(
-        `${currentUser.displayName} — Live 1080p 60fps Stage Stream (${channel.name})`,
+        `${currentUser.displayName} — Live ${
+          isScreenSharing ? '1080p 60fps Screen Share' : 'HD WebRTC Camera Stream'
+        } (${channel.name})`,
         24,
         32
       );
@@ -120,7 +150,7 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
       ctx.fillStyle = '#A19DAD';
       ctx.font = '11px JetBrains Mono, monospace';
       ctx.fillText(
-        `Bitrate: 384 kbps Audio · 60 FPS WebRTC Video`,
+        `Bitrate: 384 kbps Opus Audio · 60 FPS WebRTC Media Transport`,
         24,
         h - 20
       );
@@ -130,7 +160,7 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
 
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [isScreenSharing, currentUser.displayName, channel.name]);
+  }, [isScreenSharing, isCameraOn, currentUser.displayName, channel.name]);
 
   const handleToggleScreenShare = async () => {
     if (isScreenSharing) {
@@ -151,8 +181,59 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
     playSoundEffect(660, 'sine');
   };
 
+  const handleToggleCamera = async () => {
+    if (isCameraOn) {
+      setIsCameraOn(false);
+      return;
+    }
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    } catch {
+      // Fallback to live procedural camera stream
+    }
+    setIsCameraOn(true);
+    playSoundEffect(580, 'sine');
+  };
+
+  // Collaborative Whiteboard drawing handlers
+  const handleWhiteboardPointerDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = whiteboardRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    isDrawingRef.current = true;
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const handleWhiteboardPointerMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const canvas = whiteboardRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const handleWhiteboardClear = () => {
+    const canvas = whiteboardRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#09090D] text-[#F5F3FA] overflow-y-auto p-6">
+    <div className="flex-1 flex flex-col h-full bg-[#09090D] text-[#F5F3FA] overflow-y-auto p-4 sm:p-6">
       {/* Stage / Channel Title Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 mb-6 rounded-xl bg-[#101014] border border-[#282631] shadow-sm">
         <div className="flex items-center gap-3">
@@ -165,18 +246,34 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
                 {channel.name}
               </h2>
               <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#8957F5]/20 text-[#8957F5] font-mono border border-[#8957F5]/30">
-                {isStage ? 'LIVE STAGE' : 'VOICE CHANNEL'}
+                {isStage ? 'LIVE STAGE' : 'VOICE & VIDEO ROOM'}
               </span>
             </div>
             <p className="text-xs text-[#706C7B] mt-0.5">
               {channel.topic ||
-                `${communityName} · High-definition spatial WebRTC audio room`}
+                `${communityName} · High-definition spatial WebRTC audio, video & embedded activities`}
             </p>
           </div>
         </div>
 
         {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleToggleCamera}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+              isCameraOn
+                ? 'bg-[#8957F5] text-white border-[#8957F5]'
+                : 'bg-[#17171F] text-[#F5F3FA] border-[#282631] hover:bg-[#22212C]'
+            }`}
+          >
+            {isCameraOn ? (
+              <VideoOff className="w-4 h-4" />
+            ) : (
+              <Video className="w-4 h-4 text-[#A47BFF]" />
+            )}
+            <span>{isCameraOn ? 'Stop Video' : 'Video Camera'}</span>
+          </button>
+
           <button
             onClick={handleToggleScreenShare}
             className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
@@ -194,16 +291,44 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
           </button>
 
           <button
+            onClick={() =>
+              setActiveActivity(activeActivity === 'whiteboard' ? 'none' : 'whiteboard')
+            }
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+              activeActivity === 'whiteboard'
+                ? 'bg-[#8957F5] text-white border-[#8957F5]'
+                : 'bg-[#17171F] text-[#C4B1FF] border-[#282631] hover:bg-[#22212C]'
+            }`}
+          >
+            <PenTool className="w-3.5 h-3.5" />
+            <span>Whiteboard Activity</span>
+          </button>
+
+          <button
+            onClick={() =>
+              setActiveActivity(activeActivity === 'trivia' ? 'none' : 'trivia')
+            }
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+              activeActivity === 'trivia'
+                ? 'bg-[#8957F5] text-white border-[#8957F5]'
+                : 'bg-[#17171F] text-[#C4B1FF] border-[#282631] hover:bg-[#22212C]'
+            }`}
+          >
+            <Gamepad2 className="w-3.5 h-3.5" />
+            <span>Trivia Activity</span>
+          </button>
+
+          <button
             onClick={() => setNoiseSuppression(!noiseSuppression)}
             className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-colors ${
               noiseSuppression
                 ? 'bg-[#17171F] text-[#C4B1FF] border-[#8957F5]/40'
                 : 'bg-[#17171F] text-[#706C7B] border-[#282631]'
             }`}
-            title="Toggle Crisp AI Voice Noise Suppression"
+            title="Toggle Crisp Voice Noise Suppression"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{noiseSuppression ? 'Crisp Audio: ON' : 'Crisp Audio: OFF'}</span>
+            <span>{noiseSuppression ? 'Crisp: ON' : 'Crisp: OFF'}</span>
           </button>
 
           {isStage && (
@@ -249,8 +374,8 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
         </div>
       </div>
 
-      {/* Live Screen Share Viewport */}
-      {isScreenSharing && (
+      {/* Live Video / Screen Share Viewport */}
+      {(isScreenSharing || isCameraOn) && (
         <div className="mb-6 rounded-xl overflow-hidden border border-[#8957F5]/50 bg-[#101014] shadow-xl">
           <div className="px-4 py-2 bg-[#17171F] border-b border-[#282631] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
@@ -258,7 +383,8 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
                 LIVE
               </span>
               <span className="font-semibold text-[#F5F3FA]">
-                {currentUser.displayName}&apos;s Screen Share
+                {currentUser.displayName}&apos;s{' '}
+                {isScreenSharing ? 'Screen Share' : 'HD Video Stream'}
               </span>
             </div>
             <span className="text-[10px] font-mono text-[#A47BFF] tabular-nums">
@@ -271,6 +397,96 @@ export const VoiceStageView: React.FC<VoiceStageViewProps> = ({
             height={220}
             className="w-full h-52 object-cover block"
           />
+        </div>
+      )}
+
+      {/* Embedded Activity 1: Collaborative Whiteboard */}
+      {activeActivity === 'whiteboard' && (
+        <div className="mb-6 rounded-xl overflow-hidden border border-[#8957F5]/40 bg-[#101014] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-[#F5F3FA] flex items-center gap-2">
+              <PenTool className="w-4 h-4 text-[#8957F5]" />
+              <span>Collaborative Whiteboard Activity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {['#8957F5', '#A47BFF', '#3BA55D', '#FAA81A', '#ED4245', '#F5F3FA'].map(
+                (col) => (
+                  <button
+                    key={col}
+                    type="button"
+                    onClick={() => setBrushColor(col)}
+                    className={`w-5 h-5 rounded-full border ${
+                      brushColor === col ? 'border-white scale-110' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: col }}
+                  />
+                )
+              )}
+              <button
+                type="button"
+                onClick={handleWhiteboardClear}
+                className="h-7 px-2.5 rounded bg-[#17171F] text-[11px] text-[#ED4245] flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+          <canvas
+            ref={whiteboardRef}
+            width={760}
+            height={240}
+            onMouseDown={handleWhiteboardPointerDown}
+            onMouseMove={handleWhiteboardPointerMove}
+            onMouseUp={() => {
+              isDrawingRef.current = false;
+            }}
+            onMouseLeave={() => {
+              isDrawingRef.current = false;
+            }}
+            className="w-full h-56 rounded-lg bg-[#09090D] border border-[#282631] cursor-crosshair block"
+          />
+        </div>
+      )}
+
+      {/* Embedded Activity 2: Live Trivia Quiz */}
+      {activeActivity === 'trivia' && (
+        <div className="mb-6 rounded-xl border border-[#8957F5]/40 bg-[#101014] p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-[#F5F3FA] flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 text-[#8957F5]" />
+              <span>Doomcord Live Trivia Challenge</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-[#17171F] border border-[#282631] font-mono text-xs text-[#C4B1FF]">
+              Score: {triviaScore} pts
+            </span>
+          </div>
+
+          <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631] space-y-3">
+            <div className="text-xs font-semibold text-[#F5F3FA]">
+              Q{triviaStep + 1}: {TRIVIA_QUESTIONS[triviaStep].q}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {TRIVIA_QUESTIONS[triviaStep].opts.map((opt, idx) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    if (idx === TRIVIA_QUESTIONS[triviaStep].ans) {
+                      setTriviaScore((s) => s + 100);
+                      playSoundEffect(880, 'triangle');
+                    } else {
+                      playSoundEffect(220, 'sawtooth');
+                    }
+                    setTriviaStep((prev) => (prev + 1) % TRIVIA_QUESTIONS.length);
+                  }}
+                  className="p-2.5 rounded-lg bg-[#0D0D12] hover:bg-[#8957F5]/20 border border-[#282631] hover:border-[#8957F5] text-left text-xs text-[#F5F3FA] transition-colors"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

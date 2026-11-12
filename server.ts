@@ -56,8 +56,57 @@ export interface ServerAuthAccount {
   mustChangePassword: boolean;
   isBanned: boolean;
   isSuspended: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
+  twoFactorBackupCodes?: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32DecodeNode(input: string): Buffer {
+  const cleaned = input.toUpperCase().replace(/=+$/, '').replace(/[^A-Z2-7]/g, '');
+  let bits = 0;
+  let value = 0;
+  const output: number[] = [];
+  for (let i = 0; i < cleaned.length; i++) {
+    const idx = BASE32_ALPHABET.indexOf(cleaned[i]);
+    if (idx === -1) continue;
+    value = (value << 5) | idx;
+    bits += 5;
+    if (bits >= 8) {
+      output.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(output);
+}
+
+function generateTotpNode(secret: string, timestampMs: number = Date.now()): string {
+  const key = base32DecodeNode(secret);
+  const counter = Math.floor(timestampMs / 1000 / 30);
+  const buf = Buffer.alloc(8);
+  buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
+  buf.writeUInt32BE(counter >>> 0, 4);
+  const hmac = crypto.createHmac('sha1', key).update(buf).digest();
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const binary =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff);
+  return String(binary % 1_000_000).padStart(6, '0');
+}
+
+function verifyTotpNode(secret: string, code: string): boolean {
+  const cleaned = String(code).trim().replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(cleaned)) return false;
+  const now = Date.now();
+  for (let w = -1; w <= 1; w++) {
+    if (generateTotpNode(secret, now + w * 30_000) === cleaned) return true;
+  }
+  return false;
 }
 
 function hashPassword(password: string, salt: string): string {
@@ -394,7 +443,7 @@ app.post('/api/auth/register', rateLimitMiddleware(20, 60_000), (req, res) => {
 });
 
 app.post('/api/auth/login', rateLimitMiddleware(25, 60_000), (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, totpCode } = req.body || {};
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required.' });
     return;
@@ -428,6 +477,35 @@ app.post('/api/auth/login', rateLimitMiddleware(25, 60_000), (req, res) => {
     }
   }
 
+  // Enforce Two-Factor Authentication (2FA) if enabled on account
+  if (account.twoFactorEnabled && account.twoFactorSecret) {
+    if (!totpCode) {
+      res.status(200).json({
+        requiresTwoFactor: true,
+        email: account.email,
+      });
+      return;
+    }
+    const cleanCode = String(totpCode).trim().toUpperCase();
+    const isTotpValid = verifyTotpNode(account.twoFactorSecret, cleanCode);
+    const isBackupValid = (account.twoFactorBackupCodes || []).includes(cleanCode);
+
+    if (!isTotpValid && !isBackupValid) {
+      res.status(401).json({
+        error: 'Invalid 6-digit Authenticator code or Backup Recovery code.',
+      });
+      return;
+    }
+
+    if (isBackupValid) {
+      account.twoFactorBackupCodes = (account.twoFactorBackupCodes || []).filter(
+        (c) => c !== cleanCode
+      );
+      accounts[account.uid] = account;
+      saveAccounts(accounts);
+    }
+  }
+
   const effectiveRole: ServerRole =
     account.uid === ROOT_OWNER_UUID || isOwnerEmail ? 'root_owner' : account.role;
 
@@ -455,9 +533,110 @@ app.post('/api/auth/login', rateLimitMiddleware(25, 60_000), (req, res) => {
       displayName: account.displayName,
       role: effectiveRole,
       mustChangePassword: account.mustChangePassword,
+      twoFactorEnabled: Boolean(account.twoFactorEnabled),
       createdAt: account.createdAt,
     },
   });
+});
+
+// Enable 2FA on backend account record
+app.post('/api/auth/2fa/enable', (req, res) => {
+  const sessionAccount = extractSession(req);
+  if (!sessionAccount) {
+    res.status(401).json({ error: 'Unauthenticated.' });
+    return;
+  }
+  const { secret, code, backupCodes } = req.body || {};
+  if (!secret || !code) {
+    res.status(400).json({ error: 'Secret and 6-digit verification code are required.' });
+    return;
+  }
+  if (!verifyTotpNode(String(secret), String(code))) {
+    res.status(400).json({ error: 'Invalid 6-digit authenticator code. Please check your clock.' });
+    return;
+  }
+
+  const accounts = loadAccounts();
+  const target = accounts[sessionAccount.uid];
+  if (target) {
+    target.twoFactorEnabled = true;
+    target.twoFactorSecret = String(secret);
+    target.twoFactorBackupCodes = Array.isArray(backupCodes) ? backupCodes : [];
+    target.updatedAt = new Date().toISOString();
+    accounts[target.uid] = target;
+    saveAccounts(accounts);
+  }
+
+  res.json({ status: '2fa_enabled', twoFactorEnabled: true });
+});
+
+// Disable 2FA on backend account record
+app.post('/api/auth/2fa/disable', (req, res) => {
+  const sessionAccount = extractSession(req);
+  if (!sessionAccount) {
+    res.status(401).json({ error: 'Unauthenticated.' });
+    return;
+  }
+  const accounts = loadAccounts();
+  const target = accounts[sessionAccount.uid];
+  if (target) {
+    target.twoFactorEnabled = false;
+    delete target.twoFactorSecret;
+    delete target.twoFactorBackupCodes;
+    target.updatedAt = new Date().toISOString();
+    accounts[target.uid] = target;
+    saveAccounts(accounts);
+  }
+  res.json({ status: '2fa_disabled', twoFactorEnabled: false });
+});
+
+// Account Recovery / Password Reset via 2FA or Backup Code
+app.post('/api/auth/reset-password', rateLimitMiddleware(10, 60_000), (req, res) => {
+  const { email, recoveryCode, newPassword } = req.body || {};
+  if (!email || !recoveryCode || !newPassword) {
+    res.status(400).json({ error: 'Email, recovery/2FA code, and new password are required.' });
+    return;
+  }
+  if (String(newPassword).length < 6) {
+    res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    return;
+  }
+
+  const accounts = loadAccounts();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const account = Object.values(accounts).find((a) => a.email.toLowerCase() === normalizedEmail);
+  if (!account) {
+    res.status(404).json({ error: 'Account not found.' });
+    return;
+  }
+
+  const cleanCode = String(recoveryCode).trim().toUpperCase();
+  const validTotp = account.twoFactorSecret
+    ? verifyTotpNode(account.twoFactorSecret, cleanCode)
+    : false;
+  const validBackup = (account.twoFactorBackupCodes || []).includes(cleanCode);
+
+  if (!validTotp && !validBackup) {
+    res.status(403).json({
+      error: 'Invalid 2FA authenticator code or backup recovery code.',
+    });
+    return;
+  }
+
+  const newSalt = crypto.randomBytes(16).toString('hex');
+  account.passwordSalt = newSalt;
+  account.passwordHash = hashPassword(String(newPassword), newSalt);
+  account.mustChangePassword = false;
+  account.updatedAt = new Date().toISOString();
+  if (validBackup) {
+    account.twoFactorBackupCodes = (account.twoFactorBackupCodes || []).filter(
+      (c) => c !== cleanCode
+    );
+  }
+  accounts[account.uid] = account;
+  saveAccounts(accounts);
+
+  res.json({ status: 'password_reset_complete' });
 });
 
 app.get('/api/auth/session', (req, res) => {

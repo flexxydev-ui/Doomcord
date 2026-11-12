@@ -69,6 +69,34 @@ export interface UserProfile {
   joinedCommunities?: string[];
   blockedUsers?: string[];
   savedMessages?: string[];
+  // Account Security & 2FA
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
+  twoFactorBackupCodes?: string[];
+  emailVerified?: boolean;
+  passkeys?: {
+    id: string;
+    name: string;
+    createdAt: string;
+  }[];
+  loginHistory?: {
+    id: string;
+    device: string;
+    ip: string;
+    method: string;
+    timestamp: string;
+  }[];
+  connectedAccounts?: {
+    provider: 'github' | 'google' | 'twitch' | 'youtube' | 'spotify' | 'steam';
+    username: string;
+    connectedAt: string;
+    showOnProfile: boolean;
+  }[];
+  privacySettings?: {
+    readReceipts: boolean;
+    allowDmFromServerMembers: boolean;
+    sharePresence: boolean;
+  };
 }
 
 export interface NitroPlanConfig {
@@ -307,20 +335,71 @@ export interface DirectMessageThread {
   createdAt: string;
 }
 
-export type ChannelType = 'text' | 'announcement' | 'voice' | 'stage';
+export type ChannelType = 'text' | 'announcement' | 'forum' | 'media' | 'voice' | 'stage';
 
 export interface Channel {
   id: string;
   communityId: string;
   name: string;
   topic?: string;
+  category?: string;
   type: ChannelType;
   position: number;
+  slowmodeSeconds?: number;
+  isPrivate?: boolean;
   unread?: boolean;
   createdAt?: string;
 }
 
 export type MemberRole = 'owner' | 'admin' | 'moderator' | 'member';
+
+export interface ServerRoleDefinition {
+  id: string;
+  name: string;
+  color: string;
+  hoisted: boolean;
+  mentionable: boolean;
+  position: number;
+  permissions: string[];
+}
+
+export interface ServerInviteRecord {
+  code: string;
+  creatorUid: string;
+  creatorName: string;
+  uses: number;
+  maxUses?: number | null;
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export interface ServerWebhookRecord {
+  id: string;
+  name: string;
+  channelId: string;
+  secretToken: string;
+  deliveriesCount: number;
+  createdAt: string;
+}
+
+export interface ServerBotRecord {
+  id: string;
+  name: string;
+  description: string;
+  prefix: string;
+  permissions: string[];
+  installedAt: string;
+}
+
+export interface ServerEventRecord {
+  id: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+  locationChannelId?: string;
+  interestedUids: string[];
+  createdAt: string;
+}
 
 export interface Community {
   id: string;
@@ -336,6 +415,24 @@ export interface Community {
   memberCount?: number;
   boostCount?: number;
   boostedBy?: string[];
+  memberRoles?: Record<string, MemberRole>;
+  customRoles?: ServerRoleDefinition[];
+  bannedMembers?: string[];
+  timedOutMembers?: Record<string, string>;
+  invites?: ServerInviteRecord[];
+  webhooks?: ServerWebhookRecord[];
+  installedBots?: ServerBotRecord[];
+  events?: ServerEventRecord[];
+  verificationLevel?: 'none' | 'low' | 'medium' | 'high';
+  welcomeMessage?: string;
+  rules?: string[];
+  autoModConfig?: {
+    enabled: boolean;
+    blockInviteLinks: boolean;
+    blockExcessiveCaps: boolean;
+    maxMentionsPerMessage: number;
+    blockedKeywords: string[];
+  };
   createdAt: string;
 }
 

@@ -43,7 +43,9 @@ import {
 import { ForcePasswordChangeModal } from './components/modals/ForcePasswordChangeModal';
 import { ReceiptDocumentModal } from './components/receipts/ReceiptDocumentModal';
 import { QuickSwitcherModal } from './components/modals/QuickSwitcherModal';
+import { ServerSettingsModal } from './components/modals/ServerSettingsModal';
 import { CommunityStarterTemplate } from './lib/chatEnhancements';
+import { Menu, X as CloseIcon, Settings as SettingsGearIcon } from 'lucide-react';
 
 import {
   INITIAL_NITRO_PLANS,
@@ -105,6 +107,8 @@ function MainApp() {
     updateProfile,
     acceptOwnerInviteOnboard,
     changePassword,
+    enableTwoFactor,
+    disableTwoFactor,
     logout,
   } = useAuth();
 
@@ -147,6 +151,8 @@ function MainApp() {
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
   const [isCreateOrbOpen, setIsCreateOrbOpen] = useState(false);
   const [createChannelCommunityId, setCreateChannelCommunityId] = useState<string | null>(null);
+  const [serverSettingsCommunityId, setServerSettingsCommunityId] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [checkoutPayload, setCheckoutPayload] = useState<CheckoutPayload | null>(null);
   const [passwordModalDismissed, setPasswordModalDismissed] = useState(false);
   const [activeReceiptModal, setActiveReceiptModal] = useState<ReceiptRecord | null>(null);
@@ -956,6 +962,140 @@ function MainApp() {
     },
     [createChannelCommunityId, communities]
   );
+
+  // Server Management Modal handlers
+  const handleUpdateCommunity = useCallback(
+    async (communityId: string, updates: Partial<Community>) => {
+      await updateDoc(
+        doc(db, 'communities', communityId),
+        cleanFirestoreData(updates)
+      );
+      await recordAuditLog(
+        'UPDATE_SERVER_SETTINGS',
+        `Updated server settings for community ${communityId}`
+      );
+    },
+    [recordAuditLog]
+  );
+
+  const handleCreateChannelInServerModal = useCallback(
+    async (communityId: string, channelData: Partial<Channel>) => {
+      const chId = `ch_${Date.now()}`;
+      const existingComm = communities.find((c) => c.id === communityId);
+      const newChannel: Channel = {
+        id: chId,
+        communityId,
+        name: channelData.name || 'new-channel',
+        topic: channelData.topic || '',
+        type: channelData.type || 'text',
+        category: channelData.category || 'TEXT CHANNELS',
+        slowmodeSeconds: channelData.slowmodeSeconds || 0,
+        position: (existingComm?.channels?.length || 0) + 1,
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(
+        doc(db, 'communities', communityId, 'channels', chId),
+        cleanFirestoreData(newChannel)
+      );
+      if (existingComm) {
+        await updateDoc(doc(db, 'communities', communityId), {
+          channels: [
+            ...(existingComm.channels || []),
+            cleanFirestoreData(newChannel),
+          ],
+        });
+      }
+      await recordAuditLog(
+        'CREATE_CHANNEL',
+        `Created #${newChannel.name} (${newChannel.type}) in ${existingComm?.name || communityId}`
+      );
+    },
+    [communities, recordAuditLog]
+  );
+
+  const handleUpdateChannelInServerModal = useCallback(
+    async (
+      communityId: string,
+      channelId: string,
+      updates: Partial<Channel>
+    ) => {
+      await updateDoc(
+        doc(db, 'communities', communityId, 'channels', channelId),
+        cleanFirestoreData(updates)
+      );
+      const existingComm = communities.find((c) => c.id === communityId);
+      if (existingComm) {
+        const nextChannels = (existingComm.channels || []).map((ch) =>
+          ch.id === channelId ? { ...ch, ...updates } : ch
+        );
+        await updateDoc(doc(db, 'communities', communityId), {
+          channels: cleanFirestoreData(nextChannels),
+        });
+      }
+    },
+    [communities]
+  );
+
+  const handleDeleteChannelInServerModal = useCallback(
+    async (communityId: string, channelId: string) => {
+      await deleteDoc(
+        doc(db, 'communities', communityId, 'channels', channelId)
+      );
+      const existingComm = communities.find((c) => c.id === communityId);
+      if (existingComm) {
+        const nextChannels = (existingComm.channels || []).filter(
+          (ch) => ch.id !== channelId
+        );
+        await updateDoc(doc(db, 'communities', communityId), {
+          channels: cleanFirestoreData(nextChannels),
+        });
+      }
+      await recordAuditLog(
+        'DELETE_CHANNEL',
+        `Deleted channel ${channelId} in community ${communityId}`
+      );
+    },
+    [communities, recordAuditLog]
+  );
+
+  const handleLeaveCommunity = useCallback(
+    async (communityId: string) => {
+      if (!profile) return;
+      const comm = communities.find((c) => c.id === communityId);
+      const nextJoined = (profile.joinedCommunities || []).filter(
+        (id) => id !== communityId
+      );
+      await updateProfile({ joinedCommunities: nextJoined });
+      if (comm) {
+        const nextMembers = (comm.members || []).filter(
+          (uid) => uid !== profile.uid
+        );
+        await updateDoc(doc(db, 'communities', communityId), {
+          members: nextMembers,
+          memberCount: Math.max(0, nextMembers.length),
+        });
+      }
+      setActiveView({ type: 'home' });
+    },
+    [profile, communities, updateProfile]
+  );
+
+  // Auto-join community when visiting ?invite=COMM_ID or invite code
+  useEffect(() => {
+    if (!profile || communities.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const inviteParam = params.get('invite');
+    if (!inviteParam) return;
+    const targetComm = communities.find(
+      (c) =>
+        c.id === inviteParam ||
+        (c.invites || []).some((inv) => inv.code === inviteParam)
+    );
+    if (targetComm && !(targetComm.bannedMembers || []).includes(profile.uid)) {
+      handleJoinCommunity(targetComm);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [profile, communities, handleJoinCommunity]);
 
   // Create Orb in Firestore
   const handleCreateOrb = useCallback(
@@ -2286,65 +2426,194 @@ function MainApp() {
     (activeView.type === 'orbs' && !!selectedOrb);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#09090D] text-[#F5F3FA]">
-      {/* 1. Primary Left Navigation Rail (60px) */}
-      <LeftNavRail
-        communities={communities}
-        activeView={activeView}
-        currentUser={profile}
-        unreadDmCount={unreadDmCount}
-        notificationCount={unreadNotificationCount}
-        onNavigateDashboard={() => setActiveView({ type: 'home' })}
-        onNavigateHome={() => setActiveView({ type: 'friends', subTab: 'online' })}
-        onNavigateNotifications={() => setActiveView({ type: 'notifications' })}
-        onNavigateOrbs={() => setActiveView({ type: 'orbs', viewMode: 'explore' })}
-        onNavigateNitro={() => setActiveView({ type: 'nitro' })}
-        onNavigateShop={() => setActiveView({ type: 'shop' })}
-        onNavigateAdmin={() => setActiveView({ type: 'admin' })}
-        onNavigateExplore={() => setActiveView({ type: 'explore_communities' })}
-        onNavigateProfile={() => setActiveView({ type: 'profile', userId: profile.uid })}
-        onSelectCommunity={(commId) => {
-          const comm = communities.find((c) => c.id === commId);
-          const firstCh = comm?.channels?.[0];
-          if (firstCh) {
-            handleSelectChannel(commId, firstCh.id);
-          }
-        }}
-        onCreateCommunity={() => setIsCreateCommunityOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-
-      {/* 2. Contextual Channel or DM Sidebar (240px) */}
-      {!hideContextSidebar && (
-        <ContextSidebar
-          activeView={activeView}
-          communities={communities}
-          directMessages={directMessages}
-          orbs={orbs}
-          currentUser={profile}
-          notificationCount={unreadNotificationCount}
-          onNavigateDashboard={() => setActiveView({ type: 'home' })}
-          onNavigateFriends={(subTab) =>
-            setActiveView({ type: 'friends', subTab: subTab || 'online' })
-          }
-          onNavigateNotifications={() => setActiveView({ type: 'notifications' })}
-          onNavigateProfile={() => setActiveView({ type: 'profile', userId: profile.uid })}
-          onNavigateNitro={() => setActiveView({ type: 'nitro' })}
-          onNavigateShop={() => setActiveView({ type: 'shop' })}
-          onNavigateAdmin={() => setActiveView({ type: 'admin' })}
-          onSelectDm={(dmId) => setActiveView({ type: 'dm', dmId })}
-          onSelectChannel={handleSelectChannel}
-          onCreateChannel={(commId) => setCreateChannelCommunityId(commId)}
-          onBoostCommunity={handleBoostCommunity}
-          onOpenQuickSwitcher={() => setIsQuickSwitcherOpen(true)}
-          onSelectOrbView={(view) => setActiveView(view)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onChangePresence={setPresence}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#09090D] text-[#F5F3FA] relative">
+      {/* Mobile Drawer Backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 z-40 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
         />
       )}
 
+      {/* Navigation Wrapper (Responsive Drawer on Mobile, Static Flex on Desktop) */}
+      <div
+        className={`${
+          mobileNavOpen ? 'fixed inset-y-0 left-0 z-50 flex' : 'hidden md:flex'
+        } h-full shrink-0`}
+      >
+        {/* 1. Primary Left Navigation Rail (60px) */}
+        <LeftNavRail
+          communities={communities}
+          activeView={activeView}
+          currentUser={profile}
+          unreadDmCount={unreadDmCount}
+          notificationCount={unreadNotificationCount}
+          onNavigateDashboard={() => {
+            setActiveView({ type: 'home' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateHome={() => {
+            setActiveView({ type: 'friends', subTab: 'online' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateNotifications={() => {
+            setActiveView({ type: 'notifications' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateOrbs={() => {
+            setActiveView({ type: 'orbs', viewMode: 'explore' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateNitro={() => {
+            setActiveView({ type: 'nitro' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateShop={() => {
+            setActiveView({ type: 'shop' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateAdmin={() => {
+            setActiveView({ type: 'admin' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateExplore={() => {
+            setActiveView({ type: 'explore_communities' });
+            setMobileNavOpen(false);
+          }}
+          onNavigateProfile={() => {
+            setActiveView({ type: 'profile', userId: profile.uid });
+            setMobileNavOpen(false);
+          }}
+          onSelectCommunity={(commId) => {
+            const comm = communities.find((c) => c.id === commId);
+            const firstCh = comm?.channels?.[0];
+            if (firstCh) {
+              handleSelectChannel(commId, firstCh.id);
+            }
+          }}
+          onCreateCommunity={() => {
+            setIsCreateCommunityOpen(true);
+            setMobileNavOpen(false);
+          }}
+          onOpenSettings={() => {
+            setIsSettingsOpen(true);
+            setMobileNavOpen(false);
+          }}
+        />
+
+        {/* 2. Contextual Channel or DM Sidebar (240px) */}
+        {!hideContextSidebar && (
+          <ContextSidebar
+            activeView={activeView}
+            communities={communities}
+            directMessages={directMessages}
+            orbs={orbs}
+            currentUser={profile}
+            notificationCount={unreadNotificationCount}
+            onNavigateDashboard={() => {
+              setActiveView({ type: 'home' });
+              setMobileNavOpen(false);
+            }}
+            onNavigateFriends={(subTab) => {
+              setActiveView({ type: 'friends', subTab: subTab || 'online' });
+              setMobileNavOpen(false);
+            }}
+            onNavigateNotifications={() => {
+              setActiveView({ type: 'notifications' });
+              setMobileNavOpen(false);
+            }}
+            onNavigateProfile={() => {
+              setActiveView({ type: 'profile', userId: profile.uid });
+              setMobileNavOpen(false);
+            }}
+            onNavigateNitro={() => {
+              setActiveView({ type: 'nitro' });
+              setMobileNavOpen(false);
+            }}
+            onNavigateShop={() => {
+              setActiveView({ type: 'shop' });
+              setMobileNavOpen(false);
+            }}
+            onNavigateAdmin={() => {
+              setActiveView({ type: 'admin' });
+              setMobileNavOpen(false);
+            }}
+            onSelectDm={(dmId) => {
+              setActiveView({ type: 'dm', dmId });
+              setMobileNavOpen(false);
+            }}
+            onSelectChannel={(commId, chId) => {
+              handleSelectChannel(commId, chId);
+              setMobileNavOpen(false);
+            }}
+            onCreateChannel={(commId) => setCreateChannelCommunityId(commId)}
+            onBoostCommunity={handleBoostCommunity}
+            onOpenServerSettings={(commId) => {
+              setServerSettingsCommunityId(commId);
+              setMobileNavOpen(false);
+            }}
+            onOpenQuickSwitcher={() => {
+              setIsQuickSwitcherOpen(true);
+              setMobileNavOpen(false);
+            }}
+            onSelectOrbView={(view) => {
+              setActiveView(view);
+              setMobileNavOpen(false);
+            }}
+            onOpenSettings={() => {
+              setIsSettingsOpen(true);
+              setMobileNavOpen(false);
+            }}
+            onChangePresence={setPresence}
+          />
+        )}
+      </div>
+
       {/* 3. Central Main Workspace View */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#09090D]">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative bg-[#09090D]">
+        {/* Mobile Top Navigation Bar (<768px) */}
+        <div className="flex md:hidden items-center justify-between px-3 py-2 bg-[#101014] border-b border-[#282631] shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-label="Toggle Navigation"
+              className="p-1.5 rounded-lg bg-[#17171F] border border-[#282631] text-[#F5F3FA]"
+            >
+              {mobileNavOpen ? (
+                <CloseIcon className="w-4 h-4" />
+              ) : (
+                <Menu className="w-4 h-4" />
+              )}
+            </button>
+            <img
+              src="/assets/aistudio/doomcord-icon_378efdf9.png"
+              alt="Doomcord"
+              className="w-5 h-5 object-contain shrink-0"
+            />
+            <span className="text-xs font-bold text-[#F5F3FA] truncate">
+              {activeCommunity
+                ? `${activeCommunity.name} · #${activeChannel?.name || 'channel'}`
+                : 'Doomcord'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {activeCommunity && (
+              <button
+                onClick={() => setServerSettingsCommunityId(activeCommunity.id)}
+                className="px-2 py-1 rounded bg-[#17171F] border border-[#282631] text-[10px] font-semibold text-[#C4B1FF] flex items-center gap-1"
+              >
+                <SettingsGearIcon className="w-3 h-3" />
+                <span>Server</span>
+              </button>
+            )}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="px-2 py-1 rounded bg-[#17171F] border border-[#282631] text-[10px] font-semibold text-[#A19DAD]"
+            >
+              Settings
+            </button>
+          </div>
+        </div>
         {/* Global Platform Announcement Banner */}
         {systemConfig.globalAnnouncement && (
           <div className="px-6 py-2 bg-[#17171F] border-b border-[#282631] flex items-center justify-between text-xs">
@@ -2479,6 +2748,7 @@ function MainApp() {
               onMarkAsRead={handleMarkAsRead}
               showRightPanel={isRightPanelOpen}
               onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
+              autoModConfig={activeCommunity?.autoModConfig}
             />
           )
         ) : activeView.type === 'orbs' ? (
@@ -2639,18 +2909,20 @@ function MainApp() {
         )}
       </div>
 
-      {/* 4. Collapsible Right Contextual Panel (300px) */}
+      {/* 4. Collapsible Right Contextual Panel (300px, desktop only) */}
       {canShowContextualPanel && isRightPanelOpen && (
-        <ContextualPanel
-          activeView={activeView}
-          activeCommunity={activeCommunity}
-          recipientProfile={activeDm?.recipientProfile}
-          activeOrb={selectedOrb}
-          members={allUsers}
-          onSelectMember={handleOpenDmWithUser}
-          onViewProfile={(userId) => setActiveView({ type: 'profile', userId })}
-          onBoostCommunity={handleBoostCommunity}
-        />
+        <div className="hidden lg:flex h-full shrink-0">
+          <ContextualPanel
+            activeView={activeView}
+            activeCommunity={activeCommunity}
+            recipientProfile={activeDm?.recipientProfile}
+            activeOrb={selectedOrb}
+            members={allUsers}
+            onSelectMember={handleOpenDmWithUser}
+            onViewProfile={(userId) => setActiveView({ type: 'profile', userId })}
+            onBoostCommunity={handleBoostCommunity}
+          />
+        </div>
       )}
 
       {/* Modals */}
@@ -2676,9 +2948,30 @@ function MainApp() {
         onClose={() => setIsSettingsOpen(false)}
         onUpdateProfile={updateProfile}
         onChangePassword={changePassword}
+        onEnableTwoFactor={enableTwoFactor}
+        onDisableTwoFactor={disableTwoFactor}
         onOpenNitro={() => setActiveView({ type: 'nitro' })}
         onOpenShop={() => setActiveView({ type: 'shop' })}
         onLogout={logout}
+      />
+
+      <ServerSettingsModal
+        isOpen={!!serverSettingsCommunityId}
+        community={
+          communities.find((c) => c.id === serverSettingsCommunityId) || null
+        }
+        currentUser={profile}
+        allUsers={allUsers}
+        onClose={() => setServerSettingsCommunityId(null)}
+        onUpdateCommunity={handleUpdateCommunity}
+        onCreateChannel={handleCreateChannelInServerModal}
+        onUpdateChannel={handleUpdateChannelInServerModal}
+        onDeleteChannel={handleDeleteChannelInServerModal}
+        onDeleteCommunity={async (commId) => {
+          await handleDeleteCommunity(commId);
+          setActiveView({ type: 'home' });
+        }}
+        onLeaveCommunity={handleLeaveCommunity}
       />
 
       <CreateCommunityModal

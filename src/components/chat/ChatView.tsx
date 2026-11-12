@@ -44,6 +44,11 @@ import {
   parseMessageBlocks,
   InlineSegment,
 } from '../../lib/chatEnhancements';
+import {
+  validateFileUpload,
+  evaluateAutoModMessage,
+  AutoModRuleConfig,
+} from '../../lib/totpService';
 
 interface ChatViewProps {
   title: string;
@@ -52,6 +57,7 @@ interface ChatViewProps {
   currentUser: UserProfile;
   recipientProfile?: UserProfile;
   messages: ChatMessage[];
+  autoModConfig?: AutoModRuleConfig;
   showRightPanel?: boolean;
   onToggleRightPanel?: () => void;
   onSendMessage: (
@@ -159,6 +165,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   currentUser,
   recipientProfile,
   messages,
+  autoModConfig,
   showRightPanel = true,
   onToggleRightPanel,
   onSendMessage,
@@ -187,6 +194,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [revealedSpoilers, setRevealedSpoilers] = useState<Record<string, boolean>>({});
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
   const [selectedSlashIdx, setSelectedSlashIdx] = useState(0);
+  const [securityAlert, setSecurityAlert] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -248,6 +256,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const handleSend = () => {
     if (!inputValue.trim()) return;
     if (inputValue.length > maxCharLimit) return;
+
+    const autoModCheck = evaluateAutoModMessage(
+      inputValue,
+      autoModConfig,
+      isOwner
+    );
+    if (!autoModCheck.allowed) {
+      setSecurityAlert(autoModCheck.reason || 'Message blocked by AutoMod.');
+      setTimeout(() => setSecurityAlert(null), 4000);
+      return;
+    }
 
     const executed = executeSlashCommand(inputValue, currentUser.uid);
 
@@ -317,12 +336,23 @@ export const ChatView: React.FC<ChatViewProps> = ({
   };
 
   const processFile = (file: File) => {
+    const validation = validateFileUpload(
+      { name: file.name, size: file.size, type: file.type },
+      currentUser.nitroTier,
+      isOwner
+    );
+    if (!validation.valid) {
+      setSecurityAlert(validation.error || 'File upload rejected.');
+      setTimeout(() => setSecurityAlert(null), 4500);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
       const attachment: MessageAttachment = {
         id: `att_${Date.now()}`,
-        name: file.name,
+        name: validation.sanitizedName,
         url: dataUrl,
         type: file.type.startsWith('image/') ? 'image' : 'file',
         size: file.size,
@@ -330,7 +360,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       onSendMessage(
         file.type.startsWith('image/')
           ? 'Shared an image'
-          : `Attached ${file.name}`,
+          : `Attached ${validation.sanitizedName}`,
         [attachment]
       );
     };
@@ -1030,6 +1060,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Security / AutoMod Alert Banner */}
+      {securityAlert && (
+        <div className="px-5 py-2 bg-[#ED4245]/10 border-t border-[#ED4245]/30 flex items-center justify-between text-xs text-[#ED4245]">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-semibold shrink-0">Safety Guard:</span>
+            <span className="truncate">{securityAlert}</span>
+          </div>
+          <button
+            onClick={() => setSecurityAlert(null)}
+            className="text-[#ED4245] hover:text-white ml-2 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Reply Indicator Bar */}
       {replyingTo && (

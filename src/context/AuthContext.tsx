@@ -23,6 +23,7 @@ import {
   isRootOwnerEmail,
   cleanFirestoreData,
 } from '../lib/dataService';
+import { verifyTotpCode } from '../lib/totpService';
 
 interface AuthContextType {
   profile: UserProfile | null;
@@ -33,7 +34,7 @@ interface AuthContextType {
   setPresence: (presence: UserPresence) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   signInGoogle: () => Promise<void>;
-  signInEmail: (email: string, pass: string) => Promise<void>;
+  signInEmail: (email: string, pass: string, totpCode?: string) => Promise<void>;
   signUpEmail: (email: string, pass: string, username: string, displayName: string) => Promise<void>;
   acceptOwnerInviteOnboard: (
     inviteId: string,
@@ -43,6 +44,13 @@ interface AuthContextType {
     password: string
   ) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  enableTwoFactor: (secret: string, code: string, backupCodes: string[]) => Promise<void>;
+  disableTwoFactor: () => Promise<void>;
+  resetPasswordWithRecovery: (
+    email: string,
+    recoveryCode: string,
+    newPassword: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -338,8 +346,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [updateProfile]
   );
 
-  // Sign in with Email & Password
-  const signInEmail = useCallback(async (email: string, pass: string) => {
+  // Sign in with Email & Password (+ optional 2FA code)
+  const signInEmail = useCallback(async (email: string, pass: string, totpCode?: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !pass) {
       throw new Error('Email and password are required.');
@@ -352,17 +360,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password: pass }),
+        body: JSON.stringify({ email: normalizedEmail, password: pass, totpCode }),
       });
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const data = await res.json();
+        if (data.requiresTwoFactor) {
+          throw new Error('TWO_FACTOR_REQUIRED');
+        }
         if (res.ok && data.token && data.user) {
           serverToken = data.token;
           verifiedViaServer = true;
         }
       }
-    } catch {
+    } catch (err: any) {
+      if (err?.message === 'TWO_FACTOR_REQUIRED') {
+        throw err;
+      }
       // Fallback to Firestore verification below
     }
 
@@ -379,6 +393,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!verifiedViaServer && candidateHash !== expectedHash && !isValidTemp) {
         throw new Error('Invalid email or password.');
+      }
+
+      if (existingOwner?.twoFactorEnabled && existingOwner?.twoFactorSecret) {
+        if (!totpCode) {
+          throw new Error('TWO_FACTOR_REQUIRED');
+        }
+        const cleanCode = totpCode.trim().toUpperCase();
+        const isValidTotp = verifyTotpCode(existingOwner.twoFactorSecret, cleanCode);
+        const isValidBackup = (existingOwner.twoFactorBackupCodes || []).includes(cleanCode);
+        if (!isValidTotp && !isValidBackup) {
+          throw new Error('Invalid 6-digit Authenticator code or Backup Recovery code.');
+        }
       }
 
       const finalOwnerProfile = buildDefaultRootOwnerProfile({
@@ -428,6 +454,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const candidateHash = await computeSaltedHash(userObj.authSalt, pass);
       if (candidateHash !== userObj.authHash) {
         throw new Error('Invalid email or password.');
+      }
+    }
+
+    // Check 2FA on Firestore user record
+    if (userObj.twoFactorEnabled && userObj.twoFactorSecret) {
+      if (!totpCode) {
+        throw new Error('TWO_FACTOR_REQUIRED');
+      }
+      const cleanCode = totpCode.trim().toUpperCase();
+      const isValidTotp = verifyTotpCode(userObj.twoFactorSecret, cleanCode);
+      const isValidBackup = (userObj.twoFactorBackupCodes || []).includes(cleanCode);
+      if (!isValidTotp && !isValidBackup) {
+        throw new Error('Invalid 6-digit Authenticator code or Backup Recovery code.');
+      }
+      if (isValidBackup) {
+        const remaining = (userObj.twoFactorBackupCodes || []).filter((c) => c !== cleanCode);
+        await updateDoc(doc(db, 'users', userObj.uid), {
+          twoFactorBackupCodes: remaining,
+        });
       }
     }
 
@@ -784,6 +829,119 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [token, profile]
   );
 
+  const enableTwoFactor = useCallback(
+    async (secret: string, code: string, backupCodes: string[]) => {
+      if (!profile) throw new Error('Not authenticated.');
+      if (!verifyTotpCode(secret, code)) {
+        throw new Error('Invalid 6-digit authenticator code. Please verify the code shown in your app.');
+      }
+      if (token) {
+        try {
+          await fetch('/api/auth/2fa/enable', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ secret, code, backupCodes }),
+          });
+        } catch {
+          // ignore
+        }
+      }
+      await updateProfile({
+        twoFactorEnabled: true,
+        twoFactorSecret: secret,
+        twoFactorBackupCodes: backupCodes,
+      });
+    },
+    [profile, token, updateProfile]
+  );
+
+  const disableTwoFactor = useCallback(async () => {
+    if (!profile) throw new Error('Not authenticated.');
+    if (token) {
+      try {
+        await fetch('/api/auth/2fa/disable', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch {
+        // ignore
+      }
+    }
+    await updateProfile({
+      twoFactorEnabled: false,
+      twoFactorSecret: '',
+      twoFactorBackupCodes: [],
+    });
+  }, [profile, token, updateProfile]);
+
+  const resetPasswordWithRecovery = useCallback(
+    async (email: string, recoveryCode: string, newPassword: string) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (newPassword.length < 6) {
+        throw new Error('New password must be at least 6 characters.');
+      }
+
+      const usersSnap = await getDocs(collection(db, 'users'));
+      let matchedUser: UserProfile | null = null;
+      usersSnap.forEach((d) => {
+        const u = d.data() as UserProfile;
+        if (u.email?.toLowerCase() === normalizedEmail) {
+          matchedUser = u;
+        }
+      });
+
+      if (!matchedUser) {
+        throw new Error('No account found with this email address.');
+      }
+
+      const target = matchedUser as UserProfile;
+      const cleanCode = recoveryCode.trim().toUpperCase();
+      const validTotp = target.twoFactorSecret
+        ? verifyTotpCode(target.twoFactorSecret, cleanCode)
+        : false;
+      const validBackup = (target.twoFactorBackupCodes || []).includes(cleanCode);
+
+      if (!validTotp && !validBackup) {
+        throw new Error('Invalid 2FA authenticator code or backup recovery code.');
+      }
+
+      try {
+        await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            recoveryCode: cleanCode,
+            newPassword,
+          }),
+        });
+      } catch {
+        // continue with Firestore update
+      }
+
+      const newSalt = generateRandomSalt();
+      const newHash = await computeSaltedHash(newSalt, newPassword);
+      const remainingCodes = validBackup
+        ? (target.twoFactorBackupCodes || []).filter((c) => c !== cleanCode)
+        : target.twoFactorBackupCodes || [];
+
+      await updateDoc(doc(db, 'users', target.uid), {
+        authSalt: newSalt,
+        authHash: newHash,
+        mustChangePassword: false,
+        twoFactorBackupCodes: remainingCodes,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    []
+  );
+
   const logout = useCallback(async () => {
     if (profile) {
       try {
@@ -820,6 +978,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpEmail,
         acceptOwnerInviteOnboard,
         changePassword,
+        enableTwoFactor,
+        disableTwoFactor,
+        resetPasswordWithRecovery,
         logout,
       }}
     >

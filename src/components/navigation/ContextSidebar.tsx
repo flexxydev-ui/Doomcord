@@ -51,6 +51,7 @@ interface ContextSidebarProps {
   onSelectDm: (dmId: string) => void;
   onSelectChannel: (communityId: string, channelId: string) => void;
   onCreateChannel: (communityId: string) => void;
+  onOpenServerSettings?: (communityId: string) => void;
   onBoostCommunity?: (communityId: string) => void;
   onOpenQuickSwitcher?: () => void;
   onSelectOrbView?: (view: ActiveView) => void;
@@ -75,6 +76,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
   onSelectDm,
   onSelectChannel,
   onCreateChannel,
+  onOpenServerSettings,
   onBoostCommunity,
   onOpenQuickSwitcher,
   onSelectOrbView,
@@ -123,7 +125,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
       {/* Top Header */}
       <div className="h-14 px-3.5 flex items-center justify-between border-b border-[#282631] shrink-0">
         {isCommunityView && activeCommunity ? (
-          <div className="w-full flex items-center justify-between gap-2">
+          <div className="w-full flex items-center justify-between gap-1.5">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h2 className="text-xs font-semibold text-[#F5F3FA] truncate">
@@ -140,13 +142,26 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 {activeCommunity.channels?.length || 1} channels
               </p>
             </div>
-            <button
-              onClick={() => onCreateChannel(activeCommunity.id)}
-              title="Create Channel"
-              className="w-7 h-7 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#8957F5] flex items-center justify-center transition-colors shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {onOpenServerSettings && (
+                <button
+                  onClick={() => onOpenServerSettings(activeCommunity.id)}
+                  title="Server Settings"
+                  aria-label="Server Settings"
+                  className="w-7 h-7 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#A47BFF] hover:text-[#F5F3FA] flex items-center justify-center transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => onCreateChannel(activeCommunity.id)}
+                title="Create Channel"
+                aria-label="Create Channel"
+                className="w-7 h-7 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#8957F5] flex items-center justify-center transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         ) : isOrbsView ? (
           <div className="w-full flex items-center justify-between">
@@ -276,7 +291,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
               </div>
             )}
 
-            {/* Text Channels */}
+            {/* Text, Forum & Media Channels */}
             <div>
               <div className="flex items-center justify-between px-2 mb-1">
                 <button
@@ -289,7 +304,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                   ) : (
                     <ChevronDown className="w-3 h-3" />
                   )}
-                  <span>Text Channels</span>
+                  <span>Text, Forum & Media</span>
                 </button>
                 <button
                   onClick={() => onCreateChannel(activeCommunity.id)}
@@ -302,7 +317,12 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
               {!collapsedGroups['text'] && (
                 <div className="space-y-0.5">
                   {activeCommunity.channels
-                    ?.filter((c) => c.type === 'text')
+                    ?.filter(
+                      (c) =>
+                        c.type === 'text' ||
+                        c.type === 'forum' ||
+                        c.type === 'media'
+                    )
                     .map((ch) => {
                       const isActive =
                         activeView.type === 'community' && activeView.channelId === ch.id;
@@ -318,6 +338,11 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                         >
                           <Hash className="w-3.5 h-3.5 shrink-0 text-[#706C7B]" />
                           <span className="text-xs truncate">{ch.name}</span>
+                          {(ch.type === 'forum' || ch.type === 'media') && (
+                            <span className="ml-auto text-[9px] font-mono uppercase px-1 rounded bg-[#101014] text-[#A47BFF]">
+                              {ch.type}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
