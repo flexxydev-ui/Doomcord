@@ -38,6 +38,7 @@ import {
 } from '../../types';
 import { isRootOwner, generateInitialsAvatar } from '../../lib/dataService';
 import { DEFAULT_AUTOMOD_CONFIG } from '../../lib/totpService';
+import { ImageUploader } from '../common/ImageUploader';
 
 interface ServerSettingsModalProps {
   isOpen: boolean;
@@ -547,32 +548,21 @@ export const ServerSettingsModal: React.FC<ServerSettingsModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-[#A19DAD] font-medium mb-1">
-                      Server Icon URL
-                    </label>
-                    <input
-                      type="text"
-                      value={iconUrl}
-                      onChange={(e) => setIconUrl(e.target.value)}
-                      disabled={!canManageServer}
-                      placeholder="https://..."
-                      className="w-full h-8 px-2.5 rounded-md bg-[#101014] border border-[#282631] text-[#F5F3FA] font-mono outline-none focus:border-[#8957F5]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#A19DAD] font-medium mb-1">
-                      Server Banner URL
-                    </label>
-                    <input
-                      type="text"
-                      value={bannerUrl}
-                      onChange={(e) => setBannerUrl(e.target.value)}
-                      disabled={!canManageServer}
-                      placeholder="https://..."
-                      className="w-full h-8 px-2.5 rounded-md bg-[#101014] border border-[#282631] text-[#F5F3FA] font-mono outline-none focus:border-[#8957F5]"
-                    />
-                  </div>
+                  <ImageUploader
+                    label="Server Icon"
+                    variant="avatar"
+                    value={iconUrl}
+                    onChange={setIconUrl}
+                    fallbackInitials={name || community.name || 'DC'}
+                    disabled={!canManageServer}
+                  />
+                  <ImageUploader
+                    label="Server Banner"
+                    variant="banner"
+                    value={bannerUrl}
+                    onChange={setBannerUrl}
+                    disabled={!canManageServer}
+                  />
                 </div>
 
                 <div>

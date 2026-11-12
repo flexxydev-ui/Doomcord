@@ -5,6 +5,7 @@ import {
   COMMUNITY_TEMPLATES,
   CommunityStarterTemplate,
 } from '../../lib/chatEnhancements';
+import { ImageUploader } from '../common/ImageUploader';
 
 interface CreateCommunityModalProps {
   isOpen: boolean;
@@ -183,18 +184,13 @@ export const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-[#A19DAD] block mb-1">
-              Icon URL (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="https://..."
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              className="w-full bg-[#17171F] text-[#F5F3FA] text-xs px-3.5 py-2.5 rounded-lg border border-[#282631] outline-none focus:border-[#8957F5] font-mono transition-colors"
-            />
-          </div>
+          <ImageUploader
+            label="Server Icon (Optional)"
+            variant="avatar"
+            value={iconUrl}
+            onChange={setIconUrl}
+            fallbackInitials={name || 'DC'}
+          />
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#282631]">
             <button

@@ -32,6 +32,7 @@ import {
   buildOtpAuthUri,
   generateBackupCodes,
 } from '../../lib/totpService';
+import { ImageUploader } from '../common/ImageUploader';
 
 interface SettingsModalProps {
   currentUser: UserProfile;
@@ -83,6 +84,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [photoURL, setPhotoURL] = useState(currentUser.photoURL || '');
   const [bannerURL, setBannerURL] = useState(currentUser.bannerURL || '');
   const [savedFeedback, setSavedFeedback] = useState(false);
+
+  useEffect(() => {
+    setDisplayName(currentUser.displayName);
+    setBio(currentUser.bio || '');
+    setStatusMessage(currentUser.statusMessage || '');
+    setAccentColor(currentUser.accentColor || '#8957F5');
+    setSecondaryColor(currentUser.secondaryColor || '#17171F');
+    setPhotoURL(currentUser.photoURL || '');
+    setBannerURL(currentUser.bannerURL || '');
+  }, [
+    currentUser.uid,
+    currentUser.displayName,
+    currentUser.bio,
+    currentUser.statusMessage,
+    currentUser.accentColor,
+    currentUser.secondaryColor,
+    currentUser.photoURL,
+    currentUser.bannerURL,
+  ]);
 
   // Password Change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -476,31 +496,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
-                    Avatar Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={photoURL}
-                    onChange={(e) => setPhotoURL(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5] font-mono"
-                  />
-                </div>
+                <ImageUploader
+                  label="Avatar Image"
+                  variant="avatar"
+                  value={photoURL}
+                  onChange={setPhotoURL}
+                  fallbackInitials={displayName || currentUser.displayName || 'DC'}
+                />
 
-                <div>
-                  <label className="text-xs font-medium text-[#A19DAD] block mb-1">
-                    Banner Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={bannerURL}
-                    onChange={(e) => setBannerURL(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full h-8 bg-[#101014] text-[#F5F3FA] text-xs px-2.5 rounded-md border border-[#282631] outline-none focus:border-[#8957F5] font-mono"
-                  />
-                </div>
+                <ImageUploader
+                  label="Profile Banner Image"
+                  variant="banner"
+                  value={bannerURL}
+                  onChange={setBannerURL}
+                />
 
                 <div>
                   <label className="text-xs font-medium text-[#A19DAD] block mb-1">

@@ -15,6 +15,7 @@ import {
   cleanFirestoreData,
   isRootOwnerEmail,
 } from './dataService';
+import { validateImageFile } from './imageUploadService';
 
 test('isRootOwner and isAdminOrAbove strictly isolate Root Owner from normal members', () => {
   assert.equal(isRootOwner(ROOT_OWNER_UUID), true);
@@ -193,5 +194,47 @@ test('isRootOwnerEmail strictly matches only razorpay@admin.doom', () => {
   assert.equal(isRootOwnerEmail(undefined), false);
   assert.equal(isRootOwnerEmail(null), false);
 });
+
+test('validateImageFile accepts valid PNG/JPEG/WEBP/GIF files and rejects invalid types or oversized files', () => {
+  assert.deepEqual(
+    validateImageFile({ name: 'avatar.png', type: 'image/png', size: 1024 * 500 }),
+    { valid: true }
+  );
+  assert.deepEqual(
+    validateImageFile({ name: 'banner.webp', type: 'image/webp', size: 1024 * 800 }),
+    { valid: true }
+  );
+  assert.deepEqual(
+    validateImageFile({ name: 'anim.gif', type: 'image/gif', size: 1024 * 400 }),
+    { valid: true }
+  );
+  // Reject non-image file
+  const badExt = validateImageFile({
+    name: 'malware.exe',
+    type: 'application/octet-stream',
+    size: 1024,
+  });
+  assert.equal(badExt.valid, false);
+  assert.ok(badExt.error && badExt.error.includes('Unsupported file format'));
+
+  // Reject SVG XSS vector
+  const svgErr = validateImageFile({
+    name: 'vector.svg',
+    type: 'image/svg+xml',
+    size: 1024,
+  });
+  assert.equal(svgErr.valid, false);
+  assert.ok(svgErr.error);
+
+  // Reject oversized file (> 10MB default)
+  const sizeErr = validateImageFile({
+    name: 'huge.png',
+    type: 'image/png',
+    size: 12 * 1024 * 1024,
+  });
+  assert.equal(sizeErr.valid, false);
+  assert.ok(sizeErr.error && sizeErr.error.includes('upload limit'));
+});
+
 
 
