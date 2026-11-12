@@ -118,6 +118,7 @@ interface AdminDashboardViewProps {
   onOpenReceiptModal: (receipt: ReceiptRecord) => void;
   onRefundTransaction: (tx: TransactionRecord) => Promise<void>;
   onUpdateSystemConfig: (cfg: Partial<SystemConfigData>) => Promise<void>;
+  onReturnHome?: () => void;
 }
 
 type AdminTab =
@@ -165,6 +166,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   onOpenReceiptModal,
   onRefundTransaction,
   onUpdateSystemConfig,
+  onReturnHome,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -251,6 +253,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [newCosmColor2, setNewCosmColor2] = useState('#C4B1FF');
 
   useEffect(() => {
+    if (!isAdminOrAbove(currentUser)) return;
     fetch('/api/razorpay/status')
       .then((r) => r.json())
       .then((data) => {
@@ -259,19 +262,38 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         if (data.merchantUpiId) setMerchantUpi(data.merchantUpiId);
       })
       .catch(() => {});
-  }, []);
+  }, [currentUser]);
 
   if (!isAdminOrAbove(currentUser)) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-[#09090D]">
-        <div className="max-w-md p-6 rounded-xl bg-[#101014] border border-[#E57373]/40 text-center space-y-2">
-          <AlertTriangle className="w-8 h-8 text-[#E57373] mx-auto" />
-          <h2 className="text-base font-display font-bold text-[#F5F3FA]">
-            Access Restricted
+      <div
+        data-testid="admin-access-denied"
+        className="flex-1 flex items-center justify-center p-8 bg-[#09090D] text-[#F5F3FA]"
+      >
+        <div className="max-w-md w-full p-6 rounded-xl bg-[#101014] border border-[#E57373]/40 text-center space-y-3">
+          <div className="w-12 h-12 rounded-xl bg-[#E57373]/10 border border-[#E57373]/30 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-6 h-6 text-[#E57373]" />
+          </div>
+          <h2 className="text-base font-bold text-[#F5F3FA]">
+            Access Denied — Administrative Privileges Required
           </h2>
-          <p className="text-xs text-[#A19DAD]">
-            This console is restricted to authorized Doomcord Owners and Administrators.
+          <p className="text-xs text-[#A19DAD] leading-relaxed">
+            Your account (<span className="font-mono text-[#F5F3FA]">@{currentUser?.username || 'member'}</span> · Role:{' '}
+            <span className="font-mono text-[#C4B1FF]">
+              {formatRoleLabel(currentUser?.role, currentUser?.uid)}
+            </span>
+            ) does not have permission to view or interact with the Doomcord Platform Administration Console.
           </p>
+          {onReturnHome && (
+            <div className="pt-2">
+              <button
+                onClick={onReturnHome}
+                className="px-4 py-2 rounded-lg bg-[#8957F5] hover:bg-[#7A4AE6] text-xs font-semibold text-white transition-colors"
+              >
+                Return to Home
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

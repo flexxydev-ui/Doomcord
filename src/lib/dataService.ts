@@ -13,15 +13,11 @@ import {
 
 export const ROOT_OWNER_UUID = '00000000-0000-4000-8000-000000000001';
 export const ROOT_OWNER_EMAIL = 'razorpay@admin.doom';
-export const OWNER_EMAILS = [
-  'razorpay@admin.doom',
-  'kshriyans17@gmail.com',
-  'adrenoxshriyans@gmail.com',
-];
+export const OWNER_EMAILS = ['razorpay@admin.doom'];
 
 export function isRootOwnerEmail(email?: string | null): boolean {
   if (!email) return false;
-  return OWNER_EMAILS.includes(email.trim().toLowerCase());
+  return email.trim().toLowerCase() === ROOT_OWNER_EMAIL;
 }
 
 /**
@@ -52,8 +48,8 @@ export function cleanFirestoreData<T>(input: T): T {
 }
 
 /**
- * Identifies the Main Owner strictly using the protected `root_owner` role,
- * the verified authentication UUID (ROOT_OWNER_UUID), or recognized owner emails.
+ * Identifies the Main Owner strictly using the protected authentication UUID (ROOT_OWNER_UUID)
+ * or the root_owner role on the root owner account. Normal member accounts are never matched.
  */
 export function isRootOwner(
   userOrUid?: Partial<UserProfile> | string | null
@@ -62,10 +58,12 @@ export function isRootOwner(
   if (typeof userOrUid === 'string') {
     return userOrUid === ROOT_OWNER_UUID;
   }
+  if (userOrUid.uid) {
+    return userOrUid.uid === ROOT_OWNER_UUID;
+  }
   return (
-    userOrUid.uid === ROOT_OWNER_UUID ||
-    userOrUid.role === 'root_owner' ||
-    isRootOwnerEmail(userOrUid.email)
+    userOrUid.role === 'root_owner' &&
+    (!userOrUid.email || isRootOwnerEmail(userOrUid.email))
   );
 }
 

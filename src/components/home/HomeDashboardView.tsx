@@ -25,7 +25,7 @@ import {
   ReceiptRecord,
   ActiveView,
 } from '../../types';
-import { isRootOwner, isSecondaryOwner, formatRoleLabel } from '../../lib/dataService';
+import { isRootOwner, isSecondaryOwner, isAdminOrAbove, formatRoleLabel } from '../../lib/dataService';
 
 interface HomeDashboardViewProps {
   profile: UserProfile;
@@ -679,7 +679,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                 </p>
               </button>
 
-              {(isOwner || isSecOwner || profile.role === 'admin') && (
+              {isAdminOrAbove(profile) && (
                 <button
                   onClick={() => onSelectView({ type: 'admin' })}
                   className="p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#8957F5]/30 text-left transition-colors"

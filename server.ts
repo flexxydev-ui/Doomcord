@@ -248,18 +248,13 @@ function extractSession(req: express.Request): ServerAuthAccount | null {
   return null;
 }
 
-const OWNER_EMAILS = [
-  'razorpay@admin.doom',
-  'kshriyans17@gmail.com',
-  'adrenoxshriyans@gmail.com',
-];
+const OWNER_EMAILS = ['razorpay@admin.doom'];
 
 function isRootOwnerSession(account: ServerAuthAccount | null): boolean {
   if (!account) return false;
   return (
     account.uid === ROOT_OWNER_UUID ||
-    OWNER_EMAILS.includes(account.email.toLowerCase()) ||
-    account.role === 'root_owner'
+    account.email.toLowerCase() === ROOT_OWNER_EMAIL
   );
 }
 

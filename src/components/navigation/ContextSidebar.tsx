@@ -32,6 +32,7 @@ import {
 import {
   generateInitialsAvatar,
   isRootOwner,
+  isAdminOrAbove,
 } from '../../lib/dataService';
 import { calculateServerBoostState } from '../../lib/chatEnhancements';
 
@@ -590,10 +591,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                 </button>
               )}
 
-              {(currentUser.role === 'root_owner' ||
-                currentUser.role === 'secondary_owner' ||
-                currentUser.role === 'owner' ||
-                currentUser.role === 'admin') && (
+              {isAdminOrAbove(currentUser) && (
                 <button
                   onClick={onNavigateAdmin}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${

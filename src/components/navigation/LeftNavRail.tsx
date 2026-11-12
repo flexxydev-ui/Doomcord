@@ -15,6 +15,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { Community, ActiveView, UserProfile } from '../../types';
+import { isAdminOrAbove } from '../../lib/dataService';
 
 interface LeftNavRailProps {
   communities: Community[];
@@ -70,11 +71,7 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
   const isAdminActive = activeView.type === 'admin';
   const isExploreActive = activeView.type === 'explore_communities';
 
-  const isAdminOrOwner =
-    currentUser.role === 'root_owner' ||
-    currentUser.role === 'secondary_owner' ||
-    currentUser.role === 'owner' ||
-    currentUser.role === 'admin';
+  const isAdminOrOwner = isAdminOrAbove(currentUser);
 
   return (
     <aside className="w-[60px] h-full flex flex-col items-center py-3 bg-[#0D0D12] border-r border-[#282631] select-none shrink-0 z-30">

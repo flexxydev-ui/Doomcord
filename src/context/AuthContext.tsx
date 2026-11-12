@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     async function initializePlatformCatalogs() {
       try {
-        // 1. Purge any legacy demo_* users or duplicate random-UUID owner docs
+        // 1. Purge any legacy demo_* users or duplicate random-UUID owner docs, and repair any non-root user accidentally marked root_owner
         const usersSnap = await getDocs(collection(db, 'users'));
         for (const d of usersSnap.docs) {
           const data = d.data() as UserProfile;
@@ -155,6 +155,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             (data.email?.toLowerCase() === ROOT_OWNER_EMAIL && d.id !== ROOT_OWNER_UUID)
           ) {
             await deleteDoc(doc(db, 'users', d.id));
+          } else if (d.id !== ROOT_OWNER_UUID && data.role === 'root_owner') {
+            await updateDoc(doc(db, 'users', d.id), {
+              role: 'member',
+              ownerPermanentApex: false,
+            });
           }
         }
 
@@ -250,7 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (snap) => {
         if (snap.exists()) {
           const data = snap.data() as UserProfile;
-          const isRoot = isRootOwner(data);
+          const isRoot = activeUid === ROOT_OWNER_UUID;
 
           if (!isRoot && (data.isBanned || data.isSuspended)) {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -268,12 +273,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setMustChangePassword(Boolean(enforced.mustChangePassword));
             setPresenceState(enforced.presence || 'online');
           } else {
+            const safeRole =
+              data.role && data.role !== 'root_owner' ? data.role : 'member';
             const merged: UserProfile = {
               ...data,
-              role: data.role || 'member',
+              role: safeRole,
               ownedCosmetics: data.ownedCosmetics || [],
               equippedCosmetics: data.equippedCosmetics || {},
-              badges: data.badges || ['verified'],
+              badges: (data.badges || ['verified']).filter(
+                (b) => b !== 'root_owner' && b !== 'owner'
+              ),
             };
             setProfile(merged);
             setMustChangePassword(Boolean(merged.mustChangePassword));
@@ -723,48 +732,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userRef = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(userRef);
     let finalProfile: UserProfile;
-    const isOwner = isRootOwnerEmail(fbUser.email);
 
     if (snap.exists()) {
       const existing = snap.data() as UserProfile;
-      if (isOwner) {
-        finalProfile = buildDefaultRootOwnerProfile({
-          ...existing,
-          uid: fbUser.uid,
-          email: fbUser.email || existing.email,
-        });
-      } else {
-        finalProfile = existing;
-      }
+      const safeRole =
+        existing.role && existing.role !== 'root_owner' ? existing.role : 'member';
+      finalProfile = {
+        ...existing,
+        role: safeRole,
+        badges: (existing.badges || ['verified']).filter(
+          (b) => b !== 'root_owner' && b !== 'owner'
+        ),
+      };
     } else {
-      if (isOwner) {
-        finalProfile = buildDefaultRootOwnerProfile({
-          uid: fbUser.uid,
-          email: fbUser.email || '',
-          username: cleanUsername,
-          displayName: fbUser.displayName || 'Doomcord Owner',
-          photoURL: fbUser.photoURL || generateInitialsAvatar(fbUser.displayName || 'Owner'),
-        });
-      } else {
-        finalProfile = {
-          uid: fbUser.uid,
-          email: fbUser.email || '',
-          username: cleanUsername,
-          displayName: fbUser.displayName || 'Doomcord Member',
-          role: 'member',
-          photoURL: fbUser.photoURL || generateInitialsAvatar(fbUser.displayName || 'User'),
-          bio: '',
-          statusMessage: 'Online on Doomcord',
-          presence: 'online',
-          accentColor: '#8957F5',
-          nitroTier: 'free',
-          nitroBillingCycle: 'none',
-          ownedCosmetics: [],
-          equippedCosmetics: {},
-          badges: ['verified'],
-          createdAt: new Date().toISOString(),
-        };
-      }
+      finalProfile = {
+        uid: fbUser.uid,
+        email: fbUser.email || '',
+        username: cleanUsername,
+        displayName: fbUser.displayName || 'Doomcord Member',
+        role: 'member',
+        photoURL: fbUser.photoURL || generateInitialsAvatar(fbUser.displayName || 'User'),
+        bio: '',
+        statusMessage: 'Online on Doomcord',
+        presence: 'online',
+        accentColor: '#8957F5',
+        nitroTier: 'free',
+        nitroBillingCycle: 'none',
+        ownedCosmetics: [],
+        equippedCosmetics: {},
+        badges: ['verified'],
+        createdAt: new Date().toISOString(),
+      };
     }
 
     await setDoc(userRef, cleanFirestoreData(finalProfile), { merge: true });

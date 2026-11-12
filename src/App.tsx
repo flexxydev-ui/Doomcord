@@ -191,16 +191,36 @@ function MainApp() {
     testConnection();
   }, []);
 
-  // Check URL query params for direct gift or owner invitation links (?gift=... or ?owner_invite=...)
+  // Check URL query params, pathname, or hash for direct gift, owner invitation, or manual view navigation
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const giftToken = params.get('gift');
-    const inviteToken = params.get('owner_invite');
-    if (giftToken) {
-      setActiveView({ type: 'gift_redeem', token: giftToken });
-    } else if (inviteToken) {
-      setActiveView({ type: 'owner_invite_accept', token: inviteToken });
-    }
+    const syncViewFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const giftToken = params.get('gift');
+      const inviteToken = params.get('owner_invite');
+      const viewParam = params.get('view');
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
+
+      if (giftToken) {
+        setActiveView({ type: 'gift_redeem', token: giftToken });
+      } else if (inviteToken) {
+        setActiveView({ type: 'owner_invite_accept', token: inviteToken });
+      } else if (
+        viewParam === 'admin' ||
+        hash === 'admin' ||
+        pathname === '/admin'
+      ) {
+        setActiveView({ type: 'admin' });
+      }
+    };
+
+    syncViewFromUrl();
+    window.addEventListener('hashchange', syncViewFromUrl);
+    window.addEventListener('popstate', syncViewFromUrl);
+    return () => {
+      window.removeEventListener('hashchange', syncViewFromUrl);
+      window.removeEventListener('popstate', syncViewFromUrl);
+    };
   }, []);
 
   // Helper to record an immutable audit log entry
@@ -321,10 +341,16 @@ function MainApp() {
       }
     });
 
-    // 8. Transactions
+    // 8. Transactions (scoped to own transactions unless isAdminOrAbove(profile))
+    const canViewAdminData = isAdminOrAbove(profile);
     const unsubTx = onSnapshot(collection(db, 'transactions'), (snap) => {
       const list: TransactionRecord[] = [];
-      snap.forEach((d) => list.push(d.data() as TransactionRecord));
+      snap.forEach((d) => {
+        const tx = d.data() as TransactionRecord;
+        if (canViewAdminData || tx.userId === profile.uid) {
+          list.push(tx);
+        }
+      });
       list.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -354,22 +380,32 @@ function MainApp() {
     // 11. Official Receipts
     const unsubReceipts = onSnapshot(collection(db, 'receipts'), (snap) => {
       const list: ReceiptRecord[] = [];
-      snap.forEach((d) => list.push(d.data() as ReceiptRecord));
+      snap.forEach((d) => {
+        const rcp = d.data() as ReceiptRecord;
+        if (canViewAdminData || rcp.customerUid === profile.uid) {
+          list.push(rcp);
+        }
+      });
       list.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setReceipts(list);
     });
 
-    // 12. Audit Logs
-    const unsubLogs = onSnapshot(collection(db, 'audit_logs'), (snap) => {
-      const list: AuditLogEntry[] = [];
-      snap.forEach((d) => list.push(d.data() as AuditLogEntry));
-      list.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setAuditLogs(list);
-    });
+    // 12. Audit Logs (admin/owner only)
+    const unsubLogs = canViewAdminData
+      ? onSnapshot(collection(db, 'audit_logs'), (snap) => {
+          const list: AuditLogEntry[] = [];
+          snap.forEach((d) => list.push(d.data() as AuditLogEntry));
+          list.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setAuditLogs(list);
+        })
+      : () => {
+          setAuditLogs([]);
+        };
 
     // 13. Global System Config
     const unsubSys = onSnapshot(doc(db, 'system_config', 'global'), (snap) => {
@@ -404,7 +440,7 @@ function MainApp() {
       unsubSys();
       unsubDevApps();
     };
-  }, [profile?.uid]);
+  }, [profile?.uid, profile?.role]);
 
   // Helper to get the Firestore collection reference path for the active conversation's messages
   const getActiveMessagesCollectionRef = useCallback(() => {
@@ -2597,7 +2633,9 @@ function MainApp() {
             setMobileNavOpen(false);
           }}
           onNavigateAdmin={() => {
-            setActiveView({ type: 'admin' });
+            if (isAdminOrAbove(profile)) {
+              setActiveView({ type: 'admin' });
+            }
             setMobileNavOpen(false);
           }}
           onNavigateDeveloperPortal={() => {
@@ -2663,7 +2701,9 @@ function MainApp() {
               setMobileNavOpen(false);
             }}
             onNavigateAdmin={() => {
-              setActiveView({ type: 'admin' });
+              if (isAdminOrAbove(profile)) {
+                setActiveView({ type: 'admin' });
+              }
               setMobileNavOpen(false);
             }}
             onNavigateDeveloperPortal={() => {
@@ -2978,7 +3018,11 @@ function MainApp() {
             onDowngradeToFree={handleDowngradeToFree}
             onOpenShop={() => setActiveView({ type: 'shop' })}
             onOpenGiftVault={(tok) => setActiveView({ type: 'gift_redeem', token: tok })}
-            onOpenOwnerGiftingAdmin={() => setActiveView({ type: 'admin' })}
+            onOpenOwnerGiftingAdmin={
+              isAdminOrAbove(profile)
+                ? () => setActiveView({ type: 'admin' })
+                : undefined
+            }
             onSelectReceipt={(rcp) => setActiveReceiptModal(rcp)}
           />
         ) : activeView.type === 'shop' ? (
@@ -3003,39 +3047,87 @@ function MainApp() {
             onBackToApp={() => setActiveView({ type: 'home' })}
           />
         ) : activeView.type === 'admin' ? (
-          <AdminDashboardView
-            currentUser={profile}
-            authToken={token}
-            users={allUsers}
-            communities={communities}
-            orbs={orbs}
-            nitroPlans={nitroPlans}
-            cosmetics={cosmetics}
-            transactions={transactions}
-            gifts={gifts}
-            ownerInvitations={ownerInvitations}
-            receipts={receipts}
-            auditLogs={auditLogs}
-            systemConfig={systemConfig}
-            onUpdateNitroPlan={handleUpdateNitroPlan}
-            onSaveCosmetic={handleSaveCosmetic}
-            onDeleteCommunity={handleDeleteCommunity}
-            onDeleteOrb={handleDeleteOrb}
-            onUpdateUserRole={handleUpdateUserRole}
-            onUpdateSecondaryOwnerPermissions={handleUpdateSecondaryOwnerPermissions}
-            onModerateUser={handleModerateUser}
-            onGrantOrRevokeNitro={handleGrantOrRevokeNitro}
-            onGrantOrRevokeCosmetic={handleGrantOrRevokeCosmetic}
-            onCreateOwnerGift={handleCreateOwnerGift}
-            onRevokeGift={handleRevokeGift}
-            onCreateOwnerInvite={handleCreateOwnerInvite}
-            onRevokeOwnerInvite={handleRevokeOwnerInvite}
-            onCreateManualReceipt={handleCreateManualReceipt}
-            onCorrectReceiptMetadata={handleCorrectReceiptMetadata}
-            onOpenReceiptModal={(rcp) => setActiveReceiptModal(rcp)}
-            onRefundTransaction={handleRefundTransaction}
-            onUpdateSystemConfig={handleUpdateSystemConfig}
-          />
+          isAdminOrAbove(profile) ? (
+            <AdminDashboardView
+              currentUser={profile}
+              authToken={token}
+              users={allUsers}
+              communities={communities}
+              orbs={orbs}
+              nitroPlans={nitroPlans}
+              cosmetics={cosmetics}
+              transactions={transactions}
+              gifts={gifts}
+              ownerInvitations={ownerInvitations}
+              receipts={receipts}
+              auditLogs={auditLogs}
+              systemConfig={systemConfig}
+              onUpdateNitroPlan={handleUpdateNitroPlan}
+              onSaveCosmetic={handleSaveCosmetic}
+              onDeleteCommunity={handleDeleteCommunity}
+              onDeleteOrb={handleDeleteOrb}
+              onUpdateUserRole={handleUpdateUserRole}
+              onUpdateSecondaryOwnerPermissions={handleUpdateSecondaryOwnerPermissions}
+              onModerateUser={handleModerateUser}
+              onGrantOrRevokeNitro={handleGrantOrRevokeNitro}
+              onGrantOrRevokeCosmetic={handleGrantOrRevokeCosmetic}
+              onCreateOwnerGift={handleCreateOwnerGift}
+              onRevokeGift={handleRevokeGift}
+              onCreateOwnerInvite={handleCreateOwnerInvite}
+              onRevokeOwnerInvite={handleRevokeOwnerInvite}
+              onCreateManualReceipt={handleCreateManualReceipt}
+              onCorrectReceiptMetadata={handleCorrectReceiptMetadata}
+              onOpenReceiptModal={(rcp) => setActiveReceiptModal(rcp)}
+              onRefundTransaction={handleRefundTransaction}
+              onUpdateSystemConfig={handleUpdateSystemConfig}
+              onReturnHome={() => {
+                if (window.location.hash || window.location.search.includes('view=admin')) {
+                  window.history.replaceState({}, '', '/');
+                }
+                setActiveView({ type: 'home' });
+              }}
+            />
+          ) : (
+            <AdminDashboardView
+              currentUser={profile}
+              authToken={null}
+              users={[]}
+              communities={[]}
+              orbs={[]}
+              nitroPlans={[]}
+              cosmetics={[]}
+              transactions={[]}
+              gifts={[]}
+              ownerInvitations={[]}
+              receipts={[]}
+              auditLogs={[]}
+              systemConfig={systemConfig}
+              onUpdateNitroPlan={handleUpdateNitroPlan}
+              onSaveCosmetic={handleSaveCosmetic}
+              onDeleteCommunity={handleDeleteCommunity}
+              onDeleteOrb={handleDeleteOrb}
+              onUpdateUserRole={handleUpdateUserRole}
+              onUpdateSecondaryOwnerPermissions={handleUpdateSecondaryOwnerPermissions}
+              onModerateUser={handleModerateUser}
+              onGrantOrRevokeNitro={handleGrantOrRevokeNitro}
+              onGrantOrRevokeCosmetic={handleGrantOrRevokeCosmetic}
+              onCreateOwnerGift={handleCreateOwnerGift}
+              onRevokeGift={handleRevokeGift}
+              onCreateOwnerInvite={handleCreateOwnerInvite}
+              onRevokeOwnerInvite={handleRevokeOwnerInvite}
+              onCreateManualReceipt={handleCreateManualReceipt}
+              onCorrectReceiptMetadata={handleCorrectReceiptMetadata}
+              onOpenReceiptModal={(rcp) => setActiveReceiptModal(rcp)}
+              onRefundTransaction={handleRefundTransaction}
+              onUpdateSystemConfig={handleUpdateSystemConfig}
+              onReturnHome={() => {
+                if (window.location.hash || window.location.search.includes('view=admin')) {
+                  window.history.replaceState({}, '', '/');
+                }
+                setActiveView({ type: 'home' });
+              }}
+            />
+          )
         ) : activeView.type === 'developer_portal' ? (
           <DeveloperPortalView
             currentUser={profile}

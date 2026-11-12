@@ -5,6 +5,7 @@ import {
   isRootOwner,
   isSecondaryOwner,
   isAnyOwner,
+  isAdminOrAbove,
   formatApexTierName,
   formatDurationLabel,
   computeDurationExpiry,
@@ -15,35 +16,62 @@ import {
   isRootOwnerEmail,
 } from './dataService';
 
-test('isRootOwner strictly identifies Main Owner by UUID or root_owner role', () => {
+test('isRootOwner and isAdminOrAbove strictly isolate Root Owner from normal members', () => {
   assert.equal(isRootOwner(ROOT_OWNER_UUID), true);
   assert.equal(isRootOwner('user_random_123'), false);
   assert.equal(
     isRootOwner({
       uid: ROOT_OWNER_UUID,
       role: 'root_owner',
-      username: 'any_handle',
-      email: 'any@example.com',
-    }),
-    true
-  );
-  assert.equal(
-    isRootOwner({
-      uid: 'custom_uid',
-      role: 'root_owner',
-    }),
-    true
-  );
-  assert.equal(
-    isRootOwner({
-      uid: 'sec_owner_1',
-      role: 'secondary_owner',
       username: 'doomcord_owner',
+      email: 'razorpay@admin.doom',
+    }),
+    true
+  );
+  // A non-root UUID must never be treated as Root Owner even if role or email is spoofed
+  assert.equal(
+    isRootOwner({
+      uid: 'Oi527cdxGTMYWL0855MTRR5OGe13',
+      role: 'member',
+      email: 'kshriyans17@gmail.com',
     }),
     false
   );
+  assert.equal(
+    isAdminOrAbove({
+      uid: 'Oi527cdxGTMYWL0855MTRR5OGe13',
+      role: 'member',
+      email: 'kshriyans17@gmail.com',
+    }),
+    false
+  );
+  assert.equal(
+    isAdminOrAbove({
+      uid: '0VY4uejFmvYFTGHOlqV6ZXM0kMz1',
+      role: 'member',
+      email: 'flexxygtx23@gmail.com',
+    }),
+    false
+  );
+  assert.equal(
+    isAdminOrAbove({
+      uid: 'mod_user_1',
+      role: 'moderator',
+      email: 'mod@example.com',
+    }),
+    false
+  );
+  assert.equal(
+    isAdminOrAbove({
+      uid: 'admin_user_1',
+      role: 'admin',
+      email: 'admin@example.com',
+    }),
+    true
+  );
   assert.equal(isSecondaryOwner({ uid: 'sec_owner_1', role: 'secondary_owner' }), true);
   assert.equal(isAnyOwner({ uid: 'sec_owner_1', role: 'secondary_owner' }), true);
+  assert.equal(isAdminOrAbove({ uid: 'sec_owner_1', role: 'secondary_owner' }), true);
 });
 
 test('Official APEX plans have zero Nitro text and accurate INR pricing', () => {
@@ -156,13 +184,14 @@ test('cleanFirestoreData strips all undefined fields recursively and preserves v
   assert.deepEqual(cleaned.items, [1, 'text', null]);
 });
 
-test('isRootOwnerEmail identifies recognized owner emails', () => {
+test('isRootOwnerEmail strictly matches only razorpay@admin.doom', () => {
   assert.equal(isRootOwnerEmail('razorpay@admin.doom'), true);
-  assert.equal(isRootOwnerEmail('kshriyans17@gmail.com'), true);
-  assert.equal(isRootOwnerEmail('adrenoxshriyans@gmail.com'), true);
-  assert.equal(isRootOwnerEmail('KSHRIYANS17@GMAIL.COM'), true);
+  assert.equal(isRootOwnerEmail('RAZORPAY@ADMIN.DOOM'), true);
+  assert.equal(isRootOwnerEmail('kshriyans17@gmail.com'), false);
+  assert.equal(isRootOwnerEmail('adrenoxshriyans@gmail.com'), false);
   assert.equal(isRootOwnerEmail('random@gmail.com'), false);
   assert.equal(isRootOwnerEmail(undefined), false);
   assert.equal(isRootOwnerEmail(null), false);
 });
+
 
