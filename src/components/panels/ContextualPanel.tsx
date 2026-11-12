@@ -67,8 +67,8 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
       Boolean(recipientProfile.permanentEntitlement);
 
     return (
-      <aside className="w-72 h-full bg-[#0D0D12] border-l border-[#282631] flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
-        <div className="h-14 px-4 border-b border-[#282631] flex items-center justify-between shrink-0">
+      <aside className="w-72 h-full doom-glass-sidebar border-l border-white/10 flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
+        <div className="h-14 px-4 border-b border-white/10 flex items-center justify-between shrink-0">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B]">
             Profile Overview
           </span>
@@ -212,8 +212,8 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
     );
 
     return (
-      <aside className="w-60 h-full bg-[#0D0D12] border-l border-[#282631] flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
-        <div className="h-14 px-3.5 border-b border-[#282631] flex items-center justify-between shrink-0">
+      <aside className="w-60 h-full doom-glass-sidebar border-l border-white/10 flex flex-col shrink-0 overflow-y-auto text-[#F5F3FA]">
+        <div className="h-14 px-3.5 border-b border-white/10 flex items-center justify-between shrink-0">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#706C7B]">
             Server Roster
           </span>
@@ -344,7 +344,7 @@ export const ContextualPanel: React.FC<ContextualPanelProps> = ({
   // Orbs Detail Context
   if (activeView.type === 'orbs' && activeOrb) {
     return (
-      <aside className="w-72 h-full bg-[#0D0D12] border-l border-[#282631] p-4 flex flex-col shrink-0 overflow-y-auto space-y-4 text-[#F5F3FA]">
+      <aside className="w-72 h-full doom-glass-sidebar border-l border-white/10 p-4 flex flex-col shrink-0 overflow-y-auto space-y-4 text-[#F5F3FA]">
         <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#8957F5]">
           <Sparkles className="w-4 h-4 text-[#A47BFF]" />
           <span>Orb Specifications</span>

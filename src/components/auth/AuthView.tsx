@@ -94,27 +94,34 @@ export const AuthView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#09090D] text-[#F5F3FA]">
+    <div className="min-h-screen w-full flex bg-[#09080F] text-[#F5F3FA] doom-ambient-bg">
       {/* Left Brand Identity Showcase (Desktop) */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#101014] border-r border-[#282631] p-12 flex-col justify-between relative overflow-hidden select-none">
+      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 doom-glass-sidebar p-12 flex-col justify-between relative overflow-hidden select-none">
         <div>
           {/* Official Brand Mark & Title */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/assets/aistudio/doomcord-icon_378efdf9.png"
-              alt="Doomcord"
-              className="w-9 h-9 object-contain"
-            />
-            <span className="font-semibold text-lg tracking-tight text-[#F5F3FA]">
-              Doomcord
-            </span>
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#15111F] border border-[#8957F5]/45 flex items-center justify-center doom-purple-glow">
+              <img
+                src="/assets/aistudio/doomcord-icon_378efdf9.png"
+                alt="DOOMCORD"
+                className="w-7 h-7 object-contain"
+              />
+            </div>
+            <div>
+              <div className="font-black text-lg tracking-tight text-[#F5F3FA]">
+                DOOMCORD
+              </div>
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C4B1FF]">
+                RISE ABOVE. CONNECT BEYOND.
+              </div>
+            </div>
           </div>
 
           <div className="mt-20 max-w-lg space-y-4">
-            <div className="text-xs font-medium tracking-wide uppercase text-[#8957F5]">
-              Modern Communication Platform
+            <div className="text-xs font-mono font-bold tracking-[0.18em] uppercase text-[#C4B1FF]">
+              RISE ABOVE. CONNECT BEYOND.
             </div>
-            <h1 className="text-3xl xl:text-4xl font-semibold text-[#F5F3FA] leading-tight">
+            <h1 className="text-3xl xl:text-4xl font-extrabold text-[#F5F3FA] leading-tight">
               Real-time messaging, curated communities, and interactive Orbs.
             </h1>
             <p className="text-sm text-[#A19DAD] leading-relaxed">
@@ -123,60 +130,67 @@ export const AuthView: React.FC = () => {
           </div>
 
           <div className="mt-12 grid grid-cols-3 gap-3.5 max-w-lg">
-            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+            <div className="p-4 rounded-2xl doom-glass">
               <MessageSquare className="w-4 h-4 text-[#8957F5] mb-2.5" />
-              <div className="text-xs font-medium text-[#F5F3FA]">
+              <div className="text-xs font-semibold text-[#F5F3FA]">
                 Direct Threads
               </div>
-              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+              <p className="text-[11px] text-[#A19DAD] mt-1 leading-normal">
                 Encrypted chats, replies & media
               </p>
             </div>
 
-            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+            <div className="p-4 rounded-2xl doom-glass">
               <Compass className="w-4 h-4 text-[#A47BFF] mb-2.5" />
-              <div className="text-xs font-medium text-[#F5F3FA]">
+              <div className="text-xs font-semibold text-[#F5F3FA]">
                 Spatial Orbs
               </div>
-              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+              <p className="text-[11px] text-[#A19DAD] mt-1 leading-normal">
                 Curated discovery & 3D space
               </p>
             </div>
 
-            <div className="p-4 rounded-lg bg-[#17171F] border border-[#282631]">
+            <div className="p-4 rounded-2xl doom-glass">
               <Crown className="w-4 h-4 text-[#C4B1FF] mb-2.5" />
-              <div className="text-xs font-medium text-[#F5F3FA]">
+              <div className="text-xs font-semibold text-[#F5F3FA]">
                 DOOMCORD APEX
               </div>
-              <p className="text-[11px] text-[#706C7B] mt-1 leading-normal">
+              <p className="text-[11px] text-[#A19DAD] mt-1 leading-normal">
                 Themes, badges & gifting
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-[#706C7B] pt-8 border-t border-[#282631]">
+        <div className="flex items-center justify-between text-xs text-[#A19DAD] pt-8 border-t border-white/10">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#8957F5]" />
             <span>RFC 6238 2FA Authenticator & persistent Firestore state</span>
           </div>
-          <span className="font-mono text-[11px]">Doomcord v3.5</span>
+          <span className="font-mono text-[11px] text-[#C4B1FF]">DOOMCORD</span>
         </div>
       </div>
 
       {/* Right Authentication Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-sm space-y-6">
+        <div className="w-full max-w-md doom-glass-strong rounded-3xl p-6 sm:p-8 space-y-6">
           {/* Mobile Brand Header */}
-          <div className="lg:hidden flex items-center gap-2.5 mb-2">
-            <img
-              src="/assets/aistudio/doomcord-icon_378efdf9.png"
-              alt="Doomcord"
-              className="w-8 h-8 object-contain"
-            />
-            <span className="font-semibold text-base text-[#F5F3FA]">
-              Doomcord
-            </span>
+          <div className="lg:hidden flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-[#15111F] border border-[#8957F5]/45 flex items-center justify-center">
+              <img
+                src="/assets/aistudio/doomcord-icon_378efdf9.png"
+                alt="DOOMCORD"
+                className="w-6 h-6 object-contain"
+              />
+            </div>
+            <div>
+              <div className="font-black text-base text-[#F5F3FA]">
+                DOOMCORD
+              </div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-[#C4B1FF]">
+                RISE ABOVE. CONNECT BEYOND.
+              </div>
+            </div>
           </div>
 
           <div>

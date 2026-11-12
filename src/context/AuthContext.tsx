@@ -102,9 +102,9 @@ function buildDefaultRootOwnerProfile(
     username: existing?.username || 'doomcord_owner',
     displayName: existing?.displayName || 'Doomcord Root Owner',
     role: 'root_owner',
-    photoURL: existing?.photoURL || generateInitialsAvatar('Doomcord Owner', '#b45309'),
+    photoURL: existing?.photoURL || generateInitialsAvatar('Doomcord Owner', '#8957F5'),
     bio: existing?.bio ?? 'Root Owner & Sovereign Architect of Doomcord APEX.',
-    statusMessage: existing?.statusMessage ?? 'DOOMCORD APEX · RISE ABOVE. STAND APART.',
+    statusMessage: existing?.statusMessage ?? 'DOOMCORD · RISE ABOVE. CONNECT BEYOND.',
     presence: existing?.presence || 'online',
     accentColor: existing?.accentColor || '#8957F5',
     // PERMANENT OWNER APEX+ PRIVILEGES (#27 & #7):

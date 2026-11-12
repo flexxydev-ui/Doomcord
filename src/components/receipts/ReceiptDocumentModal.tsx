@@ -134,8 +134,8 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
   <title>Doomcord Receipt ${receipt.receiptNumber}</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; padding: 40px; max-width: 820px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 24px; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; background: #ecfdf5; color: #047857; border: 1px solid #10b981; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #8957F5; padding-bottom: 20px; margin-bottom: 24px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; background: #f3e8ff; color: #6b21a8; border: 1px solid #8957F5; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
     th { text-align: left; padding: 10px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; }
     .totals { margin-left: auto; width: 280px; font-size: 13px; }
@@ -151,8 +151,8 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
   }
   <div class="header">
     <div>
-      <h1 style="margin:0;color:#064e3b;letter-spacing:-0.5px;">DOOMCORD APEX</h1>
-      <p style="margin:4px 0 0;font-size:12px;color:#475569;">RISE ABOVE. STAND APART. · Official Finance Receipt</p>
+      <h1 style="margin:0;color:#4c1d95;letter-spacing:-0.5px;">DOOMCORD APEX</h1>
+      <p style="margin:4px 0 0;font-size:12px;color:#475569;">RISE ABOVE. CONNECT BEYOND. · Official Finance Receipt</p>
     </div>
     <div style="text-align:right;">
       <div style="font-family:monospace;font-size:18px;font-weight:800;">${receipt.receiptNumber}</div>
@@ -480,10 +480,10 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                   </div>
                   <span
                     className={`text-xs font-mono uppercase tracking-widest ${
-                      printWhiteMode ? 'text-emerald-700 font-bold' : 'text-[#8957F5]'
+                      printWhiteMode ? 'text-[#6D28D9] font-bold' : 'text-[#A47BFF]'
                     }`}
                   >
-                    RISE ABOVE. STAND APART.
+                    RISE ABOVE. CONNECT BEYOND.
                   </span>
                 </div>
                 <h2
@@ -524,11 +524,11 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 {/* Payment Status Indicator */}
                 <div className="mt-2 inline-block">
                   {receipt.paymentStatus === 'Complimentary' ? (
-                    <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-xs font-bold">
+                    <span className="px-3 py-1 rounded-lg bg-[#8957F5]/20 border border-[#8957F5]/40 text-[#C4B1FF] font-mono text-xs font-bold">
                       COMPLIMENTARY — ₹0 PAID
                     </span>
                   ) : receipt.paymentStatus === 'Paid' ? (
-                    <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-xs font-bold">
+                    <span className="px-3 py-1 rounded-lg bg-[#8957F5]/20 border border-[#8957F5]/40 text-[#C4B1FF] font-mono text-xs font-bold">
                       VERIFIED PAID · ₹{receipt.totalAmountINR} INR
                     </span>
                   ) : receipt.paymentStatus === 'Refunded' ? (
@@ -589,7 +589,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                   <span
                     className={`text-sm font-bold font-mono ${
                       receipt.serviceExpiryDate === null
-                        ? 'text-emerald-500'
+                        ? 'text-[#A47BFF]'
                         : printWhiteMode
                         ? 'text-slate-900'
                         : 'text-white'
@@ -746,7 +746,7 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="opacity-75">Discount</span>
-                  <span className="font-mono tabular-nums text-emerald-400">
+                  <span className="font-mono tabular-nums text-[#C4B1FF]">
                     -₹{receipt.discountTotalINR} INR
                   </span>
                 </div>
@@ -770,11 +770,11 @@ export const ReceiptDocumentModal: React.FC<ReceiptDocumentModalProps> = ({
             {receipt.auditHistory && receipt.auditHistory.length > 0 && (
               <div
                 className={`mt-6 pt-4 border-t text-[11px] ${
-                  printWhiteMode ? 'border-slate-200' : 'border-[#282631]'
+                  printWhiteMode ? 'border-slate-200' : 'border-white/12'
                 }`}
               >
                 <div className="flex items-center gap-1.5 font-mono uppercase tracking-wider opacity-70 mb-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#A47BFF]" />
                   <span>Immutable Receipt Audit Trail ({receipt.auditHistory.length})</span>
                 </div>
                 <div className="space-y-1 font-mono">

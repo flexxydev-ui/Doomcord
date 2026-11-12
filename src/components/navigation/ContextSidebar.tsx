@@ -127,9 +127,9 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
   };
 
   return (
-    <aside className="w-60 h-full flex flex-col bg-[#0D0D12] border-r border-[#282631] select-none shrink-0 text-[#F5F3FA]">
+    <aside className="w-60 h-full flex flex-col doom-glass-sidebar select-none shrink-0 text-[#F5F3FA]">
       {/* Top Header */}
-      <div className="h-14 px-3.5 flex items-center justify-between border-b border-[#282631] shrink-0">
+      <div className="h-14 px-3.5 flex items-center justify-between border-b border-white/10 shrink-0">
         {isCommunityView && activeCommunity ? (
           <div className="w-full flex items-center justify-between gap-1.5">
             <div className="min-w-0">
@@ -664,9 +664,15 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
                                 ? dm.groupIconUrl ||
                                   generateInitialsAvatar(displayTitle, '#8957F5')
                                 : recipient?.photoURL ||
-                                  generateInitialsAvatar(displayTitle)
+                                  generateInitialsAvatar(displayTitle, '#8957F5')
                             }
                             alt={displayTitle}
+                            onError={(e) => {
+                              e.currentTarget.src = generateInitialsAvatar(
+                                displayTitle,
+                                '#8957F5'
+                              );
+                            }}
                             className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
                           />
                           {!isGroup && recipient && (
@@ -709,7 +715,7 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
       </div>
 
       {/* Bottom User Identity Dock */}
-      <div className="p-2.5 bg-[#0D0D12] border-t border-[#282631] flex items-center justify-between gap-1.5 shrink-0">
+      <div className="p-2.5 bg-[#100D18]/85 border-t border-white/10 flex items-center justify-between gap-1.5 shrink-0">
         <button
           onClick={onNavigateProfile}
           className="flex items-center gap-2 min-w-0 text-left hover:opacity-90 transition-opacity flex-1"
@@ -718,9 +724,15 @@ export const ContextSidebar: React.FC<ContextSidebarProps> = ({
             <img
               src={
                 currentUser.photoURL ||
-                generateInitialsAvatar(currentUser.displayName)
+                generateInitialsAvatar(currentUser.displayName, '#8957F5')
               }
               alt={currentUser.displayName}
+              onError={(e) => {
+                e.currentTarget.src = generateInitialsAvatar(
+                  currentUser.displayName,
+                  '#8957F5'
+                );
+              }}
               className="w-7 h-7 rounded-md object-cover bg-[#17171F]"
             />
             <span

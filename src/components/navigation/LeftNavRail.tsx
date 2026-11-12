@@ -10,12 +10,11 @@ import {
   Shield,
   Plus,
   Settings,
-  User,
   Globe,
   Terminal,
 } from 'lucide-react';
 import { Community, ActiveView, UserProfile } from '../../types';
-import { isAdminOrAbove } from '../../lib/dataService';
+import { isAdminOrAbove, generateInitialsAvatar } from '../../lib/dataService';
 
 interface LeftNavRailProps {
   communities: Community[];
@@ -58,272 +57,257 @@ export const LeftNavRail: React.FC<LeftNavRailProps> = ({
   onCreateCommunity,
   onOpenSettings,
 }) => {
-  const isDashboardActive = activeView.type === 'home';
-  const isFriendsOrDmActive = activeView.type === 'friends' || activeView.type === 'dm';
+  const isHomeDashboardActive = activeView.type === 'home';
+  const isFriendsActive = activeView.type === 'friends';
+  const isDmActive = activeView.type === 'dm';
   const isOrbsActive = activeView.type === 'orbs';
+  const isExploreActive = activeView.type === 'explore_communities';
   const isNotificationsActive = activeView.type === 'notifications';
-  const isProfileActive =
-    activeView.type === 'profile' &&
-    (!activeView.userId || activeView.userId === currentUser.uid);
   const isNitroActive = activeView.type === 'nitro';
   const isShopActive = activeView.type === 'shop';
-  const isDevPortalActive = activeView.type === 'developer_portal';
+  const isDeveloperActive = activeView.type === 'developer_portal';
   const isAdminActive = activeView.type === 'admin';
-  const isExploreActive = activeView.type === 'explore_communities';
+  const showAdmin = isAdminOrAbove(currentUser);
 
-  const isAdminOrOwner = isAdminOrAbove(currentUser);
+  const railBtnClass = (active: boolean) =>
+    `relative group w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+      active
+        ? 'bg-[#8957F5]/25 text-[#F5F3FA] border border-[#8957F5]/55 shadow-[0_0_20px_rgba(137,87,245,0.32)]'
+        : 'bg-white/[0.035] text-[#A19DAD] hover:text-[#F5F3FA] hover:bg-white/[0.08] border border-white/[0.08]'
+    }`;
 
   return (
-    <aside className="w-[60px] h-full flex flex-col items-center py-3 bg-[#0D0D12] border-r border-[#282631] select-none shrink-0 z-30">
-      {/* Official Doomcord Logo -> Home */}
-      <button
-        onClick={onNavigateDashboard}
-        title="Doomcord Home"
-        className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-opacity hover:opacity-90 mb-2.5 shrink-0"
-      >
-        <img
-          src="/assets/aistudio/doomcord-icon_378efdf9.png"
-          alt="Doomcord"
-          className="w-8 h-8 object-contain"
-        />
-        {isDashboardActive && (
-          <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#8957F5] rounded-r" />
-        )}
-      </button>
+    <nav
+      aria-label="Primary Navigation Rail"
+      className="w-[72px] h-full doom-glass-nav flex flex-col items-center py-3.5 select-none z-30 shrink-0 justify-between"
+    >
+      {/* Top & Primary Navigation Icons */}
+      <div className="flex flex-col items-center gap-2 w-full">
+        {/* Official Doomcord Purple D Logo */}
+        <button
+          onClick={onNavigateDashboard}
+          aria-label="DOOMCORD — Rise Above. Connect Beyond."
+          title="DOOMCORD — Rise Above. Connect Beyond."
+          className={`relative group w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden ${
+            isHomeDashboardActive
+              ? 'bg-[#15111F] border-2 border-[#8957F5] shadow-[0_0_24px_rgba(137,87,245,0.45)]'
+              : 'bg-[#15111F]/90 border border-white/15 hover:border-[#A47BFF]/60'
+          }`}
+        >
+          <img
+            src="/assets/aistudio/doomcord-icon_378efdf9.png"
+            alt="Doomcord Logo"
+            className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-105"
+          />
+        </button>
 
-      <div className="w-5 h-[1px] bg-[#282631] mb-2" />
+        <div className="w-8 h-[1px] bg-white/10 my-1" />
 
-      {/* Primary Navigation Icons */}
-      <nav className="flex flex-col items-center gap-1 mb-2">
         {/* Home */}
         <button
           onClick={onNavigateDashboard}
           title="Home"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isDashboardActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          aria-label="Home"
+          className={railBtnClass(isHomeDashboardActive)}
         >
-          <Home className="w-4 h-4" />
-          {isDashboardActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+          {isHomeDashboardActive && (
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <Home size={19} />
         </button>
 
-        {/* Messages & Friends */}
+        {/* Friends */}
+        <button
+          onClick={onNavigateHome}
+          title="Friends"
+          aria-label="Friends"
+          className={railBtnClass(isFriendsActive)}
+        >
+          {isFriendsActive && (
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
+          )}
+          <Users size={19} />
+        </button>
+
+        {/* Messages */}
         <button
           onClick={onNavigateHome}
           title="Direct Messages"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isFriendsOrDmActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          aria-label="Messages"
+          className={railBtnClass(isDmActive)}
         >
-          {activeView.type === 'dm' ? (
-            <MessageSquare className="w-4 h-4" />
-          ) : (
-            <Users className="w-4 h-4" />
+          {isDmActive && (
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
-          {isFriendsOrDmActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
-          )}
+          <MessageSquare size={19} />
           {unreadDmCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#8957F5]" />
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8957F5] text-white text-[10px] font-bold flex items-center justify-center border border-[#09080F]">
+              {unreadDmCount > 9 ? '9+' : unreadDmCount}
+            </span>
           )}
         </button>
 
-        {/* Communities Directory */}
+        {/* Communities Discovery */}
         <button
           onClick={onNavigateExplore}
-          title="Explore Communities"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isExploreActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          title="Communities"
+          aria-label="Communities"
+          className={railBtnClass(isExploreActive)}
         >
-          <Globe className="w-4 h-4" />
           {isExploreActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <Compass size={19} />
         </button>
 
-        {/* Orbs Discovery */}
+        {/* Orbs Spatial Canvas */}
         <button
           onClick={onNavigateOrbs}
-          title="Orbs — Spatial Realms"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isOrbsActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          title="Orbs Spatial Network"
+          aria-label="Orbs"
+          className={railBtnClass(isOrbsActive)}
         >
-          <Compass className="w-4 h-4" />
           {isOrbsActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <Globe size={19} />
         </button>
 
         {/* Notifications */}
         <button
           onClick={onNavigateNotifications}
           title="Notifications"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isNotificationsActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          aria-label="Notifications"
+          className={railBtnClass(isNotificationsActive)}
         >
-          <Bell className="w-4 h-4" />
           {isNotificationsActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <Bell size={19} />
           {notificationCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#8957F5]" />
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8957F5] text-white text-[10px] font-bold flex items-center justify-center border border-[#09080F]">
+              {notificationCount > 9 ? '9+' : notificationCount}
+            </span>
           )}
         </button>
 
-        {/* DOOMCORD APEX */}
+        {/* APEX Membership */}
         <button
           onClick={onNavigateNitro}
-          title="DOOMCORD APEX"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isNitroActive
-              ? 'bg-[#8957F5] text-white'
-              : 'text-[#C4B1FF] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          title="APEX Sovereign Membership"
+          aria-label="APEX"
+          className={railBtnClass(isNitroActive)}
         >
-          <Crown className="w-4 h-4" />
           {isNitroActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <Crown
+            size={19}
+            className={isNitroActive ? 'text-[#C4B1FF]' : 'text-[#A47BFF]'}
+          />
         </button>
 
-        {/* Cosmetics Shop */}
+        {/* APEX Collection Cosmetics Store */}
         <button
           onClick={onNavigateShop}
-          title="Cosmetics Shop"
-          className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isShopActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
+          title="APEX Collection Store"
+          aria-label="APEX Collection"
+          className={railBtnClass(isShopActive)}
         >
-          <ShoppingBag className="w-4 h-4" />
           {isShopActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
+            <span className="absolute -left-2.5 w-1 h-5 rounded-r-full bg-[#8957F5]" />
           )}
+          <ShoppingBag size={18} />
         </button>
 
-        {/* Developer Portal & Bots */}
+        <div className="w-8 h-[1px] bg-white/10 my-1" />
+
+        {/* Joined Communities Strip */}
+        <div className="flex flex-col items-center gap-2 max-h-[180px] overflow-y-auto no-scrollbar w-full px-2">
+          {communities.map((comm) => {
+            const isSelected =
+              activeView.type === 'community' &&
+              activeView.communityId === comm.id;
+            return (
+              <button
+                key={comm.id}
+                onClick={() => onSelectCommunity(comm.id)}
+                title={comm.name}
+                className={`relative group w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0 overflow-hidden ${
+                  isSelected
+                    ? 'ring-2 ring-[#8957F5] shadow-[0_0_16px_rgba(137,87,245,0.4)]'
+                    : 'opacity-80 hover:opacity-100 border border-white/10'
+                }`}
+              >
+                <img
+                  src={comm.iconUrl || generateInitialsAvatar(comm.name)}
+                  alt={comm.name}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            );
+          })}
+
+          <button
+            onClick={onCreateCommunity}
+            title="Create Community"
+            aria-label="Create Community"
+            className="w-10 h-10 rounded-2xl bg-white/[0.04] hover:bg-[#8957F5]/20 text-[#C4B1FF] border border-dashed border-white/20 hover:border-[#8957F5]/50 flex items-center justify-center transition-all shrink-0"
+          >
+            <Plus size={17} />
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Governance, Developer, Settings & User Avatar */}
+      <div className="flex flex-col items-center gap-2 pt-2 border-t border-white/10 w-full">
         {onNavigateDeveloperPortal && (
           <button
             onClick={onNavigateDeveloperPortal}
-            title="Developer Portal & Bots"
-            className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              isDevPortalActive
-                ? 'bg-[#22212C] text-[#8957F5]'
-                : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-            }`}
+            title="Developer Portal"
+            aria-label="Developer Portal"
+            className={railBtnClass(isDeveloperActive)}
           >
-            <Terminal className="w-4 h-4" />
-            {isDevPortalActive && (
-              <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
-            )}
+            <Terminal size={17} />
           </button>
         )}
 
-        {/* Admin Console (Owner & Admin only) */}
-        {isAdminOrOwner && (
+        {showAdmin && (
           <button
             onClick={onNavigateAdmin}
-            title="Administration Console"
-            className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              isAdminActive
-                ? 'bg-[#8957F5] text-white'
-                : 'text-[#8957F5] hover:bg-[#17171F]'
-            }`}
+            title="Administration Panel"
+            aria-label="Admin"
+            className={railBtnClass(isAdminActive)}
           >
-            <Shield className="w-4 h-4" />
-            {isAdminActive && (
-              <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
-            )}
+            <Shield size={18} className="text-[#C4B1FF]" />
           </button>
         )}
-      </nav>
-
-      <div className="w-5 h-[1px] bg-[#282631] mb-2" />
-
-      {/* Communities Quick Switcher Rail */}
-      <div className="flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-1.5 px-1.5 scrollbar-none">
-        {communities.map((comm) => {
-          const isActive =
-            activeView.type === 'community' && activeView.communityId === comm.id;
-          return (
-            <div key={comm.id} className="relative flex items-center justify-center w-full">
-              {isActive && (
-                <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#8957F5] rounded-r" />
-              )}
-              <button
-                onClick={() => onSelectCommunity(comm.id)}
-                title={comm.name}
-                className={`w-9 h-9 rounded-lg overflow-hidden transition-all flex items-center justify-center text-xs font-semibold ${
-                  isActive
-                    ? 'ring-1 ring-[#8957F5] text-white'
-                    : 'text-[#A19DAD] hover:text-[#F5F3FA] bg-[#17171F] hover:bg-[#22212C] border border-[#282631]'
-                }`}
-              >
-                {comm.iconUrl ? (
-                  <img
-                    src={comm.iconUrl}
-                    alt={comm.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span>{comm.name.slice(0, 2).toUpperCase()}</span>
-                )}
-              </button>
-            </div>
-          );
-        })}
-
-        {/* Create Community Quick Action */}
-        <button
-          onClick={onCreateCommunity}
-          title="Create Community"
-          className="w-9 h-9 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-dashed border-[#282631] hover:border-[#8957F5] text-[#A19DAD] hover:text-[#8957F5] flex items-center justify-center transition-colors shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* Bottom Profile & Settings */}
-      <div className="flex flex-col items-center gap-1 pt-2.5 border-t border-[#282631] w-full shrink-0">
-        <button
-          onClick={onNavigateProfile}
-          title="My Profile"
-          className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-            isProfileActive
-              ? 'bg-[#22212C] text-[#8957F5]'
-              : 'text-[#A19DAD] hover:bg-[#17171F] hover:text-[#F5F3FA]'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          {isProfileActive && (
-            <span className="absolute -left-[10px] top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#8957F5] rounded-r" />
-          )}
-        </button>
 
         <button
           onClick={onOpenSettings}
-          title="Settings"
-          className="w-8 h-8 rounded-lg text-[#A19DAD] hover:text-[#F5F3FA] hover:bg-[#17171F] flex items-center justify-center transition-colors"
+          title="Settings & Security"
+          aria-label="Settings"
+          className="w-11 h-11 rounded-2xl bg-white/[0.035] hover:bg-white/[0.08] text-[#A19DAD] hover:text-[#F5F3FA] border border-white/[0.08] flex items-center justify-center transition-all"
         >
-          <Settings className="w-4 h-4" />
+          <Settings size={18} />
+        </button>
+
+        <button
+          onClick={onNavigateProfile}
+          title={`${currentUser.displayName} (@${currentUser.username})`}
+          className="relative group mt-0.5"
+        >
+          <img
+            src={
+              currentUser.photoURL ||
+              generateInitialsAvatar(currentUser.displayName)
+            }
+            alt={currentUser.displayName}
+            className="w-10 h-10 rounded-full object-cover ring-2 ring-[#8957F5]/50 group-hover:ring-[#C4B1FF] transition-all"
+          />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#8957F5] ring-2 ring-[#09080F] absolute bottom-0 right-0" />
         </button>
       </div>
-    </aside>
+    </nav>
   );
 };

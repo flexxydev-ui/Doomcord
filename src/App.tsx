@@ -1178,7 +1178,7 @@ function MainApp() {
         category: orbData.category || 'Gaming',
         icon: 'Sparkles',
         primaryColor: orbData.primaryColor || '#8957F5',
-        secondaryColor: orbData.secondaryColor || '#10b981',
+        secondaryColor: orbData.secondaryColor || '#A47BFF',
         visibility: orbData.visibility || 'public',
         creatorId: profile.uid,
         creatorName: profile.displayName,
@@ -2442,18 +2442,25 @@ function MainApp() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#09090D] text-[#F5F3FA]">
-        <img
-          src="/assets/aistudio/doomcord-icon_378efdf9.png"
-          alt="Doomcord"
-          className="w-14 h-14 object-contain mb-4 animate-pulse"
-        />
-        <h2 className="text-sm font-bold tracking-tight text-[#F5F3FA]">
-          Initializing Doomcord Workspace...
-        </h2>
-        <span className="text-xs text-[#A19DAD] mt-1">
-          Synchronizing real-time channels & APEX entitlements
-        </span>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#09080F] text-[#F5F3FA] doom-ambient-bg select-none">
+        <div className="doom-glass-strong rounded-3xl px-10 py-8 flex flex-col items-center text-center max-w-sm">
+          <div className="w-16 h-16 rounded-2xl bg-[#15111F] border border-[#8957F5]/45 flex items-center justify-center mb-4 doom-purple-glow">
+            <img
+              src="/assets/aistudio/doomcord-icon_378efdf9.png"
+              alt="DOOMCORD"
+              className="w-10 h-10 object-contain animate-pulse"
+            />
+          </div>
+          <h2 className="text-base font-black tracking-tight text-[#F5F3FA]">
+            DOOMCORD
+          </h2>
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#C4B1FF] mt-1">
+            RISE ABOVE. CONNECT BEYOND.
+          </span>
+          <span className="text-xs text-[#A19DAD] mt-3">
+            Synchronizing real-time channels & APEX entitlements...
+          </span>
+        </div>
       </div>
     );
   }
@@ -2586,11 +2593,11 @@ function MainApp() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#09090D] text-[#F5F3FA] relative">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#09080F] text-[#F5F3FA] doom-ambient-bg relative">
       {/* Mobile Drawer Backdrop */}
       {mobileNavOpen && (
         <div
-          className="fixed inset-0 bg-black/70 z-40 md:hidden"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileNavOpen(false)}
         />
       )}
@@ -2746,14 +2753,14 @@ function MainApp() {
       </div>
 
       {/* 3. Central Main Workspace View */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative bg-[#09090D]">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative bg-[#09080F]">
         {/* Mobile Top Navigation Bar (<768px) */}
-        <div className="flex md:hidden items-center justify-between px-3 py-2 bg-[#101014] border-b border-[#282631] shrink-0">
+        <div className="flex md:hidden items-center justify-between px-3 py-2 doom-glass-header shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setMobileNavOpen((prev) => !prev)}
               aria-label="Toggle Navigation"
-              className="p-1.5 rounded-lg bg-[#17171F] border border-[#282631] text-[#F5F3FA]"
+              className="p-1.5 rounded-xl doom-glass text-[#F5F3FA]"
             >
               {mobileNavOpen ? (
                 <CloseIcon className="w-4 h-4" />
@@ -3154,7 +3161,7 @@ function MainApp() {
         {/* Section 24: Dedicated 5-Tab Mobile Bottom Navigation Bar (<768px) */}
         <nav
           aria-label="Mobile Primary Navigation"
-          className="flex md:hidden items-center justify-around px-2 py-1.5 bg-[#0D0D12] border-t border-[#282631] shrink-0 z-30"
+          className="flex md:hidden items-center justify-around px-2 py-1.5 doom-glass-nav border-t border-white/10 shrink-0 z-30"
         >
           <button
             onClick={() => {

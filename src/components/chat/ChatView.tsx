@@ -500,7 +500,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   return (
     <div
-      className="flex-1 flex flex-col h-full bg-[#09090D] overflow-hidden relative text-[#F5F3FA]"
+      className="flex-1 flex flex-col h-full bg-[#09080F] doom-ambient-bg overflow-hidden relative text-[#F5F3FA]"
       onDragOver={(e) => {
         e.preventDefault();
         setIsDraggingOver(true);
@@ -510,7 +510,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     >
       {/* Drag-and-Drop Overlay */}
       {isDraggingOver && (
-        <div className="absolute inset-4 rounded-xl bg-[#101014]/95 border-2 border-dashed border-[#8957F5] z-40 flex flex-col items-center justify-center pointer-events-none">
+        <div className="absolute inset-4 rounded-2xl doom-glass-strong border-2 border-dashed border-[#8957F5] z-40 flex flex-col items-center justify-center pointer-events-none">
           <Paperclip className="w-8 h-8 text-[#8957F5] mb-2" />
           <p className="text-xs font-semibold text-[#F5F3FA]">
             Drop file or image to share in {title}
@@ -522,7 +522,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       {/* Top Conversation Header */}
-      <header className="h-14 px-5 bg-[#09090D] border-b border-[#282631] flex items-center justify-between shrink-0 z-10">
+      <header className="h-14 px-5 doom-glass-header flex items-center justify-between shrink-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative shrink-0">
             {recipientProfile ? (
@@ -1302,7 +1302,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       {/* Message Composer */}
-      <div className="px-5 py-2.5 bg-[#09090D] border-t border-[#282631]">
+      <div className="px-5 py-3 bg-[#100D18]/85 backdrop-blur-xl border-t border-white/10">
         {/* Quick Formatting & Slash Bar */}
         <div className="flex items-center justify-between mb-1.5 px-1">
           <div className="flex items-center gap-1">

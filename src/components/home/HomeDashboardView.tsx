@@ -10,10 +10,8 @@ import {
   Bell,
   ArrowUpRight,
   Shield,
-  Hash,
   Receipt,
-  Gift,
-  User,
+  Globe,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -25,7 +23,13 @@ import {
   ReceiptRecord,
   ActiveView,
 } from '../../types';
-import { isRootOwner, isSecondaryOwner, isAdminOrAbove, formatRoleLabel } from '../../lib/dataService';
+import {
+  isRootOwner,
+  isSecondaryOwner,
+  isAdminOrAbove,
+  formatRoleLabel,
+  generateInitialsAvatar,
+} from '../../lib/dataService';
 
 interface HomeDashboardViewProps {
   profile: UserProfile;
@@ -65,9 +69,13 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     profile.nitroTier === 'nitro' ||
     profile.permanentEntitlement === 'OWNER_PERMANENT_APEX' ||
     profile.permanentEntitlement === 'LIFETIME_APEX_PLUS';
-  const hasApexBasic = profile.nitroTier === 'basic' || profile.permanentEntitlement === 'LIFETIME_APEX';
+  const hasApexBasic =
+    profile.nitroTier === 'basic' ||
+    profile.permanentEntitlement === 'LIFETIME_APEX';
 
-  const joinedCommunities = communities.filter((c) => c.members?.includes(profile.uid));
+  const joinedCommunities = communities.filter((c) =>
+    c.members?.includes(profile.uid)
+  );
   const friendIds = profile.friends || [];
   const friends = allUsers.filter((u) => friendIds.includes(u.uid));
   const onlineFriends = friends.filter((u) => u.presence !== 'invisible');
@@ -76,624 +84,509 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     (r) => r.toUid === profile.uid && r.status === 'pending'
   );
 
-  const unclaimedGiftsForMe = gifts.filter(
+  const unclaimedUserGifts = gifts.filter(
     (g) =>
       g.status === 'unclaimed' &&
-      ((g.restrictedRecipientUid && g.restrictedRecipientUid === profile.uid) ||
-        (g.restrictedRecipientUsername &&
-          g.restrictedRecipientUsername.toLowerCase() === profile.username.toLowerCase()) ||
-        (g.restrictedRecipientEmail &&
-          g.restrictedRecipientEmail.toLowerCase() === profile.email.toLowerCase()))
+      (g.restrictedRecipientUsername?.toLowerCase() ===
+        profile.username.toLowerCase() ||
+        (profile.email &&
+          g.restrictedRecipientEmail?.toLowerCase() ===
+            profile.email.toLowerCase()))
   );
 
-  const myReceipts = receipts.filter(
+  const userReceipts = receipts.filter(
     (r) =>
       r.customerUid === profile.uid ||
-      r.customerEmail?.toLowerCase() === profile.email?.toLowerCase()
+      r.customerUsername?.toLowerCase() === profile.username.toLowerCase() ||
+      (profile.email &&
+        r.customerEmail?.toLowerCase() === profile.email.toLowerCase())
   );
 
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const recentDMs = [...dmThreads]
+    .sort((a, b) => {
+      const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 5);
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-[#09090D] text-[#F5F3FA]">
-      {/* Top Header */}
-      <header className="sticky top-0 z-20 h-14 px-6 bg-[#09090D]/90 backdrop-blur-md border-b border-[#282631] flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-mono uppercase tracking-wider text-[#8957F5]">
-            Overview
-          </span>
-          <span className="text-[#282631]">/</span>
-          <h1 className="font-semibold text-sm text-[#F5F3FA]">Home Command</h1>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onSelectView({ type: 'notifications' })}
-            className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1.5 transition-colors whitespace-nowrap"
-          >
-            <Bell className="w-3.5 h-3.5 text-[#8957F5]" />
-            <span>Inbox</span>
-            {pendingIncomingRequests.length + unclaimedGiftsForMe.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-[#8957F5] text-white font-mono font-bold text-[10px] tabular-nums">
-                {pendingIncomingRequests.length + unclaimedGiftsForMe.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => onSelectView({ type: 'profile', userId: profile.uid })}
-            className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#F5F3FA] flex items-center gap-1.5 transition-colors whitespace-nowrap"
-          >
-            <User className="w-3.5 h-3.5 text-[#A19DAD]" />
-            <span>My Profile</span>
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        {/* Identity & Quick Launch Banner */}
-        <section className="rounded-xl bg-[#101014] border border-[#282631] p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-[#17171F] border border-[#8957F5]/30 flex items-center justify-center text-base font-bold text-[#8957F5] overflow-hidden">
-                {profile.photoURL ? (
-                  <img
-                    src={profile.photoURL}
-                    alt={profile.displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  profile.displayName?.slice(0, 2).toUpperCase() || 'DC'
-                )}
+    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[#09080F] text-[#F5F3FA] doom-ambient-bg select-none">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8">
+        {/* =============================================================== */}
+        {/* 1. PERSONALIZED GLASS WELCOME HERO & BRANDING                   */}
+        {/* =============================================================== */}
+        <section className="doom-glass-elevated rounded-3xl p-6 md:p-8 relative overflow-hidden">
+          <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#8957F5]/20 blur-3xl" />
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-[#15111F] border border-[#8957F5]/45 flex items-center justify-center shrink-0 doom-purple-glow">
+                <img
+                  src="/assets/aistudio/doomcord-icon_378efdf9.png"
+                  alt="DOOMCORD"
+                  className="w-11 h-11 object-contain"
+                />
               </div>
-              <span
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#101014] ${
-                  profile.presence === 'online'
-                    ? 'bg-[#3BA55D]'
-                    : profile.presence === 'idle'
-                    ? 'bg-[#FAA81A]'
-                    : profile.presence === 'dnd'
-                    ? 'bg-[#ED4245]'
-                    : 'bg-[#706C7B]'
-                }`}
-              />
-            </div>
-
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-semibold text-[#F5F3FA]">
-                  {greeting}, {profile.displayName}
-                </h2>
-                {isOwner && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#A47BFF] border-l border-[#282631] pl-2">
-                    ROOT OWNER
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#C4B1FF]">
+                    DOOMCORD · RISE ABOVE. CONNECT BEYOND.
                   </span>
-                )}
-                {!isOwner && isSecOwner && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5] border-l border-[#282631] pl-2">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono uppercase bg-[#8957F5]/20 text-[#C4B1FF] border border-[#8957F5]/40">
                     {formatRoleLabel(profile.role, profile.uid)}
                   </span>
-                )}
-                {hasApexPlus && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#C4B1FF] border-l border-[#282631] pl-2 flex items-center gap-1">
-                    <Crown className="w-3 h-3 text-[#A47BFF]" />
-                    APEX+
-                  </span>
-                )}
-                {!hasApexPlus && hasApexBasic && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#8957F5] border-l border-[#282631] pl-2">
-                    APEX
-                  </span>
-                )}
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#F5F3FA] mt-1">
+                  Welcome back, {profile.displayName}
+                </h1>
+                <p className="text-xs sm:text-sm text-[#A19DAD] mt-1 max-w-2xl">
+                  Your spatial communication workspace — jump into real-time conversations, communities, and 3D Orbs.
+                </p>
               </div>
-              <p className="text-xs text-[#A19DAD] mt-0.5">
-                @{profile.username} · {profile.statusMessage || 'Connect and collaborate on Doomcord.'}
-              </p>
+            </div>
+
+            {/* Quick Action Bar inside Hero */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() =>
+                  onSelectView({ type: 'friends', subTab: 'online' })
+                }
+                className="px-4 py-2.5 rounded-xl bg-[#8957F5] hover:bg-[#A47BFF] text-white text-xs font-bold flex items-center gap-2 transition-all doom-purple-glow"
+              >
+                <UserPlus size={15} />
+                <span>Friends & DMs</span>
+              </button>
+              <button
+                onClick={onOpenCreateCommunity}
+                className="px-4 py-2.5 rounded-xl doom-glass hover:border-[#8957F5]/50 text-[#F5F3FA] text-xs font-semibold flex items-center gap-2 transition-all"
+              >
+                <Plus size={15} className="text-[#C4B1FF]" />
+                <span>New Community</span>
+              </button>
+              <button
+                onClick={onOpenCreateOrb}
+                className="px-4 py-2.5 rounded-xl doom-glass hover:border-[#8957F5]/50 text-[#F5F3FA] text-xs font-semibold flex items-center gap-2 transition-all"
+              >
+                <Globe size={15} className="text-[#C4B1FF]" />
+                <span>Launch Orb</span>
+              </button>
+              {isAdminOrAbove(profile) && (
+                <button
+                  onClick={() => onSelectView({ type: 'admin' })}
+                  className="px-4 py-2.5 rounded-xl bg-[#8957F5]/20 hover:bg-[#8957F5]/30 border border-[#8957F5]/45 text-[#C4B1FF] text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <Shield size={15} />
+                  <span>Admin Console</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* =============================================================== */}
+        {/* 2. APEX MEMBERSHIP STATUS & NOTIFICATIONS STRIP                 */}
+        {/* =============================================================== */}
+        <section className="flex flex-col lg:flex-row gap-5">
+          {/* APEX Membership Glass Panel */}
+          <div className="flex-1 doom-glass rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#8957F5]/20 border border-[#8957F5]/40 flex items-center justify-center text-[#C4B1FF] shrink-0">
+                <Crown size={22} />
+              </div>
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-[#C4B1FF]">
+                  APEX MEMBERSHIP STATUS
+                </div>
+                <div className="text-base font-extrabold text-[#F5F3FA] mt-0.5">
+                  {hasApexPlus
+                    ? isOwner || isSecOwner
+                      ? 'Sovereign Permanent APEX+ Entitlement'
+                      : 'APEX+ Sovereign Active'
+                    : hasApexBasic
+                    ? 'APEX Basic Active'
+                    : 'Standard Citizen Tier'}
+                </div>
+                <div className="text-xs text-[#A19DAD] mt-0.5">
+                  {hasApexPlus
+                    ? '4K 60fps spatial streaming, full APEX Collection cosmetics, and custom profile banners unlocked.'
+                    : 'Upgrade to APEX or APEX+ for animated frames, 4K streams, and exclusive profile cosmetics.'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => onSelectView({ type: 'nitro' })}
+                className="px-3.5 py-2 rounded-xl bg-[#8957F5] hover:bg-[#A47BFF] text-white text-xs font-bold transition-colors"
+              >
+                {hasApexPlus ? 'Manage APEX+' : 'Explore APEX'}
+              </button>
+              <button
+                onClick={() => onSelectView({ type: 'shop' })}
+                className="px-3.5 py-2 rounded-xl doom-glass text-xs font-semibold text-[#C4B1FF]"
+              >
+                Cosmetics
+              </button>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Notifications & Gifts Summary Glass Panel */}
+          <div className="lg:w-96 doom-glass rounded-2xl p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-[#C4B1FF] shrink-0">
+                <Bell size={19} />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-[#F5F3FA]">
+                  Notifications & Gifts
+                </div>
+                <div className="text-xs text-[#A19DAD]">
+                  {pendingIncomingRequests.length} friend requests ·{' '}
+                  {unclaimedUserGifts.length} unclaimed gifts
+                </div>
+              </div>
+            </div>
             <button
-              onClick={() => onSelectView({ type: 'friends', subTab: 'add' })}
-              className="h-8 px-3 rounded-md bg-[#8957F5] hover:bg-[#7a4be6] text-white font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm"
+              onClick={() => onSelectView({ type: 'notifications' })}
+              className="px-3 py-2 rounded-xl doom-glass-elevated text-xs font-bold text-[#C4B1FF] hover:text-white shrink-0"
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Add Friend</span>
-            </button>
-
-            <button
-              onClick={onOpenCreateCommunity}
-              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#F5F3FA] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
-            >
-              <Plus className="w-3.5 h-3.5 text-[#8957F5]" />
-              <span>New Community</span>
-            </button>
-
-            <button
-              onClick={onOpenCreateOrb}
-              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[#F5F3FA] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
-            >
-              <Compass className="w-3.5 h-3.5 text-[#A47BFF]" />
-              <span>New Orb</span>
-            </button>
-
-            <button
-              onClick={() => onSelectView({ type: 'nitro' })}
-              className="h-8 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#8957F5]/30 text-[#C4B1FF] font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
-            >
-              <Crown className="w-3.5 h-3.5 text-[#8957F5]" />
-              <span>APEX</span>
+              Open Inbox
             </button>
           </div>
         </section>
 
-        {/* Platform Metrics */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button
-            onClick={() => onSelectView({ type: 'friends', subTab: 'all' })}
-            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
-          >
-            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
-              <span>Friends</span>
-              <Users className="w-4 h-4 text-[#8957F5]" />
-            </div>
-            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
-              {friends.length}
-            </div>
-            <div className="text-[11px] text-[#706C7B] mt-0.5 tabular-nums">
-              {onlineFriends.length} online now
-            </div>
-          </button>
-
-          <button
-            onClick={() =>
-              dmThreads.length > 0
-                ? onSelectView({ type: 'dm', dmId: dmThreads[0].id })
-                : onSelectView({ type: 'friends', subTab: 'all' })
-            }
-            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
-          >
-            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
-              <span>Conversations</span>
-              <MessageSquare className="w-4 h-4 text-[#8957F5]" />
-            </div>
-            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
-              {dmThreads.length}
-            </div>
-            <div className="text-[11px] text-[#706C7B] mt-0.5">
-              Direct message channels
-            </div>
-          </button>
-
-          <button
-            onClick={() => onSelectView({ type: 'explore_communities' })}
-            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
-          >
-            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
-              <span>Communities</span>
-              <Hash className="w-4 h-4 text-[#A47BFF]" />
-            </div>
-            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
-              {joinedCommunities.length}
-            </div>
-            <div className="text-[11px] text-[#706C7B] mt-0.5 tabular-nums">
-              {communities.length} total discoverable
-            </div>
-          </button>
-
-          <button
-            onClick={() => onSelectView({ type: 'orbs', viewMode: 'explore' })}
-            className="text-left rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] p-3.5 transition-colors"
-          >
-            <div className="flex items-center justify-between text-xs text-[#A19DAD] mb-1.5">
-              <span>Spatial Orbs</span>
-              <Compass className="w-4 h-4 text-[#C4B1FF]" />
-            </div>
-            <div className="text-xl font-bold text-[#F5F3FA] tabular-nums">
-              {orbs.length}
-            </div>
-            <div className="text-[11px] text-[#706C7B] mt-0.5">
-              Interactive 3D spaces
-            </div>
-          </button>
-        </section>
-
-        {/* Main Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Left Column (7 cols): Conversations & Communities */}
-          <div className="lg:col-span-7 space-y-5">
+        {/* =============================================================== */}
+        {/* 3. TWO-COLUMN MAIN WORKSPACE: CONVERSATIONS & FRIEND ACTIVITY   */}
+        {/* =============================================================== */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (7 cols): Recent Conversations & Communities */}
+          <div className="lg:col-span-7 space-y-6">
             {/* Recent Conversations */}
-            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
-                    Recent Conversations
-                  </h3>
-                  <p className="text-[11px] text-[#706C7B]">
-                    Pick up where you left off
-                  </p>
-                </div>
-                <button
-                  onClick={() => onSelectView({ type: 'friends', subTab: 'all' })}
-                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] flex items-center gap-1 transition-colors"
-                >
-                  <span>All Friends</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {dmThreads.length === 0 ? (
-                <div className="p-6 text-center">
-                  <MessageSquare className="w-7 h-7 text-[#706C7B] mx-auto mb-2 opacity-60" />
-                  <p className="text-xs font-medium text-[#F5F3FA]">
-                    No direct conversations yet
-                  </p>
-                  <p className="text-[11px] text-[#706C7B] mt-0.5 max-w-sm mx-auto">
-                    Add a friend by username or message a member from any community.
-                  </p>
-                  <button
-                    onClick={() => onSelectView({ type: 'friends', subTab: 'add' })}
-                    className="mt-3 h-7 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#8957F5] inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Find Friends</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="divide-y divide-[#282631]/60">
-                  {dmThreads.slice(0, 5).map((dm) => {
-                    const otherUid =
-                      dm.participants.find((id) => id !== profile.uid) || dm.participants[0];
-                    const peer =
-                      dm.recipientProfile ||
-                      allUsers.find((u) => u.uid === otherUid);
-                    const peerName = peer?.displayName || 'Doomcord Member';
-                    const peerUsername = peer?.username || 'member';
-
-                    return (
-                      <button
-                        key={dm.id}
-                        onClick={() => onSelectView({ type: 'dm', dmId: dm.id })}
-                        className="w-full px-4 py-2.5 hover:bg-[#17171F] flex items-center justify-between gap-3 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-md bg-[#17171F] border border-[#282631] flex items-center justify-center text-xs font-bold text-[#8957F5] shrink-0 overflow-hidden">
-                            {peer?.photoURL ? (
-                              <img
-                                src={peer.photoURL}
-                                alt={peerName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              peerName.slice(0, 2).toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium text-[#F5F3FA] truncate">
-                                {peerName}
-                              </span>
-                              <span className="text-[10px] font-mono text-[#706C7B] truncate">
-                                @{peerUsername}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-[#A19DAD] truncate">
-                              {dm.lastMessageText || 'Open thread'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {dm.lastMessageAt && (
-                            <span className="text-[10px] font-mono text-[#706C7B] tabular-nums">
-                              {new Date(dm.lastMessageAt).toLocaleDateString()}
-                            </span>
-                          )}
-                          <ArrowUpRight className="w-3.5 h-3.5 text-[#706C7B]" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Joined Communities */}
-            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
-                    Your Communities
-                  </h3>
-                  <p className="text-[11px] text-[#706C7B]">
-                    Active spaces and voice channels
-                  </p>
-                </div>
+            <div className="doom-glass rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onSelectView({ type: 'explore_communities' })}
-                    className="text-xs font-medium text-[#A19DAD] hover:text-[#F5F3FA] transition-colors"
-                  >
-                    Directory
-                  </button>
-                  <button
-                    onClick={onOpenCreateCommunity}
-                    className="h-6 px-2 rounded bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-[11px] font-medium text-[#8957F5] flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>New</span>
-                  </button>
+                  <MessageSquare size={16} className="text-[#A47BFF]" />
+                  <h2 className="text-sm font-bold text-[#F5F3FA]">
+                    Recent Conversations
+                  </h2>
                 </div>
+                <button
+                  onClick={() =>
+                    onSelectView({ type: 'friends', subTab: 'online' })
+                  }
+                  className="text-xs font-semibold text-[#C4B1FF] hover:underline flex items-center gap-1"
+                >
+                  <span>All Messages</span>
+                  <ArrowUpRight size={13} />
+                </button>
               </div>
 
-              {joinedCommunities.length === 0 ? (
-                <div className="p-6 text-center">
-                  <Hash className="w-7 h-7 text-[#706C7B] mx-auto mb-2 opacity-60" />
-                  <p className="text-xs font-medium text-[#F5F3FA]">
-                    No communities joined yet
-                  </p>
-                  <p className="text-[11px] text-[#706C7B] mt-0.5 max-w-sm mx-auto">
-                    Create your own server or explore available spaces.
-                  </p>
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <button
-                      onClick={onOpenCreateCommunity}
-                      className="h-7 px-3 rounded-md bg-[#8957F5] text-white text-xs font-medium shadow-sm"
-                    >
-                      Create Community
-                    </button>
-                    <button
-                      onClick={() => onSelectView({ type: 'explore_communities' })}
-                      className="h-7 px-3 rounded-md bg-[#17171F] text-[#F5F3FA] text-xs font-medium border border-[#282631]"
-                    >
-                      Browse Directory
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5">
-                  {joinedCommunities.map((comm) => {
-                    const firstChannelId = comm.channels?.[0]?.id || 'general';
+              {recentDMs.length > 0 ? (
+                <div className="space-y-2">
+                  {recentDMs.map((thread) => {
+                    const otherUid =
+                      thread.participants.find((id) => id !== profile.uid) ||
+                      thread.participants[0];
+                    const otherUser =
+                      thread.recipientProfile ||
+                      allUsers.find((u) => u.uid === otherUid);
+                    const title =
+                      thread.isGroup && thread.groupName
+                        ? thread.groupName
+                        : otherUser?.displayName || 'Direct Conversation';
+                    const avatar =
+                      otherUser?.photoURL || generateInitialsAvatar(title);
+
                     return (
                       <button
-                        key={comm.id}
+                        key={thread.id}
                         onClick={() =>
                           onSelectView({
-                            type: 'community',
-                            communityId: comm.id,
-                            channelId: firstChannelId,
+                            type: 'dm',
+                            dmId: thread.id,
                           })
                         }
-                        className="p-3 rounded-lg bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-left transition-colors flex items-start gap-2.5"
+                        className="w-full p-3 rounded-xl bg-[#15111F]/85 hover:bg-[#15111F] border border-white/10 hover:border-[#8957F5]/40 flex items-center justify-between gap-3 transition-all text-left"
                       >
-                        <div
-                          className="w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs text-white shrink-0"
-                          style={{ backgroundColor: comm.themeColor || '#8957F5' }}
-                        >
-                          {comm.name.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-semibold text-[#F5F3FA] truncate">
-                            {comm.name}
-                          </h4>
-                          <p className="text-[11px] text-[#706C7B] line-clamp-1">
-                            {comm.description || 'Community workspace'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-[#706C7B] tabular-nums">
-                            <span>{comm.members?.length || 1} members</span>
-                            <span>·</span>
-                            <span>{comm.channels?.length || 1} channels</span>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={avatar}
+                            alt={title}
+                            onError={(e) => {
+                              e.currentTarget.src = generateInitialsAvatar(
+                                title,
+                                '#8957F5'
+                              );
+                            }}
+                            className="w-10 h-10 rounded-full object-cover border border-white/15 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-[#F5F3FA] truncate">
+                              {title}
+                            </div>
+                            <div className="text-[11px] text-[#A19DAD] truncate">
+                              {thread.lastMessageText ||
+                                'Open encrypted channel'}
+                            </div>
                           </div>
                         </div>
+                        <span className="text-[10px] font-mono text-[#C4B1FF] shrink-0">
+                          Open →
+                        </span>
                       </button>
                     );
                   })}
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column (5 cols): Notifications, Orbs & Actions */}
-          <div className="lg:col-span-5 space-y-5">
-            {/* Notifications & Pending Actions */}
-            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Bell className="w-3.5 h-3.5 text-[#8957F5]" />
-                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
-                    Notifications & Activity
-                  </h3>
-                </div>
-                <button
-                  onClick={() => onSelectView({ type: 'notifications' })}
-                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] transition-colors"
-                >
-                  Open Inbox
-                </button>
-              </div>
-
-              <div className="p-3 space-y-2">
-                {pendingIncomingRequests.length === 0 &&
-                unclaimedGiftsForMe.length === 0 &&
-                myReceipts.length === 0 ? (
-                  <div className="py-5 text-center">
-                    <p className="text-xs text-[#706C7B]">
-                      You're all caught up. No pending requests or gifts.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {pendingIncomingRequests.slice(0, 3).map((req) => (
-                      <button
-                        key={req.id}
-                        onClick={() => onSelectView({ type: 'friends', subTab: 'pending' })}
-                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center justify-between text-left transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <UserPlus className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
-                              Friend request from @{req.fromUsername}
-                            </p>
-                            <p className="text-[10px] text-[#A19DAD]">Review request</p>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-3 h-3 text-[#706C7B] shrink-0" />
-                      </button>
-                    ))}
-
-                    {unclaimedGiftsForMe.slice(0, 2).map((gift) => (
-                      <button
-                        key={gift.id}
-                        onClick={() =>
-                          onSelectView({
-                            type: 'gift_redeem',
-                            token: gift.claimToken || gift.tokenPreview,
-                          })
-                        }
-                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#8957F5]/30 flex items-center justify-between text-left transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Gift className="w-3.5 h-3.5 text-[#A47BFF] shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
-                              APEX Gift from {gift.creatorName}
-                            </p>
-                            <p className="text-[10px] text-[#A47BFF]">Click to claim</p>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-3 h-3 text-[#A47BFF] shrink-0" />
-                      </button>
-                    ))}
-
-                    {myReceipts.slice(0, 2).map((rcp) => (
-                      <button
-                        key={rcp.id}
-                        onClick={() => onOpenReceipt(rcp)}
-                        className="w-full p-2.5 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] flex items-center justify-between text-left transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Receipt className="w-3.5 h-3.5 text-[#8957F5] shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-[#F5F3FA] truncate">
-                              Receipt {rcp.receiptNumber}
-                            </p>
-                            <p className="text-[10px] font-mono text-[#706C7B] tabular-nums">
-                              ₹{rcp.totalAmountINR} · {rcp.paymentStatus}
-                            </p>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-3 h-3 text-[#706C7B] shrink-0" />
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Featured Orbs */}
-            <div className="rounded-xl bg-[#101014] border border-[#282631] overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#282631] flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-[#F5F3FA]">
-                    Featured Orbs
-                  </h3>
-                  <p className="text-[11px] text-[#706C7B]">
-                    3D spaces & thematic realms
-                  </p>
-                </div>
-                <button
-                  onClick={() => onSelectView({ type: 'orbs', viewMode: 'explore' })}
-                  className="text-xs font-medium text-[#8957F5] hover:text-[#A47BFF] transition-colors"
-                >
-                  Explore All
-                </button>
-              </div>
-
-              {orbs.length === 0 ? (
-                <div className="p-5 text-center">
-                  <Compass className="w-6 h-6 text-[#706C7B] mx-auto mb-1.5 opacity-60" />
-                  <p className="text-xs text-[#706C7B]">
-                    No Orbs created yet.
+              ) : (
+                <div className="p-6 rounded-xl bg-[#15111F]/70 border border-white/10 text-center">
+                  <p className="text-xs text-[#A19DAD] mb-3">
+                    No active direct message threads yet. Start a conversation with any citizen.
                   </p>
                   <button
-                    onClick={onOpenCreateOrb}
-                    className="mt-2.5 h-7 px-3 rounded-md bg-[#17171F] hover:bg-[#22212C] border border-[#282631] text-xs font-medium text-[#A47BFF]"
+                    onClick={() =>
+                      onSelectView({ type: 'friends', subTab: 'online' })
+                    }
+                    className="px-4 py-2 rounded-xl bg-[#8957F5] text-white text-xs font-bold"
                   >
-                    + Create First Orb
+                    Start Conversation
                   </button>
                 </div>
-              ) : (
-                <div className="divide-y divide-[#282631]/60">
-                  {orbs.slice(0, 4).map((orb) => (
+              )}
+            </div>
+
+            {/* Your Communities */}
+            <div className="doom-glass rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Compass size={16} className="text-[#A47BFF]" />
+                  <h2 className="text-sm font-bold text-[#F5F3FA]">
+                    Communities (
+                    {joinedCommunities.length || communities.length})
+                  </h2>
+                </div>
+                <button
+                  onClick={() => onSelectView({ type: 'explore_communities' })}
+                  className="text-xs font-semibold text-[#C4B1FF] hover:underline flex items-center gap-1"
+                >
+                  <span>Discover Servers</span>
+                  <ArrowUpRight size={13} />
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {(joinedCommunities.length > 0
+                  ? joinedCommunities
+                  : communities
+                )
+                  .slice(0, 4)
+                  .map((comm) => (
                     <button
-                      key={orb.id}
+                      key={comm.id}
                       onClick={() =>
-                        onSelectView({ type: 'orbs', orbId: orb.id, viewMode: 'detail' })
+                        onSelectView({
+                          type: 'community',
+                          communityId: comm.id,
+                          channelId: comm.channels?.[0]?.id || 'general',
+                        })
                       }
-                      className="w-full px-4 py-2.5 hover:bg-[#17171F] flex items-center justify-between gap-2.5 text-left transition-colors"
+                      className="w-full p-3.5 rounded-xl bg-[#15111F]/85 hover:bg-[#15111F] border border-white/10 hover:border-[#8957F5]/40 flex items-center justify-between gap-3 transition-all text-left"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                          style={{ backgroundColor: orb.primaryColor || '#8957F5' }}
-                        >
-                          {orb.name.slice(0, 2).toUpperCase()}
-                        </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={
+                            comm.iconUrl || generateInitialsAvatar(comm.name, '#8957F5')
+                          }
+                          alt={comm.name}
+                          onError={(e) => {
+                            e.currentTarget.src = generateInitialsAvatar(
+                              comm.name,
+                              '#8957F5'
+                            );
+                          }}
+                          className="w-11 h-11 rounded-2xl object-cover border border-white/15 shrink-0"
+                        />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-medium text-[#F5F3FA] truncate">
-                              {orb.name}
-                            </span>
-                            <span className="text-[9px] font-mono uppercase text-[#706C7B]">
-                              {orb.category}
-                            </span>
+                          <div className="text-sm font-bold text-[#F5F3FA] truncate">
+                            {comm.name}
                           </div>
-                          <p className="text-[10px] text-[#706C7B] truncate">
-                            {orb.description}
-                          </p>
+                          <div className="text-xs text-[#A19DAD] truncate">
+                            {comm.description}
+                          </div>
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono text-[#706C7B] tabular-nums shrink-0">
-                        {orb.memberCount || 1}
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-bold text-[#C4B1FF]">
+                          {comm.memberCount || comm.members?.length || 1} members
+                        </div>
+                        <div className="text-[10px] font-mono text-[#777180]">
+                          {comm.channels?.length || 1} channels
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (5 cols): Friend Activity, Featured Orbs & Receipts */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Friend Activity */}
+            <div className="doom-glass rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-[#A47BFF]" />
+                  <h2 className="text-sm font-bold text-[#F5F3FA]">
+                    Friend Activity ({onlineFriends.length} Online)
+                  </h2>
+                </div>
+                <button
+                  onClick={() =>
+                    onSelectView({ type: 'friends', subTab: 'online' })
+                  }
+                  className="text-xs font-semibold text-[#C4B1FF] hover:underline"
+                >
+                  Manage
+                </button>
+              </div>
+
+              {friends.length > 0 ? (
+                <div className="space-y-2.5">
+                  {friends.slice(0, 5).map((fr) => (
+                    <div
+                      key={fr.uid}
+                      className="p-3 rounded-xl bg-[#15111F]/85 border border-white/10 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative shrink-0">
+                          <img
+                            src={
+                              fr.photoURL ||
+                              generateInitialsAvatar(fr.displayName, '#8957F5')
+                            }
+                            alt={fr.displayName}
+                            onError={(e) => {
+                              e.currentTarget.src = generateInitialsAvatar(
+                                fr.displayName,
+                                '#8957F5'
+                              );
+                            }}
+                            className="w-9 h-9 rounded-full object-cover"
+                          />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#8957F5] ring-2 ring-[#15111F] absolute bottom-0 right-0" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-[#F5F3FA] truncate">
+                            {fr.displayName}
+                          </div>
+                          <div className="text-[11px] text-[#A19DAD] truncate">
+                            {fr.statusMessage || `@${fr.username}`}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onStartDM(fr)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#8957F5]/20 hover:bg-[#8957F5]/30 text-[#C4B1FF] text-xs font-semibold"
+                      >
+                        Message
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-5 rounded-xl bg-[#15111F]/70 border border-white/10 text-xs text-[#A19DAD] text-center">
+                  Connect with citizens in the Friends directory to see real-time presence and activity.
+                </div>
+              )}
+            </div>
+
+            {/* Featured Spatial Orbs */}
+            <div className="doom-glass rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#C4B1FF]" />
+                  <h2 className="text-sm font-bold text-[#F5F3FA]">
+                    Featured Spatial Orbs
+                  </h2>
+                </div>
+                <button
+                  onClick={() => onSelectView({ type: 'orbs' })}
+                  className="text-xs font-semibold text-[#C4B1FF] hover:underline"
+                >
+                  Enter 3D Canvas
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {orbs.slice(0, 3).map((orb) => (
+                  <button
+                    key={orb.id}
+                    onClick={() =>
+                      onSelectView({
+                        type: 'orbs',
+                        orbId: orb.id,
+                        viewMode: 'detail',
+                      })
+                    }
+                    className="w-full p-3.5 rounded-xl bg-[#15111F]/85 hover:bg-[#15111F] border border-white/10 hover:border-[#8957F5]/40 flex items-center justify-between gap-3 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8957F5] to-[#C4B1FF] p-[1px] shrink-0">
+                        <div className="w-full h-full rounded-full bg-[#15111F] flex items-center justify-center text-[#C4B1FF]">
+                          <Globe size={17} />
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#F5F3FA] truncate">
+                          {orb.name}
+                        </div>
+                        <div className="text-[11px] text-[#A19DAD] truncate">
+                          {orb.description}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 rounded-lg bg-[#8957F5]/15 text-[#C4B1FF] text-[10px] font-mono shrink-0">
+                      {orb.memberCount} members
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Official Verifiable Receipts */}
+            {userReceipts.length > 0 && (
+              <div className="doom-glass rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Receipt size={15} className="text-[#C4B1FF]" />
+                    <h2 className="text-sm font-bold text-[#F5F3FA]">
+                      Your Official Receipts
+                    </h2>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {userReceipts.slice(0, 3).map((rcp) => (
+                    <button
+                      key={rcp.id}
+                      onClick={() => onOpenReceipt(rcp)}
+                      className="w-full p-3 rounded-xl bg-[#15111F]/85 hover:bg-[#15111F] border border-white/10 flex items-center justify-between text-xs text-left"
+                    >
+                      <div>
+                        <div className="font-mono text-[#C4B1FF]">
+                          {rcp.receiptNumber}
+                        </div>
+                        <div className="text-[#A19DAD] truncate">
+                          {rcp.items?.[0]?.productName || rcp.title}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#F5F3FA]">
+                        View →
                       </span>
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Quick Links */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button
-                onClick={() => onSelectView({ type: 'shop' })}
-                className="p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#282631] text-left transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-[#A47BFF] mb-1.5" />
-                <div className="text-xs font-semibold text-[#F5F3FA]">Cosmetics Shop</div>
-                <p className="text-[10px] text-[#706C7B] mt-0.5">
-                  Decorations & themes
-                </p>
-              </button>
-
-              {isAdminOrAbove(profile) && (
-                <button
-                  onClick={() => onSelectView({ type: 'admin' })}
-                  className="p-3.5 rounded-lg bg-[#101014] hover:bg-[#17171F] border border-[#8957F5]/30 text-left transition-colors"
-                >
-                  <Shield className="w-4 h-4 text-[#8957F5] mb-1.5" />
-                  <div className="text-xs font-semibold text-[#F5F3FA]">Admin Console</div>
-                  <p className="text-[10px] text-[#706C7B] mt-0.5">
-                    Platform Management
-                  </p>
-                </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

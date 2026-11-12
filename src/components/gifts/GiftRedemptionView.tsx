@@ -238,8 +238,8 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
               </div>
 
               {matchedInvite.status === 'accepted' || claimedSuccess ? (
-                <div className="p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-center">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <div className="p-5 rounded-2xl doom-glass-elevated border border-[#8957F5]/40 text-center">
+                  <CheckCircle2 className="w-8 h-8 text-[#A47BFF] mx-auto mb-2" />
                   <h4 className="text-sm font-bold text-white">
                     Secondary Owner Account Activated!
                   </h4>
@@ -400,8 +400,8 @@ export const GiftRedemptionView: React.FC<GiftRedemptionViewProps> = ({
 
               {/* Claim Status & Action Button */}
               {claimedSuccess || matchedGift.status === 'redeemed' ? (
-                <div className="p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <div className="p-5 rounded-2xl doom-glass-elevated border border-[#8957F5]/40 text-center space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-[#A47BFF] mx-auto" />
                   <h3 className="text-base font-bold text-white">
                     {claimedSuccess
                       ? 'Gift Unlocked & Activated on Your Account!'
